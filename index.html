@@ -759,7 +759,7 @@
 
   <script>
     const SUPABASE_URL = 'https://ltoiylrqpbplfiuhvfbi.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_os1uOyJ3Ns1Kg9ke9bXhXg_lI9SnrRV';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0b2l5bHJxcGJwbGZpdWh2ZmJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzODE4MTQsImV4cCI6MjEwNDk1NzgxNH0.hMNtR9jD4hHb4EYDnjyq7NSMa7VBCp24j_0fH0zS4d4';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let alumnosData = [];
@@ -807,7 +807,7 @@
           .from('profiles')
           .select('role')
           .eq('id', session.user.id)
-          .single();
+          .maybeSingle();
         
         const rol = perfil ? perfil.role : 'limited';
         aplicarPermisos(rol);
@@ -817,7 +817,7 @@
     }
 
     async function registrarUsuarioEnPerfiles(authData) {
-      if (!authData.user) return;
+      if (!authData || !authData.user) return;
 
       const { error } = await _supabase
         .from('profiles')
@@ -835,32 +835,32 @@
     }
 
     async function iniciarSesion() {
-  const email = document.getElementById('loginEmail').value;
-  const password = document.getElementById('loginPassword').value;
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
 
-  if (!email || !password) {
-    alert('Por favor complete correo y contraseña.');
-    return;
-  }
+      if (!email || !password) {
+        alert('Por favor complete correo y contraseña.');
+        return;
+      }
 
-  const { data: authData, error: authError } = await _supabase.auth.signInWithPassword({ email, password });
-  
-  if (authError) {
-    alert('Credenciales incorrectas: ' + authError.message);
-    return;
-  }
+      const { data: authData, error: authError } = await _supabase.auth.signInWithPassword({ email, password });
+      
+      if (authError) {
+        alert('Credenciales incorrectas: ' + authError.message);
+        return;
+      }
 
-  await registrarUsuarioEnPerfiles(authData);
+      await registrarUsuarioEnPerfiles(authData);
 
-  const { data: perfil, error: perfilError } = await _supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', authData.user.id)
-    .maybeSingle(); // Se cambia .single() por .maybeSingle() para evitar excepciones si no existe el perfil aún
+      const { data: perfil, error: perfilError } = await _supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', authData.user.id)
+        .maybeSingle();
 
-  const rol = (!perfilError && perfil) ? perfil.role : 'limited';
-  aplicarPermisos(rol);
-}
+      const rol = (!perfilError && perfil) ? perfil.role : 'limited';
+      aplicarPermisos(rol);
+    }
 
     async function registrarCuenta() {
       const email = document.getElementById('loginEmail').value;
@@ -884,22 +884,21 @@
     }
 
     function aplicarPermisos(rol) {
-  const loginSection = document.getElementById('loginSection');
-  const aside = document.querySelector('aside');
-  const main = document.querySelector('main');
+      const loginSection = document.getElementById('loginSection');
+      const aside = document.querySelector('aside');
+      const main = document.querySelector('main');
 
-  if (loginSection) loginSection.style.setProperty('display', 'none', 'important');
-  if (aside) aside.style.setProperty('display', 'flex', 'important');
-  if (main) main.style.setProperty('display', 'block', 'important');
+      if (loginSection) loginSection.style.setProperty('display', 'none', 'important');
+      if (aside) aside.style.setProperty('display', 'flex', 'important');
+      if (main) main.style.setProperty('display', 'block', 'important');
 
-  // Inicialización de datos con captura de errores para evitar bloqueos
-  Promise.allSettled([
-    cargarStaff(),
-    cargarDatosAlumnos(),
-    cargarLibroDiario(),
-    cargarHistorialLiquidaciones()
-  ]).catch(err => console.error("Error al inicializar datos:", err));
-}
+      Promise.allSettled([
+        cargarStaff(),
+        cargarDatosAlumnos(),
+        cargarLibroDiario(),
+        cargarHistorialLiquidaciones()
+      ]).catch(err => console.error("Error al inicializar datos:", err));
+    }
 
     function guardarReservas() {
       const valARS = document.getElementById("reservaARS").value;
@@ -1784,7 +1783,7 @@
         alert('Error al cargar Libro Diario: ' + error.message);
         return;
       }
-      cajaData = asientos;
+      cajaData = asientos || [];
       renderizarLibroDiario();
     }
 
@@ -1819,7 +1818,7 @@
           tbody.innerHTML += `
             <tr>
               <td>${fechaFormateada}</td>
-              <td><span style="color: ${esIngreso ? 'var(--neon-green)' : 'var(--danger-red)'}; font-weight:700;">${c.tipo.toUpperCase()}</span></td>
+              <td><span style="color: ${esIngreso ? 'var(--neon-green)' : 'var(--danger-red)'}; font-weight:700;">${c.tipo ? c.tipo.toUpperCase() : 'INGRESO'}</span></td>
               <td><strong>${c.persona || '-'}</strong></td>
               <td>${c.detalle || c.descripcion || '-'}</td>
               <td>${c.cobrador || '-'}</td>
@@ -1885,13 +1884,13 @@
       if (!asiento) return;
 
       document.getElementById('editAsientoId').value = asiento.id;
-      document.getElementById('editAsientoTipo').value = asiento.tipo;
+      document.getElementById('editAsientoTipo').value = asiento.tipo || 'ingreso';
       document.getElementById('editAsientoFecha').value = asiento.fecha;
       document.getElementById('editAsientoPersona').value = asiento.persona || '';
       document.getElementById('editAsientoDetalle').value = asiento.detalle || asiento.descripcion || '';
       document.getElementById('editAsientoCobrador').value = asiento.cobrador || 'Nacho';
-      document.getElementById('editAsientoCategoria').value = asiento.categoria || 'Otros';
-      document.getElementById('editAsientoMonto').value = asiento.monto;
+      document.getElementById('editAsientoCategoria').value = asiento.categoria || 'Cuota';
+      document.getElementById('editAsientoMonto').value = asiento.monto || 0;
 
       document.getElementById('modalEditAsiento').style.display = 'flex';
     }
@@ -1910,8 +1909,8 @@
       const categoria = document.getElementById('editAsientoCategoria').value;
       const monto = parseFloat(document.getElementById('editAsientoMonto').value) || 0;
 
-      if (!fecha || !persona || !detalle || monto <= 0) {
-        alert('Por favor completá los datos requeridos.');
+      if (!id || !fecha || monto <= 0) {
+        alert('Por favor, ingresá valores válidos.');
         return;
       }
 
@@ -1920,7 +1919,7 @@
       }).eq('id', id);
 
       if (error) {
-        alert('Error al actualizar asiento: ' + error.message);
+        alert('Error al guardar cambios: ' + error.message);
       } else {
         cerrarModalAsiento();
         cargarLibroDiario();
@@ -1929,10 +1928,10 @@
     }
 
     async function borrarAsiento(id) {
-      if (!confirm('¿Confirmás eliminar este registro contable?')) return;
+      if (!confirm('¿Desea eliminar este registro contable?')) return;
       const { error } = await _supabase.from('caja_diaria').delete().eq('id', id);
       if (error) {
-        alert('Error al borrar asiento: ' + error.message);
+        alert('Error al borrar el asiento: ' + error.message);
       } else {
         cargarLibroDiario();
         cargarAuditoriaCierreMensual();
@@ -1940,160 +1939,84 @@
     }
 
     async function cargarPlanesRenovacion() {
-      const profFiltro = document.getElementById('filtroProfesorPlan')?.value || '';
-
-      let query = _supabase.from('planes_renovacion').select('*').order('created_at', { ascending: false });
-      if (profFiltro) query = query.eq('profesor', profFiltro);
-
-      const { data, error } = await query;
-
+      const { data, error } = await _supabase.from('planes').select('*').order('id', { ascending: false });
       if (error) {
-        console.error('Error al cargar planes:', error);
+        console.error('Error al cargar planes:', error.message);
         return;
       }
-
       planesData = data || [];
-      renderizarTablaPlanes(planesData);
-    }
-
-    function renderizarTablaPlanes(items) {
-      const contenedor = document.getElementById('tbodyPlanes');
-      if (!contenedor) return;
-      contenedor.innerHTML = '';
-
-      if (!items || items.length === 0) {
-        contenedor.innerHTML = '<div class="card"><p>No hay planes pendientes o registrados.</p></div>';
-        return;
-      }
-
-      const agrupadoPorProfesor = items.reduce((acc, plan) => {
-        if (!acc[plan.profesor]) acc[plan.profesor] = [];
-        acc[plan.profesor].push(plan);
-        return acc;
-      }, {});
-
-      Object.keys(agrupadoPorProfesor).forEach(profesor => {
-        const planesProfesor = agrupadoPorProfesor[profesor];
-
-        let htmlCard = `
-          <div class="card" style="margin-bottom: 20px; border-left: 4px solid var(--accent-blue);">
-            <h3 style="margin-bottom: 12px; display: flex; justify-content: space-between;">
-              <span>👤 ${profesor}</span>
-              <small style="font-size: 0.85rem; color: var(--text-dim);">${planesProfesor.length} plan(es)</small>
-            </h3>
-            <table style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="text-align: left;">
-                  <th>Semana Target</th>
-                  <th>Alumno y Observaciones</th>
-                  <th>Días / Sem</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-        `;
-
-        planesProfesor.forEach(p => {
-          htmlCard += `
-            <tr>
-              <td><span class="tag-fecha">📅 Semana ${p.semana}</span></td>
-              <td>
-                <strong>${p.alumno_nombre}</strong>
-                ${p.detalles ? `<div style="font-size: 0.85rem; color: var(--text-dim); margin-top: 4px;">📝 <em>${p.detalles}</em></div>` : ''}
-              </td>
-              <td>
-                <select onchange="actualizarDiasPlan(${p.id}, this.value)" style="padding: 4px;">
-                  ${[1, 2, 3, 4, 5].map(d => `<option value="${d}" ${d === p.dias_semana ? 'selected' : ''}>${d} días/sem</option>`).join('')}
-                </select>
-              </td>
-              <td>
-                ${p.completado 
-                  ? `<span class="badge-presente">✓ Listo</span>` 
-                  : `<span style="color: var(--warning-yellow); font-weight: bold;">⏳ Pendiente</span>`}
-              </td>
-              <td>
-                <button class="btn" style="padding: 4px 8px; font-size: 0.8rem;" onclick="toggleEstadoPlan(${p.id}, ${!p.completado})">
-                  ${p.completado ? 'Pendiente' : 'Listo'}
-                </button>
-                <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="borrarPlanRenovacion(${p.id})">🗑️</button>
-              </td>
-            </tr>
-          `;
-        });
-
-        htmlCard += `
-              </tbody>
-            </table>
-          </div>
-        `;
-
-        contenedor.innerHTML += htmlCard;
-      });
+      filtrarPlanes();
     }
 
     async function guardarPlanRenovacion() {
       const profesor = document.getElementById('planProfesor').value;
       const semana = document.getElementById('planSemana').value.trim();
       const alumno = document.getElementById('planAlumno').value.trim();
-      const dias = parseInt(document.getElementById('planDias').value, 10);
+      const dias = parseInt(document.getElementById('planDias').value, 10) || 3;
       const detalles = document.getElementById('planDetalles').value.trim();
 
       if (!profesor || !semana || !alumno) {
-        alert('Por favor completá el profesor, la semana y el nombre del alumno.');
+        alert('Por favor completá los campos obligatorios (Profesor, Semana y Alumno).');
         return;
       }
 
-      const { error } = await _supabase.from('planes_renovacion').insert([{
-        profesor,
-        semana,
-        alumno_nombre: alumno,
-        dias_semana: dias,
-        detalles: detalles,
-        completado: false
+      const { error } = await _supabase.from('planes').insert([{
+        profesor, semana, alumno, dias_semana: dias, detalles
       }]);
 
       if (error) {
         alert('Error al guardar el plan: ' + error.message);
       } else {
+        document.getElementById('planSemana').value = '';
         document.getElementById('planAlumno').value = '';
         document.getElementById('planDetalles').value = '';
         cargarPlanesRenovacion();
       }
     }
 
-    async function actualizarDiasPlan(id, nuevosDias) {
-      const { error } = await _supabase.from('planes_renovacion').update({ dias_semana: parseInt(nuevosDias, 10) }).eq('id', id);
-      if (error) alert('Error al actualizar días: ' + error.message);
-    }
-
-    async function toggleEstadoPlan(id, nuevoEstado) {
-      const { error } = await _supabase.from('planes_renovacion').update({ completado: nuevoEstado }).eq('id', id);
-      if (error) alert('Error al cambiar estado: ' + error.message);
-      else cargarPlanesRenovacion();
-    }
-
-    async function borrarPlanRenovacion(id) {
-      if (!confirm('¿Eliminar esta tarea de planificación?')) return;
-      const { error } = await _supabase.from('planes_renovacion').delete().eq('id', id);
-      if (error) alert('Error al eliminar: ' + error.message);
-      else cargarPlanesRenovacion();
-    }
-
     function filtrarPlanes() {
-      const texto = document.getElementById('buscadorPlan')?.value.toLowerCase().trim() || '';
-      if (!texto) {
-        renderizarTablaPlanes(planesData);
+      const cont = document.getElementById('tbodyPlanes');
+      if (!cont) return;
+
+      const profFiltro = document.getElementById('filtroProfesorPlan')?.value || '';
+      const textoBuscador = document.getElementById('buscadorPlan')?.value.toLowerCase().trim() || '';
+
+      const filtrados = planesData.filter(p => {
+        const coincideProf = !profFiltro || p.profesor === profFiltro;
+        const coincideTexto = !textoBuscador || 
+          (p.alumno && p.alumno.toLowerCase().includes(textoBuscador)) || 
+          (p.semana && p.semana.toLowerCase().includes(textoBuscador));
+        return coincideProf && coincideTexto;
+      });
+
+      if (filtrados.length === 0) {
+        cont.innerHTML = '<p style="color: var(--text-dim); padding: 12px 0;">No hay planes registrados o coincidentes con la búsqueda.</p>';
         return;
       }
 
-      const filtrados = planesData.filter(p => 
-        p.alumno_nombre.toLowerCase().includes(texto) || 
-        p.semana.toLowerCase().includes(texto) ||
-        p.profesor.toLowerCase().includes(texto)
-      );
+      cont.innerHTML = filtrados.map(p => `
+        <div style="background: #14141D; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <strong style="font-size: 1.05rem;">${p.alumno}</strong>
+              <span class="badge-presente" style="font-size: 0.75rem;">${p.dias_semana || 3} días/sem</span>
+              <span style="font-size: 0.85rem; color: var(--neon-green); background: rgba(149,255,83,0.1); padding: 2px 6px; border-radius: 4px;">Semana: ${p.semana}</span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-dim);">
+              👤 Prof. a cargo: <strong>${p.profesor}</strong>
+            </div>
+            ${p.detalles ? `<div style="font-size: 0.85rem; color: #fff; margin-top: 6px; background: rgba(255,255,255,0.03); padding: 6px 10px; border-radius: 4px;">📝 ${p.detalles}</div>` : ''}
+          </div>
+          <button class="btn btn-danger" style="padding: 6px 12px;" onclick="borrarPlan(${p.id})">Eliminar</button>
+        </div>
+      `).join('');
+    }
 
-      renderizarTablaPlanes(filtrados);
+    async function borrarPlan(id) {
+      if (!confirm('¿Desea eliminar esta planificación?')) return;
+      const { error } = await _supabase.from('planes').delete().eq('id', id);
+      if (error) alert('Error al borrar plan: ' + error.message);
+      else cargarPlanesRenovacion();
     }
   </script>
 </body>
