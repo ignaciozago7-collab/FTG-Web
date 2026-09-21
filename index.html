@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>From The Ground - Gestión Integral</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -1586,35 +1587,35 @@
     }
 
     function renderizarListaStaff(items) {
-  const ul = document.getElementById('listaStaff');
-  if (!ul) return;
-  ul.innerHTML = '';
+      const ul = document.getElementById('listaStaff');
+      if (!ul) return;
+      ul.innerHTML = '';
 
-  if (!items || items.length === 0) {
-    ul.innerHTML = '<li>No hay personal registrado.</li>';
-    return;
-  }
+      if (!items || items.length === 0) {
+        ul.innerHTML = '<li>No hay personal registrado.</li>';
+        return;
+      }
 
-  items.forEach(s => {
-    const esProfesor = s.rol === 'profesor';
-    ul.innerHTML += `
-      <li>
-        <div>
-          <strong>${s.nombre}</strong> 
-          <span style="font-size: 0.85em; color: var(--text-dim);">(${esProfesor ? 'Profesor' : 'Profesional'})</span>
-        </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          ${esProfesor 
-            ? `<input type="number" id="tarifa-${s.id}" value="${s.tarifa_hora \vert{}\vert{} 0}" style="width: 100px;" placeholder="$/hora">`
-            : `<input type="number" id="pct-${s.id}" value="${s.porcentaje || 0}" style="width: 80px;" placeholder="%">`
-          }
-          <button class="btn btn-outline" onclick="actualizarConfigStaff(${s.id}, '${s.rol}')">Guardar</button>
-          <button class="btn btn-danger" onclick="borrarStaff(${s.id})">Eliminar</button>
-        </div>
-      </li>
-    `;
-  });
-}
+      items.forEach(s => {
+        const esProfesor = s.rol === 'profesor';
+        ul.innerHTML += `
+          <li>
+            <div>
+              <strong>${s.nombre}</strong> 
+              <span style="font-size: 0.85em; color: var(--text-dim);">(${esProfesor ? 'Profesor' : 'Profesional'})</span>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              ${esProfesor 
+                ? `<input type="number" id="tarifa-${s.id}" value="${s.tarifa_hora \vert{}\vert{} 0}" style="width: 100px;" placeholder="$/hora">`
+                : `<input type="number" id="pct-${s.id}" value="${s.porcentaje || 0}" style="width: 80px;" placeholder="%">`
+              }
+              <button class="btn btn-outline" onclick="actualizarConfigStaff(${s.id}, '${s.rol}')">Guardar</button>
+              <button class="btn btn-danger" onclick="borrarStaff(${s.id})">Eliminar</button>
+            </div>
+          </li>
+        `;
+      });
+    }
 
     function poblarSelectStaffLiquidacion() {
       const select = document.getElementById('selectStaff');
