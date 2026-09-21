@@ -790,7 +790,6 @@
         document.getElementById("reservaUSD").value = usdGuardado;
       }
 
-      // Enlazamos los eventos de los botones del login por seguridad para evitar conflictos de contexto
       const btnLogin = document.getElementById('btnLogin');
       if (btnLogin) btnLogin.addEventListener('click', iniciarSesion);
 
@@ -1949,7 +1948,7 @@
       renderizarTablaPlanes(planesData);
     }
 
-    function renderizarTablaPlanes(items) {
+    function renderizarListaPlanes(items) {
       const contenedor = document.getElementById('tbodyPlanes');
       if (!contenedor) return;
       contenedor.innerHTML = '';
@@ -2055,8 +2054,8 @@
       }
     }
 
-    async function actualizarDiasPlan(id, nuevosDias) {
-      const { error } = await _supabase.from('planes_renovacion').update({ dias_semana: parseInt(nuevosDias, 10) }).eq('id', id);
+    async function actualizarDiasPlan(id, novosDias) {
+      const { error } = await _supabase.from('planes_renovacion').update({ dias_semana: parseInt(novosDias, 10) }).eq('id', id);
       if (error) alert('Error al actualizar días: ' + error.message);
     }
 
