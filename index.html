@@ -835,32 +835,32 @@
     }
 
     async function iniciarSesion() {
-      const email = document.getElementById('loginEmail').value;
-      const password = document.getElementById('loginPassword').value;
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
 
-      if (!email || !password) {
-        alert('Por favor complete correo y contraseña.');
-        return;
-      }
+  if (!email || !password) {
+    alert('Por favor complete correo y contraseña.');
+    return;
+  }
 
-      const { data: authData, error: authError } = await _supabase.auth.signInWithPassword({ email, password });
-      
-      if (authError) {
-        alert('Credenciales incorrectas: ' + authError.message);
-        return;
-      }
+  const { data: authData, error: authError } = await _supabase.auth.signInWithPassword({ email, password });
+  
+  if (authError) {
+    alert('Credenciales incorrectas: ' + authError.message);
+    return;
+  }
 
-      await registrarUsuarioEnPerfiles(authData);
+  await registrarUsuarioEnPerfiles(authData);
 
-      const { data: perfil, error: perfilError } = await _supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', authData.user.id)
-        .single();
+  const { data: perfil, error: perfilError } = await _supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', authData.user.id)
+    .maybeSingle(); // Se cambia .single() por .maybeSingle() para evitar excepciones si no existe el perfil aún
 
-      const rol = (!perfilError && perfil) ? perfil.role : 'limited';
-      aplicarPermisos(rol);
-    }
+  const rol = (!perfilError && perfil) ? perfil.role : 'limited';
+  aplicarPermisos(rol);
+}
 
     async function registrarCuenta() {
       const email = document.getElementById('loginEmail').value;
@@ -884,15 +884,22 @@
     }
 
     function aplicarPermisos(rol) {
-      document.getElementById('loginSection').style.display = 'none';
-      document.querySelector('aside').style.display = 'flex';
-      document.querySelector('main').style.display = 'block';
+  const loginSection = document.getElementById('loginSection');
+  const aside = document.querySelector('aside');
+  const main = document.querySelector('main');
 
-      cargarStaff();
-      cargarDatosAlumnos();
-      cargarLibroDiario();
-      cargarHistorialLiquidaciones();
-    }
+  if (loginSection) loginSection.style.setProperty('display', 'none', 'important');
+  if (aside) aside.style.setProperty('display', 'flex', 'important');
+  if (main) main.style.setProperty('display', 'block', 'important');
+
+  // Inicialización de datos con captura de errores para evitar bloqueos
+  Promise.allSettled([
+    cargarStaff(),
+    cargarDatosAlumnos(),
+    cargarLibroDiario(),
+    cargarHistorialLiquidaciones()
+  ]).catch(err => console.error("Error al inicializar datos:", err));
+}
 
     function guardarReservas() {
       const valARS = document.getElementById("reservaARS").value;
