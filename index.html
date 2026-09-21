@@ -642,7 +642,7 @@
           </p>
         </div>
         <div class="table-responsive" style="overflow-x: auto; border-radius: 8px; border: 1px solid var(--border-color);">
-          <iframe src="https://docs.google.com/spreadsheets/d/1ZAaoaLEAQbQHA1F5_1YRi-6XKwchqJqrkvxSB0S8znI/gviz/tq?tqx=out:html&sheet=TURNOS+2026" 
+          <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vT17X3p-0eS-905_1YRi-6XKwchqJqrkvxSB0S8znI/pubhtml?widget=true&amp;headers=false" 
                   style="width: 100%; height: 500px; border: none; background: #14141D;">
           </iframe>
         </div>
@@ -654,7 +654,7 @@
           Modificaciones de horarios de última hora y altas recientes actualizadas en tiempo real.
         </p>
         <div class="table-responsive" style="overflow-x: auto; border-radius: 8px; border: 1px solid var(--border-color);">
-          <iframe src="https://docs.google.com/spreadsheets/d/1ZAaoaLEAQbQHA1F5_1YRi-6XKwchqJqrkvxSB0S8znI/gviz/tq?tqx=out:html&sheet=Novedades" 
+          <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vT17X3p-0eS-905_1YRi-6XKwchqJqrkvxSB0S8znI/pubhtml?gid=Novedades&amp;single=true&amp;widget=true&amp;headers=false" 
                   style="width: 100%; height: 220px; border: none; background: #14141D;">
           </iframe>
         </div>
@@ -1443,7 +1443,7 @@
         (registros || []).forEach(r => {
           const monto = parseFloat(r.monto) || 0;
           const cat = r.categoria ? String(r.categoria).toLowerCase() : '';
-          const desc = (r.descripcion || r.detalle) ? String(r.descripcion || r.detalle).toLowerCase() : '';
+          const desc = (r.descripcion || r.detalle) ? String(r.detalle || r.descripcion).toLowerCase() : '';
           const tipo = r.tipo ? String(r.tipo).toLowerCase() : '';
 
           const operador = mapearIntegrante(r.cobrador, r.persona, r.operador, r.usuario);
