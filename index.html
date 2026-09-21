@@ -1,0 +1,2060 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>From The Ground - Gestión Integral</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg-dark: #1B1B26;
+      --card-bg: #242433;
+      --neon-green: #95FF53;
+      --text-light: #FFFFFF;
+      --text-dim: #A0A0B0;
+      --border-color: #323246;
+      --danger-red: #FF5353;
+      --warning-yellow: #FFC107;
+      --accent-blue: #5395FF;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-light); display: flex; min-height: 100vh; }
+
+    aside {
+      width: 260px;
+      background-color: #14141D;
+      border-right: 1px solid var(--border-color);
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .logo-badge {
+      background-color: var(--neon-green);
+      color: var(--bg-dark);
+      font-weight: 900;
+      padding: 8px 12px;
+      border-radius: 8px;
+    }
+
+    nav { display: flex; flex-direction: column; gap: 8px; }
+    .nav-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-dim);
+      padding: 12px;
+      border-radius: 8px;
+      text-align: left;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .nav-btn.active, .nav-btn:hover {
+      background-color: var(--card-bg);
+      color: var(--neon-green);
+      border-color: var(--border-color);
+    }
+
+    main { flex: 1; padding: 32px; overflow-y: auto; }
+    .section-page { display: none; }
+    .section-page.active { display: block; }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .metric-card h4 { font-size: 0.85rem; color: var(--text-dim); }
+    .metric-card .val { font-size: 1.6rem; font-weight: 800; color: var(--neon-green); margin-top: 8px; }
+
+    .card {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 24px;
+    }
+
+    .form-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+
+    .btn {
+      background-color: var(--neon-green);
+      color: var(--bg-dark);
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-light);
+    }
+
+    .btn-danger {
+      background-color: rgba(255, 83, 83, 0.2);
+      color: var(--danger-red);
+      border: 1px solid var(--danger-red);
+    }
+
+    .btn-warning {
+      background-color: rgba(255, 193, 7, 0.2);
+      color: var(--warning-yellow);
+      border: 1px solid var(--warning-yellow);
+    }
+
+    input, select {
+      background: #14141D;
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 6px;
+    }
+
+    ul { list-style: none; max-height: 520px; overflow-y: auto; }
+
+    li {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .info-cliente { display: flex; flex-direction: column; gap: 4px; }
+    .meta-pago { font-size: 0.8rem; color: var(--text-dim); }
+    .meta-pago strong { color: var(--neon-green); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+    th { color: var(--text-dim); font-size: 0.85rem; text-transform: uppercase; }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      padding: 24px;
+      border-radius: 12px;
+      width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .input-asistencia {
+      width: 60px;
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border: 1px solid var(--neon-green);
+    }
+
+    .badge-presente {
+      background: rgba(149, 255, 83, 0.15);
+      color: var(--neon-green);
+      border: 1px solid var(--neon-green);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+
+    .tag-fecha {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #14141D;
+      border: 1px solid var(--border-color);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    .tabs-clientes {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+    }
+
+    .tab-btn {
+      background: #14141D;
+      border: 1px solid var(--border-color);
+      color: var(--text-dim);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background-color: var(--neon-green);
+      color: var(--bg-dark);
+      border-color: var(--neon-green);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- PANTALLA DE LOGIN -->
+  <div id="loginSection" style="display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; background: #1B1B26; position: fixed; top: 0; left: 0; z-index: 2000;">
+    <div class="card" style="width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+      <h3 style="margin-bottom: 8px;">Iniciar Sesión - FTG</h3>
+      <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 16px;">Ingrese sus credenciales de acceso corporativo.</p>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <input type="email" id="loginEmail" placeholder="Correo electrónico" required>
+        <input type="password" id="loginPassword" placeholder="Contraseña" required>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn" onclick="iniciarSesion()" style="flex: 1; padding: 12px;">Ingresar</button>
+          <button class="btn btn-outline" onclick="registrarCuenta()" style="flex: 1; padding: 12px;">Registrarse</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <aside style="display: none;">
+    <div style="font-weight: 800; font-size: 1.1rem;">
+      <span class="logo-badge">FTG</span> From the Ground
+    </div>
+    <nav>
+      <button class="nav-btn active" onclick="cambiarSeccion('alumnosSection', this)">👥 Clientes</button>
+      <button class="nav-btn" onclick="cambiarSeccion('asistenciasSection', this)">📌 Asistencias</button>
+      <button class="nav-btn" onclick="cambiarSeccion('cierreMensualSection', this)">📊 Cierre Mensual</button>
+      <button class="nav-btn" onclick="cambiarSeccion('staffSection', this)">🥊 Staff & Liquidación</button>
+      <button class="nav-btn" onclick="cambiarSeccion('libroDiarioSection', this)">📖 Libro Diario</button>
+      <button class="nav-btn" onclick="cambiarSeccion('planesSection', this)">📋 Renovación de Planes</button>
+    </nav>
+  </aside>
+
+  <main style="display: none;">
+    <!-- SECCIÓN CLIENTES -->
+    <div id="alumnosSection" class="section-page active">
+      <h1 style="margin-bottom: 20px;">Panel de Clientes y Gestión de Cuotas</h1>
+
+      <div class="card">
+        <h3>Agregar Nuevo Cliente</h3>
+        <div class="form-row">
+          <input type="text" id="nuevoNombreCliente" placeholder="Nombre completo" style="flex: 2; min-width: 200px;" required>
+          <input type="number" id="nuevoMontoCliente" placeholder="Cuota ($)" style="flex: 1; min-width: 120px;">
+          <select id="nuevosDiasCliente" style="flex: 1; min-width: 120px;">
+            <option value="1">1 día/sem</option>
+            <option value="2">2 días/sem</option>
+            <option value="3" selected>3 días/sem</option>
+            <option value="4">4 días/sem</option>
+            <option value="5">5 días/sem</option>
+          </select>
+          <button class="btn" onclick="agregarCliente()" style="flex: 1; min-width: 150px;">+ Registrar Cliente</button>
+        </div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <h4>Total Registrados</h4>
+          <div class="val" id="metricaTotal">0</div>
+        </div>
+        <div class="metric-card">
+          <h4>Cuotas Pagadas</h4>
+          <div class="val" id="metricaPagados">0</div>
+        </div>
+        <div class="metric-card">
+          <h4>Cuotas Pendientes</h4>
+          <div class="val" id="metricaPendientes" style="color: var(--danger-red);">0</div>
+        </div>
+        <div class="metric-card">
+          <h4>Recaudación Estimada</h4>
+          <div class="val" id="metricaRecaudacion">$0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <h3>Nómina de Clientes</h3>
+          <input type="text" id="buscador" placeholder="🔍 Buscar cliente..." oninput="filtrarAlumnos()" style="width: 250px;">
+        </div>
+
+        <div class="tabs-clientes">
+          <button class="tab-btn active" onclick="cambiarTabClientes('todos', this)">Todos</button>
+          <button class="tab-btn" onclick="cambiarTabClientes('pendientes', this)">Pendientes</button>
+          <button class="tab-btn" onclick="cambiarTabClientes('pagados', this)">Pagados</button>
+        </div>
+
+        <div id="tabTodos" class="tab-content active">
+          <ul id="listaAlumnos">Cargando base de datos...</ul>
+        </div>
+
+        <div id="tabPendientes" class="tab-content">
+          <ul id="listaAlumnosPendientes">Cargando pendientes...</ul>
+        </div>
+
+        <div id="tabPagados" class="tab-content">
+          <ul id="listaAlumnosPagados">Cargando pagados...</ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN ASISTENCIAS Y PRESENTES POR FECHA -->
+    <div id="asistenciasSection" class="section-page">
+      <h1 style="margin-bottom: 20px;">Control de Asistencias por Fecha</h1>
+
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <h3>Fecha de Registro:</h3>
+            <input type="date" id="fechaAsistencia" onchange="cargarAsistencias()" style="font-size: 1rem; padding: 8px 12px;">
+            
+            <button class="btn" onclick="abrirModalPresentesHoy()">
+              📋 Presentes del Día (<span id="cantPresentesHoy">0</span>)
+            </button>
+          </div>
+          <input type="text" id="buscadorAsistencia" placeholder="🔍 Buscar por nombre..." oninput="filtrarAsistencias()" style="width: 250px;">
+        </div>
+
+        <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 12px;">
+          Presioná el botón <strong>"Marcar Presente"</strong> o escribí <strong>1</strong> en el casillero para registrar la asistencia.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Alumno</th>
+              <th>Profesor</th>
+              <th>Días / Semana</th>
+              <th>Presentes del Mes</th>
+              <th>Estado Fecha Seleccionada</th>
+              <th>Marcar Presente</th>
+              <th>Historial de Días</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyAsistencias">
+            <tr><td colspan="7">Cargando nómina de alumnos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SECCIÓN CIERRE MENSUAL -->
+    <div id="cierreMensualSection" class="section-page">
+      <h1 style="margin-bottom: 20px;">Cierre de Mes, Auditoría y Blanqueo</h1>
+
+      <div class="card">
+        <h3>Filtro del Período a Analizar</h3>
+        <div class="form-row">
+          <input type="month" id="cierreMesFiltro" onchange="cargarAuditoriaCierreMensual()">
+        </div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <h4>Ingresos Totales (Mes)</h4>
+          <div class="val" id="cierreTotalIngresos" style="color: var(--neon-green);">$0</div>
+        </div>
+        <div class="metric-card">
+          <h4>Egresos Totales (Mes)</h4>
+          <div class="val" id="cierreTotalEgresos" style="color: var(--danger-red);">$0</div>
+        </div>
+        <div class="metric-card">
+          <h4>Resultado Neto (Mes)</h4>
+          <div class="val" id="cierreResultadoNeto">$0</div>
+        </div>
+        <div class="metric-card">
+          <h4>Total Cuotas Cobradas</h4>
+          <div class="val" id="cierreCantCuotas">0</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 20px;">
+        <h3>Liquidación Individual y Reparto de Ganancias (6 Socios)</h3>
+        <table style="width: 100%; text-align: left; margin-top: 10px;">
+          <thead>
+            <tr>
+              <th>Integrante</th>
+              <th>Ingresó / Cobró</th>
+              <th>Gastó / Pagó</th>
+              <th>Sueldo</th>
+              <th>Balance previo</th>
+              <th>Ganancia (1/6)</th>
+              <th>Ajuste Final / Saldo</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyCierreIntegrantes"></tbody>
+        </table>
+      </div>
+
+      <div class="card" style="margin-top: 20px;">
+        <h3>Fondo de Reservas del Gym</h3>
+        <div class="metrics-grid">
+          <div class="metric-card" style="border-left: 5px solid var(--neon-green);">
+            <h4>Reserva Total (ARS $)</h4>
+            <div style="display: flex; align-items: center; gap: 5px; margin-top: 8px;">
+              <span style="font-size: 1.5em; font-weight: bold; color: var(--neon-green);">$</span>
+              <input type="number" id="reservaARS" placeholder="0" oninput="guardarReservas()" 
+                style="background: transparent; border: none; border-bottom: 1px dashed #666; color: var(--neon-green); font-size: 1.5em; font-weight: bold; width: 100%; outline: none;">
+            </div>
+          </div>
+
+          <div class="metric-card" style="border-left: 5px solid #00bfff;">
+            <h4>Reserva Total (USD u$s)</h4>
+            <div style="display: flex; align-items: center; gap: 5px; margin-top: 8px;">
+              <span style="font-size: 1.5em; font-weight: bold; color: #00bfff;">u$s</span>
+              <input type="number" id="reservaUSD" placeholder="0" oninput="guardarReservas()" 
+                style="background: transparent; border: none; border-bottom: 1px dashed #666; color: #00bfff; font-size: 1.5em; font-weight: bold; width: 100%; outline: none;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 20px;">
+        <h3>Resumen de Gastos / Egresos por Categoría</h3>
+        <table style="width: 100%; text-align: left; margin-top: 10px;">
+          <thead>
+            <tr>
+              <th>Categoría</th>
+              <th>Monto Total</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyCierreCategorias">
+            <tr><td colspan="2">Seleccioná un mes para cargar reporte...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card" style="margin-top: 20px;">
+        <h3>Reiniciar Estados de Cuota para el Nuevo Período</h3>
+        <p style="color: var(--text-dim); margin-top: 8px; font-size: 0.9rem; line-height: 1.4;">
+          Esta acción blanqueará la nómina de alumnos pasando las cuotas a <strong>PENDIENTE</strong> para iniciar el nuevo ciclo. Todos los registros contables e historial de asistencias previas permanecen resguardados.
+        </p>
+        <div style="margin-top: 16px;">
+          <button class="btn btn-warning" onclick="ejecutarCierreMensual()">⚡ Resetear Cuotas a Pendiente</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN STAFF & LIQUIDACIÓN -->
+    <div id="staffSection" class="section-page">
+      <h1 style="margin-bottom: 20px;">Liquidación de Personal</h1>
+
+      <div class="card">
+        <h3>Alta de Profesor / Profesional</h3>
+        <div class="form-row">
+          <input type="text" id="nombreStaff" placeholder="Nombre completo" style="flex: 2;">
+          <select id="rolStaff" onchange="toggleCamposRol()" style="flex: 1;">
+            <option value="profesor">Profesor (Por hora)</option>
+            <option value="profesional">Profesional (Porcentaje %)</option>
+          </select>
+          <input type="number" id="tarifaHoraStaff" placeholder="Valor Hora ($)" style="flex: 1;">
+          <input type="number" id="porcentajeStaff" placeholder="Porcentaje (%)" style="display: none; flex: 1;">
+          <button class="btn" onclick="guardarStaff()">Registrar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Calcular Sueldo / Comisión</h3>
+        <div class="form-row">
+          <select id="selectStaff" onchange="actualizarModoCalculo()" style="flex: 2;">
+            <option value="">Cargando personal...</option>
+          </select>
+    
+          <select id="selectOperadorLiquidacion" style="flex: 1;">
+            <option value="Nacho">Paga: Nacho</option>
+            <option value="Lea">Paga: Lea</option>
+            <option value="Ernesto">Paga: Ernesto</option>
+            <option value="Mariano">Paga: Mariano</option>
+            <option value="Elias">Paga: Elias</option>
+          </select>
+
+          <div id="wrapperHoras" style="display: flex; gap: 8px; flex: 2;">
+            <input type="number" id="inputHoras" placeholder="Horas trabajadas" style="width: 100%;">
+          </div>
+          <div id="wrapperRecaudacion" style="display: none; gap: 8px; flex: 2;">
+            <input type="number" id="inputRecaudacion" placeholder="Total recaudado ($)" style="width: 100%;">
+          </div>
+          <button class="btn" onclick="calcularYGuardarLiquidacion()">Calcular & Registrar Pago</button>
+        </div>
+        <div id="resultadoLiquidacion" style="margin-top: 16px; font-weight: 700; color: var(--neon-green);"></div>
+      </div>
+
+      <div class="card">
+        <h3>Historial de Liquidaciones Realizadas</h3>
+        <ul id="historialLiquidaciones">Cargando historial...</ul>
+      </div>
+
+      <div class="card">
+        <h3>Nómina de Personal</h3>
+        <ul id="listaStaff">Cargando staff...</ul>
+      </div>
+    </div>
+
+    <!-- SECCIÓN LIBRO DIARIO -->
+    <div id="libroDiarioSection" class="section-page">
+      <h1 style="margin-bottom: 20px;">Libro Diario y Balance de Caja</h1>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <h4>Total Ingresos</h4>
+          <div class="val" id="metricaTotalIngresos" style="color: var(--neon-green);">$0</div>
+        </div>
+        <div class="metric-card">
+          <h4>Total Egresos</h4>
+          <div class="val" id="metricaTotalEgresos" style="color: var(--danger-red);">$0</div>
+        </div>
+        <div class="metric-card">
+          <h4>Balance Neto</h4>
+          <div class="val" id="metricaBalanceNeto">$0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Registrar Movimiento Manual de Caja</h3>
+        <div class="form-row">
+          <input type="date" id="cajaFecha" style="flex: 1;" required>
+          <select id="cajaTipo" style="flex: 1;" required>
+            <option value="ingreso">Ingreso</option>
+            <option value="egreso">Egreso</option>
+          </select>
+          <input type="text" id="cajaPersona" placeholder="Persona / Entidad" style="flex: 1.5;" required>
+          <input type="text" id="cajaDetalle" placeholder="Detalle (Ej: Mantenimiento, Insumos)" style="flex: 2;" required>
+          <select id="cajaCategoria" style="flex: 1;">
+            <option value="Cuota">Cuota</option>
+            <option value="Servicios">Servicios</option>
+            <option value="Alquiler">Alquiler</option>
+            <option value="Equipamiento">Equipamiento</option>
+            <option value="Liquidacion">Liquidación Staff</option>
+            <option value="Otros">Otros</option>
+          </select>
+          <select id="cajaOperadorManual" style="flex: 1;">
+            <option value="Nacho">Operó: Nacho</option>
+            <option value="Lea">Operó: Lea</option>
+            <option value="Ernesto">Operó: Ernesto</option>
+            <option value="Mariano">Operó: Mariano</option>
+            <option value="Elias">Operó: Elias</option>
+          </select>
+          <input type="number" step="0.01" id="cajaMonto" placeholder="Monto ($)" style="flex: 1;" required>
+          <button class="btn" onclick="guardarMovimientoCaja()">Registrar Movimiento</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3>Asientos Contables</h3>
+          <input type="text" id="buscadorCaja" placeholder="🔍 Filtrar movimientos..." oninput="cargarLibroDiario()" style="width: 250px;">
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Persona</th>
+              <th>Detalle</th>
+              <th>Operó / Cobró</th>
+              <th>Categoría</th>
+              <th>Monto</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyCaja">
+            <tr><td colspan="8">Cargando libro diario...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SECCIÓN RENOVACIÓN DE PLANES DE ENTRENAMIENTO -->
+    <div id="planesSection" class="section-page">
+      <h1 style="margin-bottom: 20px;">Renovación y Planificación de Planes</h1>
+
+      <div class="card">
+        <h3>Asignar / Agregar Plan a Elaborar</h3>
+        <div class="form-row">
+          <select id="planProfesor" style="flex: 1.5;" required>
+            <option value="">Seleccionar Profesor...</option>
+          </select>
+          <input type="text" id="planSemana" placeholder="Semana (ej: 21/9)" style="flex: 1;" required>
+          <input type="text" id="planAlumno" placeholder="Nombre del Alumno" style="flex: 1.5;" required>
+          <select id="planDias" style="flex: 1;">
+            <option value="1">1 día/sem</option>
+            <option value="2">2 días/sem</option>
+            <option value="3" selected>3 días/sem</option>
+            <option value="4">4 días/sem</option>
+            <option value="5">5 días/sem</option>
+          </select>
+        </div>
+        
+        <div class="form-row" style="margin-top: 10px;">
+          <input type="text" id="planDetalles" placeholder="📝 Detalles a tener en cuenta (Ej: Dolor de hombro, enfocar en hipertrofia, subir cargas...)" style="flex: 1;">
+          <button class="btn" onclick="guardarPlanRenovacion()" style="min-width: 160px;">+ Agregar a la Lista</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <h3>Planes Asignados por Profesor</h3>
+          <div style="display: flex; gap: 12px;">
+            <select id="filtroProfesorPlan" onchange="cargarPlanesRenovacion()" style="padding: 8px;">
+              <option value="">Todos los Profesores</option>
+            </select>
+            <input type="text" id="buscadorPlan" placeholder="🔍 Buscar por alumno o semana..." oninput="filtrarPlanes()" style="width: 250px;">
+          </div>
+        </div>
+
+        <div id="tbodyPlanes">
+          <p>Cargando planificación de planes...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL LISTADO DE PRESENTES DEL DÍA -->
+  <div id="modalPresentesDia" class="modal-overlay">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 id="modalPresentesTitulo">Presentes del Día</h3>
+        <button class="btn btn-outline" style="padding: 4px 8px;" onclick="cerrarModalPresentesHoy()">✕</button>
+      </div>
+      <p style="color: var(--text-dim); font-size: 0.85rem;">Lista de personas con asistencia registrada para la fecha seleccionada:</p>
+      
+      <div id="modalListaPresentes" style="max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-top: 8px;"></div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+        <button class="btn btn-outline" onclick="cerrarModalPresentesHoy()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL HISTORIAL DE ASISTENCIAS DE UN ALUMNO -->
+  <div id="modalHistorialAsistencia" class="modal-overlay">
+    <div class="modal-content">
+      <h3 id="modalAlumnoTitulo">Historial de Asistencias</h3>
+      <p style="color: var(--text-dim); font-size: 0.85rem;">Fechas exactas en las que asistió al gimnasio:</p>
+      
+      <div id="modalListaFechas" style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 250px; overflow-y: auto; padding: 8px 0;">Cargando...</div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+        <button class="btn btn-outline" onclick="cerrarModalHistorial()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EDICIÓN ASIENTO DE CAJA -->
+  <div id="modalEditAsiento" class="modal-overlay">
+    <div class="modal-content">
+      <h3>Modificar Registro de Caja</h3>
+      <input type="hidden" id="editAsientoId">
+
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.8rem; color: var(--text-dim);">Tipo de Movimiento:</label>
+        <select id="editAsientoTipo">
+          <option value="ingreso">Ingreso</option>
+          <option value="egreso">Egreso</option>
+        </select>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.8rem; color: var(--text-dim);">Fecha:</label>
+        <input type="date" id="editAsientoFecha">
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.8rem; color: var(--text-dim);">Persona / Entidad:</label>
+        <input type="text" id="editAsientoPersona">
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.8rem; color: var(--text-dim);">Detalle:</label>
+        <input type="text" id="editAsientoDetalle">
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.8rem; color: var(--text-dim);">Operador / Receptor:</label>
+        <select id="editAsientoCobrador">
+          <option value="Nacho">Nacho</option>
+          <option value="Lea">Lea</option>
+          <option value="Ernesto">Ernesto</option>
+          <option value="Mariano">Mariano</option>
+          <option value="Elias">Elias</option>
+        </select>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.8rem; color: var(--text-dim);">Categoría:</label>
+        <select id="editAsientoCategoria">
+          <option value="Cuota">Cuota</option>
+          <option value="Servicios">Servicios</option>
+          <option value="Alquiler">Alquiler</option>
+          <option value="Equipamiento">Equipamiento</option>
+          <option value="Liquidacion">Liquidación Staff</option>
+          <option value="Otros">Otros</option>
+        </select>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.8rem; color: var(--text-dim);">Monto ($):</label>
+        <input type="number" step="0.01" id="editAsientoMonto">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+        <button class="btn btn-outline" onclick="cerrarModalAsiento()">Cancelar</button>
+        <button class="btn" onclick="guardarEdicionAsiento()">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://ltoiylrqpbplfiuhvfbi.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_os1uOyJ3Ns1Kg9ke9bXhXg_lI9SnrRV';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let alumnosData = [];
+    let asistenciasMesData = [];
+    let staffData = [];
+    let planesData = [];
+    let liquidacionesData = [];
+    let cajaData = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const hoy = new Date().toISOString().split('T')[0];
+      const mesActual = hoy.slice(0, 7);
+      
+      const elFechaAsistencia = document.getElementById('fechaAsistencia');
+      if (elFechaAsistencia) elFechaAsistencia.value = hoy;
+
+      const elFiltro = document.getElementById('cierreMesFiltro');
+      if (elFiltro) elFiltro.value = mesActual;
+      
+      const elFechaCaja = document.getElementById('cajaFecha');
+      if (elFechaCaja) elFechaCaja.valueAsDate = new Date();
+
+      const arsGuardado = localStorage.getItem("reserva_gym_ars");
+      const usdGuardado = localStorage.getItem("reserva_gym_usd");
+      if (arsGuardado !== null && document.getElementById("reservaARS")) {
+        document.getElementById("reservaARS").value = arsGuardado;
+      }
+      if (usdGuardado !== null && document.getElementById("reservaUSD")) {
+        document.getElementById("reservaUSD").value = usdGuardado;
+      }
+
+      verificarSesionActiva();
+    });
+
+    async function verificarSesionActiva() {
+      const { data: { session } } = await _supabase.auth.getSession();
+      if (session) {
+        const { data: perfil } = await _supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        const rol = perfil ? perfil.role : 'limited';
+        aplicarPermisos(rol);
+      } else {
+        document.getElementById('loginSection').style.display = 'flex';
+      }
+    }
+
+    async function registrarUsuarioEnPerfiles(authData) {
+      if (!authData.user) return;
+
+      const { error } = await _supabase
+        .from('profiles')
+        .insert([
+            { 
+                id: authData.user.id, 
+                email: authData.user.email, 
+                role: 'limited'
+            }
+        ]);
+
+      if (error && error.code !== '23505') {
+        console.error('Error al registrar perfil:', error.message);
+      }
+    }
+
+    async function iniciarSesion() {
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+
+      if (!email || !password) {
+        alert('Por favor complete correo y contraseña.');
+        return;
+      }
+
+      const { data: authData, error: authError } = await _supabase.auth.signInWithPassword({ email, password });
+      
+      if (authError) {
+        alert('Credenciales incorrectas: ' + authError.message);
+        return;
+      }
+
+      await registrarUsuarioEnPerfiles(authData);
+
+      const { data: perfil, error: perfilError } = await _supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', authData.user.id)
+        .single();
+
+      const rol = (!perfilError && perfil) ? perfil.role : 'limited';
+      aplicarPermisos(rol);
+    }
+
+    async function registrarCuenta() {
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+
+      if (!email || !password) {
+        alert('Por favor complete correo y contraseña.');
+        return;
+      }
+
+      const { data: authData, error: authError } = await _supabase.auth.signUp({ email, password });
+      
+      if (authError) {
+        alert('Error al registrarse: ' + authError.message);
+        return;
+      }
+
+      await registrarUsuarioEnPerfiles(authData);
+
+      alert('¡Cuenta creada con éxito! Ya puedes iniciar sesión.');
+    }
+
+    function aplicarPermisos(rol) {
+  document.getElementById('loginSection').style.display = 'none';
+  document.querySelector('aside').style.display = 'flex';
+  document.querySelector('main').style.display = 'block';
+
+  cargarStaff();
+  cargarDatosAlumnos();
+  cargarLibroDiario();
+  cargarHistorialLiquidaciones();
+}
+
+function validarLogin(email) {
+  const rol = (email === 'Ignaciozago7@gmail.com') ? 'admin' : 'usuario';
+  localStorage.setItem('userRole', rol);
+  aplicarPermisos(rol);
+}
+
+    function guardarReservas() {
+      const valARS = document.getElementById("reservaARS").value;
+      const valUSD = document.getElementById("reservaUSD").value;
+      localStorage.setItem("reserva_gym_ars", valARS);
+      localStorage.setItem("reserva_gym_usd", valUSD);
+    }
+
+    function cambiarSeccion(idSeccion, btn) {
+      document.querySelectorAll('.section-page').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(idSeccion).classList.add('active');
+      if (btn) btn.classList.add('active');
+
+      if (idSeccion === 'libroDiarioSection') {
+        cargarLibroDiario();
+      } else if (idSeccion === 'cierreMensualSection') {
+        cargarAuditoriaCierreMensual();
+      } else if (idSeccion === 'asistenciasSection') {
+        cargarAsistencias();
+      } else if (idSeccion === 'planesSection') {
+        poblarSelectsProfesorPlanes();
+        cargarPlanesRenovacion();
+      }
+    }
+
+    function cambiarTabClientes(tab, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      btn.classList.add('active');
+      if (tab === 'todos') {
+        document.getElementById('tabTodos').classList.add('active');
+      } else if (tab === 'pendientes') {
+        document.getElementById('tabPendientes').classList.add('active');
+      } else if (tab === 'pagados') {
+        document.getElementById('tabPagados').classList.add('active');
+      }
+    }
+
+    async function cargarDatosAlumnos() {
+      const { data: alumnos, error } = await _supabase.from('alumnos').select('*').order('nombre', { ascending: true });
+      if (error) return;
+      alumnosData = alumnos;
+      actualizarMetricasAlumnos();
+      filtrarAlumnos();
+      cargarAsistencias();
+    }
+
+    async function agregarCliente() {
+      try {
+        const nombreInput = document.getElementById('nuevoNombreCliente');
+        const montoInput = document.getElementById('nuevoMontoCliente');
+        const diasInput = document.getElementById('nuevosDiasCliente');
+
+        const nombre = nombreInput ? nombreInput.value.trim() : '';
+        const monto = montoInput ? Number(montoInput.value) : 0;
+        const dias = diasInput ? Number(diasInput.value) : 3;
+
+        if (!nombre) {
+          alert("Por favor, ingrese el nombre del cliente.");
+          return;
+        }
+
+        const { error } = await _supabase.from('alumnos').insert([{
+          nombre: nombre,
+          monto: monto,
+          dias_semana: dias,
+          pago_confirmado: false
+        }]);
+
+        if (error) {
+          alert('Error al agregar el cliente: ' + error.message);
+          return;
+        }
+
+        nombreInput.value = '';
+        montoInput.value = '';
+        diasInput.value = '3';
+
+        await cargarDatosAlumnos();
+      } catch (error) {
+        console.error("Error al agregar cliente:", error);
+      }
+    }
+
+    async function borrarCliente(id) {
+      try {
+        if (!id) throw new Error("ID inválido");
+
+        if (confirm("¿Estás seguro de eliminar este cliente?")) {
+          const { error } = await _supabase.from('alumnos').delete().eq('id', id);
+          if (error) {
+            alert('Error al borrar cliente: ' + error.message);
+          } else {
+            await cargarDatosAlumnos();
+          }
+        }
+      } catch (error) {
+        console.error("Error al borrar cliente:", error);
+      }
+    }
+
+    function actualizarMetricasAlumnos() {
+      const total = alumnosData.length;
+      const pagados = alumnosData.filter(a => a.pago_confirmado).length;
+      const pendientes = total - pagados;
+      const recaudacion = alumnosData.reduce((acc, a) => acc + (parseFloat(a.monto) || 0), 0);
+
+      document.getElementById('metricaTotal').innerText = total;
+      document.getElementById('metricaPagados').innerText = pagados;
+      document.getElementById('metricaPendientes').innerText = pendientes;
+      document.getElementById('metricaRecaudacion').innerText = `$${recaudacion.toLocaleString()}`;
+    }
+
+    function renderizarListaAlumnosHTML(items) {
+      const hoy = new Date().toISOString().split('T')[0];
+      
+      if (!items || items.length === 0) {
+        return '<li style="color: var(--text-dim);">No hay alumnos para mostrar.</li>';
+      }
+
+      return items.map(a => {
+        const estaPagado = a.pago_confirmado;
+        const fechaFormateada = a.fecha_pago ? new Date(a.fecha_pago + 'T00:00:00').toLocaleDateString('es-AR') : 'Sin fecha';
+        const fechaInput = a.fecha_pago || hoy;
+        
+        return `
+          <li>
+            <div class="info-cliente">
+              <div>
+                <strong>${a.nombre}</strong> 
+                <span style="font-size: 0.85em; color: var(--text-dim);">(${a.dias_semana || 3} días/sem)</span>
+                ${estaPagado 
+                  ? `<span style="color: var(--neon-green); font-size: 0.8rem; margin-left: 8px;">● Pagado</span>` 
+                  : '<span style="color: var(--danger-red); font-size: 0.8rem; margin-left: 8px;">● Pendiente</span>'
+                }
+              </div>
+              ${estaPagado ? `
+                <div class="meta-pago">
+                  📅 Fecha de pago: <strong>${fechaFormateada}</strong> | 👤 Recibió el pago: <strong>${a.ultimo_cobrador || 'No especificado'}</strong>
+                </div>
+              ` : ''}
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <input type="date" value="${fechaInput}" id="fecha-${a.id}" style="padding: 6px 10px;">
+              <input type="number" value="${a.monto || 0}" style="width: 100px;" id="monto-${a.id}" placeholder="Cuota $">
+              <select id="cobrador-${a.id}" style="padding: 8px;">
+                <option value="Nacho" ${a.ultimo_cobrador === 'Nacho' ? 'selected' : ''}>Recibe: Nacho</option>
+                <option value="Lea" ${a.ultimo_cobrador === 'Lea' ? 'selected' : ''}>Recibe: Lea</option>
+                <option value="Ernesto" ${a.ultimo_cobrador === 'Ernesto' ? 'selected' : ''}>Recibe: Ernesto</option>
+                <option value="Mariano" ${a.ultimo_cobrador === 'Mariano' ? 'selected' : ''}>Recibe: Mariano</option>
+                <option value="Elias" ${a.ultimo_cobrador === 'Elias' ? 'selected' : ''}>Recibe: Elias</option>
+              </select>
+              <button class="btn" onclick="actualizarPago(${a.id}, true)">Cobrar Cuota</button>
+              <button class="btn btn-outline" onclick="actualizarPago(${a.id}, false)">Marcar Pendiente</button>
+              <button class="btn btn-danger" onclick="borrarCliente(${a.id})">Eliminar</button>
+            </div>
+          </li>
+        `;
+      }).join('');
+    }
+
+    function renderizarListaAlumnos(items) {
+      const listaTodos = document.getElementById('listaAlumnos');
+      const listaPendientes = document.getElementById('listaAlumnosPendientes');
+      const listaPagados = document.getElementById('listaAlumnosPagados');
+
+      const pendientes = items.filter(a => !a.pago_confirmado);
+      const pagados = items.filter(a => a.pago_confirmado);
+
+      if (listaTodos) listaTodos.innerHTML = renderizarListaAlumnosHTML(items);
+      if (listaPendientes) listaPendientes.innerHTML = renderizarListaAlumnosHTML(pendientes);
+      if (listaPagados) listaPagados.innerHTML = renderizarListaAlumnosHTML(pagados);
+    }
+
+    async function actualizarPago(id, estado) {
+      const cliente = alumnosData.find(a => String(a.id) === String(id));
+      const montoEl = document.getElementById(`monto-${id}`);
+      const monto = montoEl ? parseFloat(montoEl.value) || 0 : (cliente ? cliente.monto : 0);
+      
+      const cobradorEl = document.getElementById(`cobrador-${id}`);
+      const cobrador = cobradorEl ? cobradorEl.value : 'Nacho';
+      
+      const fechaEl = document.getElementById(`fecha-${id}`);
+      const fechaPagoSeleccionada = fechaEl ? fechaEl.value : new Date().toISOString().split('T')[0];
+
+      if (estado && !fechaPagoSeleccionada) {
+        alert('Por favor selecciona una fecha válida para el pago.');
+        return;
+      }
+
+      const { error: errAlumno } = await _supabase.from('alumnos').update({ 
+        monto: monto, 
+        pago_confirmado: estado,
+        ultimo_cobrador: estado ? cobrador : null,
+        fecha_pago: estado ? fechaPagoSeleccionada : null
+      }).eq('id', id);
+
+      if (errAlumno) {
+        alert('Error al actualizar cliente: ' + errAlumno.message);
+        return;
+      }
+
+      if (estado && cliente) {
+        const { error: errCaja } = await _supabase.from('caja_diaria').insert([{
+          fecha: fechaPagoSeleccionada,
+          tipo: 'ingreso',
+          persona: cobrador,
+          detalle: `Cobro Cuota Mensual - ${cliente.nombre}`,
+          categoria: 'Cuota',
+          cobrador: cobrador,
+          monto: monto
+        }]);
+
+        if (errCaja) alert('Error al registrar en Libro Diario: ' + errCaja.message);
+      }
+
+      cargarDatosAlumnos();
+    }
+
+    function filtrarAlumnos() {
+      const texto = document.getElementById('buscador')?.value.toLowerCase() || '';
+      const filtrados = alumnosData.filter(a => a.nombre.toLowerCase().includes(texto));
+      renderizarListaAlumnos(filtrados);
+    }
+
+    async function cargarAsistencias() {
+      const fechaSelInput = document.getElementById('fechaAsistencia');
+      if (!fechaSelInput || !fechaSelInput.value) return;
+
+      const fechaSel = fechaSelInput.value;
+      
+      const [anioStr, mesStr] = fechaSel.split('-');
+      const anioNum = parseInt(anioStr, 10);
+      const mesNum = parseInt(mesStr, 10);
+
+      const fechaInicio = `${anioNum}-${String(mesNum).padStart(2, '0')}-01`;
+      const ultimoDiaNum = new Date(anioNum, mesNum, 0).getDate();
+      const fechaFin = `${anioNum}-${String(mesNum).padStart(2, '0')}-${String(ultimoDiaNum).padStart(2, '0')}`;
+
+      const { data, error } = await _supabase
+        .from('asistencias')
+        .select('id, alumno_id, fecha')
+        .gte('fecha', fechaInicio)
+        .lte('fecha', fechaFin);
+
+      if (error) {
+        console.error("Error al traer asistencias de Supabase:", error);
+        asistenciasMesData = [];
+      } else {
+        asistenciasMesData = data || [];
+      }
+
+      renderizarTablaAsistencias(alumnosData);
+    }
+
+    function filtrarAsistencias() {
+      const buscador = document.getElementById('buscadorAsistencia');
+      const texto = buscador ? buscador.value.toLowerCase().trim() : '';
+
+      if (!texto) {
+        renderizarTablaAsistencias(alumnosData);
+        return;
+      }
+
+      const alumnosFiltrados = alumnosData.filter(a => 
+        a.nombre && a.nombre.toLowerCase().includes(texto)
+      );
+
+      renderizarTablaAsistencias(alumnosFiltrados);
+    }
+
+    function capturarAsistencia(event, alumnoId) {
+      if (event.key === 'Enter' || event.key === '1') {
+        event.preventDefault();
+        marcarAsistenciaFecha(alumnoId);
+      }
+    }
+
+    function renderizarTablaAsistencias(items) {
+      const tbody = document.getElementById('tbodyAsistencias');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      const fechaSel = document.getElementById('fechaAsistencia').value;
+
+      const cantPresentesEl = document.getElementById('cantPresentesHoy');
+      const alumnosPresentesHoy = alumnosData.filter(a => 
+        asistenciasMesData.some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === String(fechaSel))
+      );
+
+      if (cantPresentesEl) cantPresentesEl.innerText = alumnosPresentesHoy.length;
+
+      if (!items || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7">No hay alumnos registrados.</td></tr>';
+        return;
+      }
+
+      items.forEach(a => {
+        const diasSemana = a.dias_semana || 3;
+        const idAlumnoStr = String(a.id);
+        const profActual = a.profesor_cargo || '';
+
+        const asistenciasAlumnoMes = asistenciasMesData.filter(ast => String(ast.alumno_id) === idAlumnoStr);
+        const presentesCantidad = asistenciasAlumnoMes.length;
+        const yaVinoHoy = asistenciasAlumnoMes.some(ast => String(ast.fecha) === String(fechaSel));
+
+        const opcionesProfesores = staffData.map(s => 
+          `<option value="${s.nombre}" ${s.nombre === profActual ? 'selected' : ''}>${s.nombre}</option>`
+        ).join('');
+
+        tbody.innerHTML += `
+          <tr>
+            <td><strong>${a.nombre}</strong></td>
+            <td>
+              <select onchange="actualizarProfesorCargo(${a.id}, this.value)" style="padding: 6px;">
+                <option value="">Sin asignar</option>
+                ${opcionesProfesores}
+              </select>
+            </td>
+            <td>
+              <select onchange="actualizarDiasSemana(${a.id}, this.value)">
+                ${[1, 2, 3, 4, 5].map(d => `<option value="${d}" ${d === diasSemana ? 'selected' : ''}>${d} días/sem</option>`).join('')}
+              </select>
+            </td>
+            <td>
+              <span id="cant-presentes-${a.id}" style="font-weight: bold; color: var(--neon-green); font-size: 1.2rem;">
+                ${presentesCantidad}
+              </span> asistencias
+            </td>
+            <td>
+              ${yaVinoHoy 
+                ? `<span class="badge-presente">✓ Presente en fecha</span>` 
+                : `<span style="color: var(--text-dim); font-size: 0.85rem;">— No registrado</span>`}
+            </td>
+            <td>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input 
+                  type="text" 
+                  maxlength="1" 
+                  class="input-asistencia" 
+                  placeholder="1"
+                  onkeydown="capturarAsistencia(event, ${a.id})"
+                />
+                ${yaVinoHoy 
+                  ? `<button class="btn btn-danger" style="padding: 4px 8px; font-size:0.8rem;" onclick="quitarAsistenciaFecha(${a.id})">Quitar Presente</button>`
+                  : `<button class="btn" style="padding: 6px 10px;" onclick="marcarAsistenciaFecha(${a.id})">Marcar Presente</button>`
+                }
+              </div>
+            </td>
+            <td>
+              <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.85rem;" onclick="verHistorialAlumno(${a.id}, '${a.nombre}')">
+                📅 Historial / Días
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function abrirModalPresentesHoy() {
+      const fechaSel = document.getElementById('fechaAsistencia').value;
+      const fechaFormateada = new Date(fechaSel + 'T00:00:00').toLocaleDateString('es-AR', {
+        day: '2-digit', month: '2-digit', year: 'numeric'
+      });
+
+      document.getElementById('modalPresentesTitulo').innerText = `Presentes del Día (${fechaFormateada})`;
+      const contLista = document.getElementById('modalListaPresentes');
+
+      const alumnosPresentes = alumnosData.filter(a => 
+        asistenciasMesData.some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === String(fechaSel))
+      );
+
+      if (alumnosPresentes.length === 0) {
+        contLista.innerHTML = `<p style="color: var(--text-dim); text-align: center; padding: 12px;">No hay asistencias registradas para esta fecha.</p>`;
+      } else {
+        contLista.innerHTML = alumnosPresentes.map((a, i) => `
+          <div style="display: flex; justify-content: space-between; align-items: center; background: #14141D; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div>
+              <strong>${i + 1}. ${a.nombre}</strong>
+              ${a.profesor_cargo ? `<span style="font-size: 0.8rem; color: var(--text-dim); margin-left: 6px;">(Prof: ${a.profesor_cargo})</span>` : ''}
+            </div>
+            <span class="badge-presente">Presente</span>
+          </div>
+        `).join('');
+      }
+
+      document.getElementById('modalPresentesDia').style.display = 'flex';
+    }
+
+    function cerrarModalPresentesHoy() {
+      document.getElementById('modalPresentesDia').style.display = 'none';
+    }
+
+    async function actualizarProfesorCargo(alumnoId, nombreProfesor) {
+      const alumno = alumnosData.find(a => String(a.id) === String(alumnoId));
+      if (alumno) alumno.profesor_cargo = nombreProfesor;
+
+      const { error } = await _supabase
+        .from('alumnos')
+        .update({ profesor_cargo: nombreProfesor })
+        .eq('id', alumnoId);
+
+      if (error) {
+        alert('Error al actualizar el profesor a cargo: ' + error.message);
+      }
+    }
+
+    async function marcarAsistenciaFecha(alumnoId) {
+      const fechaSel = document.getElementById('fechaAsistencia').value;
+      if (!fechaSel) return alert('Seleccioná una fecha válida.');
+
+      const { error } = await _supabase
+        .from('asistencias')
+        .insert([{ alumno_id: alumnoId, fecha: fechaSel }]);
+
+      if (error) {
+        if (error.code === '23505') {
+          alert('El alumno ya tiene registrado el presente para esta fecha.');
+        } else {
+          alert('Error al registrar asistencia: ' + error.message);
+        }
+      } else {
+        await cargarAsistencias();
+      }
+    }
+
+    async function quitarAsistenciaFecha(alumnoId) {
+      const fechaSel = document.getElementById('fechaAsistencia').value;
+
+      const { error } = await _supabase
+        .from('asistencias')
+        .delete()
+        .eq('alumno_id', alumnoId)
+        .eq('fecha', fechaSel);
+
+      if (error) {
+        alert('Error al remover asistencia: ' + error.message);
+      } else {
+        cargarAsistencias();
+      }
+    }
+
+    async function verHistorialAlumno(alumnoId, nombreAlumno) {
+      document.getElementById('modalAlumnoTitulo').innerText = `Historial: ${nombreAlumno}`;
+      const divFechas = document.getElementById('modalListaFechas');
+      divFechas.innerHTML = 'Cargando asistencias...';
+      document.getElementById('modalHistorialAsistencia').style.display = 'flex';
+
+      const { data, error } = await _supabase
+        .from('asistencias')
+        .select('fecha')
+        .eq('alumno_id', alumnoId)
+        .order('fecha', { ascending: false });
+
+      if (error) {
+        divFechas.innerHTML = 'Error al cargar historial.';
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        divFechas.innerHTML = '<span style="color: var(--text-dim);">No hay asistencias registradas aún.</span>';
+        return;
+      }
+
+      divFechas.innerHTML = '';
+      data.forEach(item => {
+        const fStr = new Date(item.fecha + 'T00:00:00').toLocaleDateString('es-AR', {
+          weekday: 'short',
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+        divFechas.innerHTML += `<div class="tag-fecha">📅 <strong>${fStr}</strong></div>`;
+      });
+    }
+
+    function cerrarModalHistorial() {
+      document.getElementById('modalHistorialAsistencia').style.display = 'none';
+    }
+
+    async function actualizarDiasSemana(alumnoId, nuevosDias) {
+      const diasNum = parseInt(nuevosDias, 10);
+      const alumno = alumnosData.find(a => String(a.id) === String(alumnoId));
+      if (alumno) alumno.dias_semana = diasNum;
+
+      const { error } = await _supabase.from('alumnos').update({ dias_semana: diasNum }).eq('id', alumnoId);
+      if (error) alert('Error al actualizar días semanales: ' + error.message);
+    }
+
+    async function cargarAuditoriaCierreMensual() {
+      try {
+        const elFiltro = document.getElementById('cierreMesFiltro');
+        if (!elFiltro || !elFiltro.value) return;
+
+        const periodo = elFiltro.value;
+        const [anioStr, mesStr] = periodo.includes('-') ? periodo.split('-') : [new Date().getFullYear(), periodo];
+        const anioNum = parseInt(anioStr, 10);
+        const mesNum = parseInt(mesStr, 10);
+
+        const fechaInicio = `${anioNum}-${String(mesNum).padStart(2, '0')}-01`;
+        const ultimoDiaNum = new Date(anioNum, mesNum, 0).getDate();
+        const fechaFin = `${anioNum}-${String(mesNum).padStart(2, '0')}-${String(ultimoDiaNum).padStart(2, '0')}`;
+
+        const { data: registros, error } = await _supabase
+          .from('caja_diaria')
+          .select('*')
+          .gte('fecha', fechaInicio)
+          .lte('fecha', fechaFin);
+
+        if (error) {
+          console.error('Error al consultar Supabase:', error.message);
+          return;
+        }
+
+        let totalIngresos = 0;
+        let totalEgresosGeneral = 0;
+        let cantCuotas = 0;
+        let egresosPorCategoria = {};
+
+        const listadoSocios = ['Nacho', 'Lea', 'Mariano', 'Elias', 'Ernesto', 'Gym'];
+
+        const mapearIntegrante = (...valores) => {
+          for (let val of valores) {
+            if (!val) continue;
+            const txt = String(val).toLowerCase().trim();
+            if (txt.includes('nacho') || txt.includes('ignacio') || txt.includes('zago')) return 'Nacho';
+            if (txt.includes('lea') || txt.includes('leandro') || txt.includes('villiani')) return 'Lea';
+            if (txt.includes('ernesto') || txt.includes('gomez')) return 'Ernesto';
+            if (txt.includes('mariano')) return 'Mariano';
+            if (txt.includes('elias')) return 'Elias';
+          }
+          return 'Gym';
+        };
+
+        let liquidacion = {};
+        listadoSocios.forEach(nombre => {
+          liquidacion[nombre] = { cobrado: 0, gastado: 0, sueldo: 0 };
+        });
+
+        (registros || []).forEach(r => {
+          const monto = parseFloat(r.monto) || 0;
+          const cat = r.categoria ? String(r.categoria).toLowerCase() : '';
+          const desc = (r.descripcion || r.detalle) ? String(r.descripcion || r.detalle).toLowerCase() : '';
+          const tipo = r.tipo ? String(r.tipo).toLowerCase() : '';
+
+          const operador = mapearIntegrante(r.cobrador, r.persona, r.operador, r.usuario);
+
+          const esSueldo = tipo === 'sueldo' || 
+                           cat.includes('sueldo') || 
+                           cat.includes('honorario') || 
+                           cat.includes('liquidac') || 
+                           desc.includes('sueldo') || 
+                           desc.includes('liquidac');
+
+          if (esSueldo) {
+            liquidacion[operador].sueldo += monto;
+            totalEgresosGeneral += monto;
+          } else if (tipo === 'ingreso') {
+            totalIngresos += monto;
+            if (r.categoria === 'Cuota') cantCuotas++;
+            liquidacion[operador].cobrado += monto;
+          } else if (tipo === 'egreso') {
+            totalEgresosGeneral += monto;
+            liquidacion[operador].gastado += monto;
+
+            if (operador === 'Gym') {
+              const categoriaNombre = r.categoria || 'Otros';
+              egresosPorCategoria[categoriaNombre] = (egresosPorCategoria[categoriaNombre] || 0) + monto;
+            }
+          }
+        });
+
+        const resultadoNetoGlobal = totalIngresos - totalEgresosGeneral;
+        const cuotaParteGanancia = resultadoNetoGlobal / listadoSocios.length;
+
+        const elIngresos = document.getElementById('cierreTotalIngresos');
+        if (elIngresos) elIngresos.innerText = `$${totalIngresos.toLocaleString()}`;
+
+        const elEgresos = document.getElementById('cierreTotalEgresos');
+        if (elEgresos) elEgresos.innerText = `$${totalEgresosGeneral.toLocaleString()}`;
+        
+        const elResultado = document.getElementById('cierreResultadoNeto');
+        if (elResultado) {
+          elResultado.innerText = `$${resultadoNetoGlobal.toLocaleString()}`;
+          elResultado.style.color = resultadoNetoGlobal >= 0 ? 'var(--neon-green)' : 'var(--danger-red)';
+        }
+
+        const elCuotas = document.getElementById('cierreCantCuotas');
+        if (elCuotas) elCuotas.innerText = cantCuotas;
+
+        const tbodyIntegrantes = document.getElementById('tbodyCierreIntegrantes');
+        if (tbodyIntegrantes) {
+          tbodyIntegrantes.innerHTML = '';
+          
+          listadoSocios.forEach(nombre => {
+            const item = liquidacion[nombre];
+            const efectivoEnMano = item.cobrado - item.gastado;
+            const gananciaSocio = cuotaParteGanancia;
+            const saldoFinal = efectivoEnMano - item.sueldo - gananciaSocio;
+
+            tbodyIntegrantes.innerHTML += `
+              <tr>
+                <td><strong>${nombre} ${nombre === 'Ernesto' ? '<span style="font-size:0.75rem; color:var(--text-dim);">(Porcentaje)</span>' : ''}</strong></td>
+                <td style="color: var(--neon-green);">$${item.cobrado.toLocaleString()}</td>
+                <td style="color: var(--danger-red);">$${item.gastado.toLocaleString()}</td>
+                <td style="color: var(--neon-green); font-weight: 600;">$${item.sueldo.toLocaleString()}</td>
+                <td>$${efectivoEnMano.toLocaleString()}</td>
+                <td style="color: var(--accent-blue); font-weight: 600;">$${Math.round(gananciaSocio).toLocaleString()}</td>
+                <td style="font-weight: bold; color: ${saldoFinal <= 0 ? 'var(--neon-green)' : 'var(--danger-red)'};">
+                  ${saldoFinal <= 0 ? 'Debe recibir (+): ' : 'Debe enviar (-): '}$${Math.round(Math.abs(saldoFinal)).toLocaleString()}
+                </td>
+              </tr>
+            `;
+          });
+        }
+
+        const tbodyCat = document.getElementById('tbodyCierreCategorias');
+        if (tbodyCat) {
+          tbodyCat.innerHTML = '';
+          const categoriasKeys = Object.keys(egresosPorCategoria);
+          if (categoriasKeys.length === 0) {
+            tbodyCat.innerHTML = '<tr><td colspan="2">No existen egresos operativos del gimnasio en este período.</td></tr>';
+          } else {
+            categoriasKeys.forEach(cat => {
+              tbodyCat.innerHTML += `
+                <tr>
+                  <td><strong>${cat}</strong></td>
+                  <td style="color: var(--danger-red); font-weight:700;">-$${egresosPorCategoria[cat].toLocaleString()}</td>
+                </tr>
+              `;
+            });
+          }
+        }
+
+      } catch (err) {
+        console.error("ERROR CRÍTICO EN CIERRE MENSUAL:", err);
+      }
+    }
+
+    async function ejecutarCierreMensual() {
+      if (!confirm('¿Estás seguro de que deseas reiniciar las cuotas de todos los clientes a PENDIENTE?')) return;
+
+      const { error } = await _supabase.from('alumnos').update({
+        pago_confirmado: false,
+        ultimo_cobrador: null,
+        fecha_pago: null
+      }).neq('id', 0);
+
+      if (error) {
+        alert('Error al realizar el cierre mensual: ' + error.message);
+      } else {
+        alert('Cierre mensual ejecutado correctamente. Se resetearon las cuotas a pendientes.');
+        cargarDatosAlumnos();
+      }
+    }
+
+    function toggleCamposRol() {
+      const rol = document.getElementById('rolStaff').value;
+      document.getElementById('tarifaHoraStaff').style.display = rol === 'profesor' ? 'block' : 'none';
+      document.getElementById('porcentajeStaff').style.display = rol === 'profesional' ? 'block' : 'none';
+    }
+
+    async function guardarStaff() {
+      const nombre = document.getElementById('nombreStaff').value;
+      const rol = document.getElementById('rolStaff').value;
+      const tarifa = parseFloat(document.getElementById('tarifaHoraStaff').value) || 0;
+      const porcentaje = parseFloat(document.getElementById('porcentajeStaff').value) || 0;
+
+      if (!nombre) return alert('Ingresá el nombre');
+
+      await _supabase.from('staff').insert([{
+        nombre,
+        rol,
+        tarifa_hora: rol === 'profesor' ? tarifa : 0,
+        porcentaje: rol === 'profesional' ? porcentaje : 0
+      }]);
+
+      document.getElementById('nombreStaff').value = '';
+      cargarStaff();
+    }
+
+    async function cargarStaff() {
+      const { data, error } = await _supabase.from('staff').select('*').order('nombre');
+      if (!error && data) {
+        staffData = data;
+        renderizarListaStaff(staffData);
+        poblarSelectStaffLiquidacion();
+        poblarSelectsProfesorPlanes();
+      }
+    }
+
+    function renderizarListaStaff(items) {
+      const ul = document.getElementById('listaStaff');
+      if (!ul) return;
+      ul.innerHTML = '';
+
+      if (!items || items.length === 0) {
+        ul.innerHTML = '<li>No hay personal registrado.</li>';
+        return;
+      }
+
+      items.forEach(s => {
+        const esProfesor = s.rol === 'profesor';
+        ul.innerHTML += `
+          <li>
+            <div>
+              <strong>${s.nombre}</strong> 
+              <span style="font-size: 0.85em; color: var(--text-dim);">(${esProfesor ? 'Profesor' : 'Profesional'})</span>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              ${esProfesor 
+                ? `<input type="number" id="tarifa-${s.id}" value="${s.tarifa_hora || 0}" style="width: 100px;" placeholder="$/hora">`
+                : `<input type="number" id="pct-${s.id}" value="${s.porcentaje || 0}" style="width: 80px;" placeholder="%">`
+              }
+              <button class="btn btn-outline" onclick="actualizarConfigStaff(${s.id}, '${s.rol}')">Guardar</button>
+              <button class="btn btn-danger" onclick="borrarStaff(${s.id})">Eliminar</button>
+            </div>
+          </li>
+        `;
+      });
+    }
+
+    function poblarSelectStaffLiquidacion() {
+      const select = document.getElementById('selectStaff');
+      if (!select) return;
+
+      let opciones = '<option value="">Seleccionar personal...</option>';
+      staffData.forEach(s => {
+        opciones += `<option value="${s.id}">${s.nombre} (${s.rol})</option>`;
+      });
+      select.innerHTML = opciones;
+    }
+
+    function poblarSelectsProfesorPlanes() {
+      const selectAgregar = document.getElementById('planProfesor');
+      const selectFiltro = document.getElementById('filtroProfesorPlan');
+      
+      let opciones = '<option value="">Seleccionar Profesor...</option>';
+      let opcionesFiltro = '<option value="">Todos los Profesores</option>';
+
+      const profesores = staffData.filter(s => s.rol && s.rol.toLowerCase().includes('profesor'));
+
+      profesores.forEach(s => {
+        opciones += `<option value="${s.nombre}">${s.nombre}</option>`;
+        opcionesFiltro += `<option value="${s.nombre}">${s.nombre}</option>`;
+      });
+
+      if (selectAgregar) selectAgregar.innerHTML = opciones;
+      if (selectFiltro) selectFiltro.innerHTML = opcionesFiltro;
+    }
+
+    async function actualizarConfigStaff(id, rol) {
+      let updateData = {};
+      if (rol === 'profesor') {
+        updateData.tarifa_hora = parseFloat(document.getElementById(`tarifa-${id}`).value) || 0;
+      } else {
+        updateData.porcentaje = parseFloat(document.getElementById(`pct-${id}`).value) || 0;
+      }
+      await _supabase.from('staff').update(updateData).eq('id', id);
+      cargarStaff();
+    }
+
+    async function borrarStaff(id) {
+      if (!confirm('¿Eliminar a este integrante del personal?')) return;
+      const { error } = await _supabase.from('staff').delete().eq('id', id);
+      if (error) alert('Error al borrar: ' + error.message);
+      else cargarStaff();
+    }
+
+    function actualizarModoCalculo() {
+      const staffId = document.getElementById('selectStaff').value;
+      const integrante = staffData.find(s => s.id == staffId);
+      if (!integrante) return;
+
+      document.getElementById('wrapperHoras').style.display = integrante.rol === 'profesor' ? 'flex' : 'none';
+      document.getElementById('wrapperRecaudacion').style.display = integrante.rol === 'profesional' ? 'flex' : 'none';
+    }
+
+    async function calcularYGuardarLiquidacion() {
+      const staffId = document.getElementById('selectStaff').value;
+      const operadorPago = document.getElementById('selectOperadorLiquidacion').value;
+      const integrante = staffData.find(s => s.id == staffId);
+
+      if (!integrante) {
+        alert('Seleccioná un miembro del staff.');
+        return;
+      }
+
+      let montoTotal = 0;
+      let detalleTexto = '';
+
+      if (integrante.rol === 'profesor') {
+        const horas = parseFloat(document.getElementById('inputHoras').value) || 0;
+        if (horas <= 0) {
+          alert('Ingresá las horas trabajadas.');
+          return;
+        }
+        montoTotal = horas * (integrante.tarifa_hora || 0);
+        detalleTexto = `Liquidación Sueldo Profesor (${horas} hrs) - ${integrante.nombre}`;
+      } else {
+        const recaudacion = parseFloat(document.getElementById('inputRecaudacion').value) || 0;
+        if (recaudacion <= 0) {
+          alert('Ingresá el total recaudado.');
+          return;
+        }
+        montoTotal = recaudacion * ((integrante.porcentaje || 0) / 100);
+        detalleTexto = `Liquidación Comisión Profesional (${integrante.porcentaje}%) - ${integrante.nombre}`;
+      }
+
+      const fechaHoy = new Date().toISOString().split('T')[0];
+
+      const { error: errCaja } = await _supabase.from('caja_diaria').insert([{
+        fecha: fechaHoy,
+        tipo: 'egreso',
+        persona: operadorPago,
+        detalle: detalleTexto,
+        categoria: 'Liquidacion',
+        cobrador: operadorPago,
+        monto: montoTotal
+      }]);
+
+      if (errCaja) {
+        alert('Error al registrar pago en Caja: ' + errCaja.message);
+        return;
+      }
+
+      const { error: errLiq } = await _supabase.from('liquidaciones').insert([{
+        fecha: fechaHoy,
+        staff_nombre: integrante.nombre,
+        operador: operadorPago,
+        monto: montoTotal,
+        detalle: detalleTexto
+      }]);
+
+      if (errLiq) {
+        alert('Error al registrar historial de liquidaciones: ' + errLiq.message);
+      } else {
+        document.getElementById('resultadoLiquidacion').innerText = `¡Pago registrado con éxito por $${montoTotal.toLocaleString()}!`;
+        cargarHistorialLiquidaciones();
+        cargarLibroDiario();
+        cargarAuditoriaCierreMensual();
+      }
+    }
+
+    async function cargarHistorialLiquidaciones() {
+      const { data, error } = await _supabase.from('liquidaciones').select('*').order('created_at', { ascending: false });
+      const ul = document.getElementById('historialLiquidaciones');
+      if (!ul) return;
+
+      if (error || !data || data.length === 0) {
+        ul.innerHTML = '<li>No hay liquidaciones registradas.</li>';
+        return;
+      }
+
+      liquidacionesData = data;
+      ul.innerHTML = data.map(l => {
+        const fStr = new Date(l.fecha + 'T00:00:00').toLocaleDateString('es-AR');
+        return `
+          <li>
+            <div>
+              <strong>${l.staff_nombre}</strong> - <span style="color: var(--neon-green);">$${l.monto.toLocaleString()}</span>
+              <div style="font-size: 0.8rem; color: var(--text-dim);">📅 ${fStr} | Pagó: <strong>${l.operador}</strong> | ${l.detalle}</div>
+            </div>
+            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="borrarLiquidacion(${l.id})">🗑️</button>
+          </li>
+        `;
+      }).join('');
+    }
+
+    async function borrarLiquidacion(id) {
+      if (!confirm('¿Confirmás eliminar esta liquidación?')) return;
+      const { error } = await _supabase.from('liquidaciones').delete().eq('id', id);
+      if (error) alert('Error al borrar: ' + error.message);
+      else cargarHistorialLiquidaciones();
+    }
+
+    async function cargarLibroDiario() {
+      const { data: asientos, error } = await _supabase.from('caja_diaria').select('*').order('fecha', { ascending: false }).order('id', { ascending: false });
+      if (error) {
+        alert('Error al cargar Libro Diario: ' + error.message);
+        return;
+      }
+      cajaData = asientos;
+      renderizarLibroDiario();
+    }
+
+    function renderizarLibroDiario() {
+      const tbody = document.getElementById('tbodyCaja');
+      if (!tbody) return;
+      const filtro = document.getElementById('buscadorCaja')?.value.toLowerCase() || '';
+      tbody.innerHTML = '';
+
+      let totalIngresos = 0;
+      let totalEgresos = 0;
+
+      const filtrados = cajaData.filter(c => 
+        (c.persona && c.persona.toLowerCase().includes(filtro)) ||
+        (c.detalle && c.detalle.toLowerCase().includes(filtro)) ||
+        (c.categoria && c.categoria.toLowerCase().includes(filtro)) ||
+        (c.cobrador && c.cobrador.toLowerCase().includes(filtro))
+      );
+
+      if (filtrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8">No hay registros para mostrar.</td></tr>';
+      } else {
+        filtrados.forEach(c => {
+          const monto = parseFloat(c.monto) || 0;
+          const esIngreso = c.tipo === 'ingreso';
+
+          if (esIngreso) totalIngresos += monto;
+          else totalEgresos += monto;
+
+          const fechaFormateada = new Date(c.fecha + 'T00:00:00').toLocaleDateString('es-AR');
+
+          tbody.innerHTML += `
+            <tr>
+              <td>${fechaFormateada}</td>
+              <td><span style="color: ${esIngreso ? 'var(--neon-green)' : 'var(--danger-red)'}; font-weight:700;">${c.tipo.toUpperCase()}</span></td>
+              <td><strong>${c.persona || '-'}</strong></td>
+              <td>${c.detalle || c.descripcion || '-'}</td>
+              <td>${c.cobrador || '-'}</td>
+              <td><span style="font-size:0.8rem; padding:4px 8px; border-radius:4px; background:rgba(255,255,255,0.05);">${c.categoria || 'Otros'}</span></td>
+              <td style="color: ${esIngreso ? 'var(--neon-green)' : 'var(--danger-red)'}; font-weight:700;">
+                ${esIngreso ? '+' : '-'}$${monto.toLocaleString()}
+              </td>
+              <td>
+                <div style="display: flex; gap: 6px;">
+                  <button class="btn btn-outline" style="padding: 4px 8px;" onclick="abrirModalAsiento(${c.id})">✏️</button>
+                  <button class="btn btn-danger" style="padding: 4px 8px;" onclick="borrarAsiento(${c.id})">🗑️</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+      }
+
+      const balanceNeto = totalIngresos - totalEgresos;
+      const elIngresos = document.getElementById('metricaTotalIngresos');
+      const elEgresos = document.getElementById('metricaTotalEgresos');
+      const elBalance = document.getElementById('metricaBalanceNeto');
+
+      if (elIngresos) elIngresos.innerText = `$${totalIngresos.toLocaleString()}`;
+      if (elEgresos) elEgresos.innerText = `$${totalEgresos.toLocaleString()}`;
+      if (elBalance) {
+        elBalance.innerText = `$${balanceNeto.toLocaleString()}`;
+        elBalance.style.color = balanceNeto >= 0 ? 'var(--neon-green)' : 'var(--danger-red)';
+      }
+    }
+
+    async function guardarMovimientoCaja() {
+      const fecha = document.getElementById('cajaFecha').value;
+      const tipo = document.getElementById('cajaTipo').value;
+      const persona = document.getElementById('cajaPersona').value;
+      const detalle = document.getElementById('cajaDetalle').value;
+      const categoria = document.getElementById('cajaCategoria').value;
+      const cobrador = document.getElementById('cajaOperadorManual').value;
+      const monto = parseFloat(document.getElementById('cajaMonto').value) || 0;
+
+      if (!fecha || !persona || !detalle || monto <= 0) {
+        alert('Por favor completá todos los campos requeridos correctamente.');
+        return;
+      }
+
+      const { error } = await _supabase.from('caja_diaria').insert([{
+        fecha, tipo, persona, detalle, categoria, cobrador, monto
+      }]);
+
+      if (error) {
+        alert('Error al registrar movimiento: ' + error.message);
+      } else {
+        document.getElementById('cajaPersona').value = '';
+        document.getElementById('cajaDetalle').value = '';
+        document.getElementById('cajaMonto').value = '';
+        cargarLibroDiario();
+        cargarAuditoriaCierreMensual();
+      }
+    }
+
+    function abrirModalAsiento(id) {
+      const asiento = cajaData.find(c => c.id === id);
+      if (!asiento) return;
+
+      document.getElementById('editAsientoId').value = asiento.id;
+      document.getElementById('editAsientoTipo').value = asiento.tipo;
+      document.getElementById('editAsientoFecha').value = asiento.fecha;
+      document.getElementById('editAsientoPersona').value = asiento.persona || '';
+      document.getElementById('editAsientoDetalle').value = asiento.detalle || asiento.descripcion || '';
+      document.getElementById('editAsientoCobrador').value = asiento.cobrador || 'Nacho';
+      document.getElementById('editAsientoCategoria').value = asiento.categoria || 'Otros';
+      document.getElementById('editAsientoMonto').value = asiento.monto;
+
+      document.getElementById('modalEditAsiento').style.display = 'flex';
+    }
+
+    function cerrarModalAsiento() {
+      document.getElementById('modalEditAsiento').style.display = 'none';
+    }
+
+    async function guardarEdicionAsiento() {
+      const id = document.getElementById('editAsientoId').value;
+      const tipo = document.getElementById('editAsientoTipo').value;
+      const fecha = document.getElementById('editAsientoFecha').value;
+      const persona = document.getElementById('editAsientoPersona').value;
+      const detalle = document.getElementById('editAsientoDetalle').value;
+      const cobrador = document.getElementById('editAsientoCobrador').value;
+      const categoria = document.getElementById('editAsientoCategoria').value;
+      const monto = parseFloat(document.getElementById('editAsientoMonto').value) || 0;
+
+      if (!fecha || !persona || !detalle || monto <= 0) {
+        alert('Por favor completá los datos requeridos.');
+        return;
+      }
+
+      const { error } = await _supabase.from('caja_diaria').update({
+        tipo, fecha, persona, detalle, cobrador, categoria, monto
+      }).eq('id', id);
+
+      if (error) {
+        alert('Error al actualizar asiento: ' + error.message);
+      } else {
+        cerrarModalAsiento();
+        cargarLibroDiario();
+        cargarAuditoriaCierreMensual();
+      }
+    }
+
+    async function borrarAsiento(id) {
+      if (!confirm('¿Confirmás eliminar este registro contable?')) return;
+      const { error } = await _supabase.from('caja_diaria').delete().eq('id', id);
+      if (error) {
+        alert('Error al borrar asiento: ' + error.message);
+      } else {
+        cargarLibroDiario();
+        cargarAuditoriaCierreMensual();
+      }
+    }
+
+    async function cargarPlanesRenovacion() {
+      const profFiltro = document.getElementById('filtroProfesorPlan')?.value || '';
+
+      let query = _supabase.from('planes_renovacion').select('*').order('created_at', { ascending: false });
+      if (profFiltro) query = query.eq('profesor', profFiltro);
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error al cargar planes:', error);
+        return;
+      }
+
+      planesData = data || [];
+      renderizarTablaPlanes(planesData);
+    }
+
+    function renderizarTablaPlanes(items) {
+      const contenedor = document.getElementById('tbodyPlanes');
+      if (!contenedor) return;
+      contenedor.innerHTML = '';
+
+      if (!items || items.length === 0) {
+        contenedor.innerHTML = '<div class="card"><p>No hay planes pendientes o registrados.</p></div>';
+        return;
+      }
+
+      const agrupadoPorProfesor = items.reduce((acc, plan) => {
+        if (!acc[plan.profesor]) acc[plan.profesor] = [];
+        acc[plan.profesor].push(plan);
+        return acc;
+      }, {});
+
+      Object.keys(agrupadoPorProfesor).forEach(profesor => {
+        const planesProfesor = agrupadoPorProfesor[profesor];
+
+        let htmlCard = `
+          <div class="card" style="margin-bottom: 20px; border-left: 4px solid var(--accent-blue);">
+            <h3 style="margin-bottom: 12px; display: flex; justify-content: space-between;">
+              <span>👤 ${profesor}</span>
+              <small style="font-size: 0.85rem; color: var(--text-dim);">${planesProfesor.length} plan(es)</small>
+            </h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="text-align: left;">
+                  <th>Semana Target</th>
+                  <th>Alumno y Observaciones</th>
+                  <th>Días / Sem</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+
+        planesProfesor.forEach(p => {
+          htmlCard += `
+            <tr>
+              <td><span class="tag-fecha">📅 Semana ${p.semana}</span></td>
+              <td>
+                <strong>${p.alumno_nombre}</strong>
+                ${p.detalles ? `<div style="font-size: 0.85rem; color: var(--text-dim); margin-top: 4px;">📝 <em>${p.detalles}</em></div>` : ''}
+              </td>
+              <td>
+                <select onchange="actualizarDiasPlan(${p.id}, this.value)" style="padding: 4px;">
+                  ${[1, 2, 3, 4, 5].map(d => `<option value="${d}" ${d === p.dias_semana ? 'selected' : ''}>${d} días/sem</option>`).join('')}
+                </select>
+              </td>
+              <td>
+                ${p.completado 
+                  ? `<span class="badge-presente">✓ Listo</span>` 
+                  : `<span style="color: var(--warning-yellow); font-weight: bold;">⏳ Pendiente</span>`}
+              </td>
+              <td>
+                <button class="btn" style="padding: 4px 8px; font-size: 0.8rem;" onclick="toggleEstadoPlan(${p.id}, ${!p.completado})">
+                  ${p.completado ? 'Pendiente' : 'Listo'}
+                </button>
+                <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="borrarPlanRenovacion(${p.id})">🗑️</button>
+              </td>
+            </tr>
+          `;
+        });
+
+        htmlCard += `
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        contenedor.innerHTML += htmlCard;
+      });
+    }
+
+    async function guardarPlanRenovacion() {
+      const profesor = document.getElementById('planProfesor').value;
+      const semana = document.getElementById('planSemana').value.trim();
+      const alumno = document.getElementById('planAlumno').value.trim();
+      const dias = parseInt(document.getElementById('planDias').value, 10);
+      const detalles = document.getElementById('planDetalles').value.trim();
+
+      if (!profesor || !semana || !alumno) {
+        alert('Por favor completá el profesor, la semana y el nombre del alumno.');
+        return;
+      }
+
+      const { error } = await _supabase.from('planes_renovacion').insert([{
+        profesor,
+        semana,
+        alumno_nombre: alumno,
+        dias_semana: dias,
+        detalles: detalles,
+        completado: false
+      }]);
+
+      if (error) {
+        alert('Error al guardar el plan: ' + error.message);
+      } else {
+        document.getElementById('planAlumno').value = '';
+        document.getElementById('planDetalles').value = '';
+        cargarPlanesRenovacion();
+      }
+    }
+
+    async function actualizarDiasPlan(id, nuevosDias) {
+      const { error } = await _supabase.from('planes_renovacion').update({ dias_semana: parseInt(nuevosDias, 10) }).eq('id', id);
+      if (error) alert('Error al actualizar días: ' + error.message);
+    }
+
+    async function toggleEstadoPlan(id, nuevoEstado) {
+      const { error } = await _supabase.from('planes_renovacion').update({ completado: nuevoEstado }).eq('id', id);
+      if (error) alert('Error al cambiar estado: ' + error.message);
+      else cargarPlanesRenovacion();
+    }
+
+    async function borrarPlanRenovacion(id) {
+      if (!confirm('¿Eliminar esta tarea de planificación?')) return;
+      const { error } = await _supabase.from('planes_renovacion').delete().eq('id', id);
+      if (error) alert('Error al eliminar: ' + error.message);
+      else cargarPlanesRenovacion();
+    }
+
+    function filtrarPlanes() {
+      const texto = document.getElementById('buscadorPlan')?.value.toLowerCase().trim() || '';
+      if (!texto) {
+        renderizarTablaPlanes(planesData);
+        return;
+      }
+
+      const filtrados = planesData.filter(p => 
+        p.alumno_nombre.toLowerCase().includes(texto) || 
+        p.semana.toLowerCase().includes(texto) ||
+        p.profesor.toLowerCase().includes(texto)
+      );
+
+      renderizarTablaPlanes(filtrados);
+    }
+  </script>
+</body>
+</html>
