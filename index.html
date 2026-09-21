@@ -231,8 +231,8 @@
         <input type="email" id="loginEmail" placeholder="Correo electrónico" required>
         <input type="password" id="loginPassword" placeholder="Contraseña" required>
         <div style="display: flex; gap: 8px;">
-          <button class="btn" onclick="iniciarSesion()" style="flex: 1; padding: 12px;">Ingresar</button>
-          <button class="btn btn-outline" onclick="registrarCuenta()" style="flex: 1; padding: 12px;">Registrarse</button>
+          <button class="btn" id="btnLogin" style="flex: 1; padding: 12px;">Ingresar</button>
+          <button class="btn btn-outline" id="btnRegister" style="flex: 1; padding: 12px;">Registrarse</button>
         </div>
       </div>
     </div>
@@ -790,6 +790,13 @@
         document.getElementById("reservaUSD").value = usdGuardado;
       }
 
+      // Enlazamos los eventos de los botones del login por seguridad para evitar conflictos de contexto
+      const btnLogin = document.getElementById('btnLogin');
+      if (btnLogin) btnLogin.addEventListener('click', iniciarSesion);
+
+      const btnRegister = document.getElementById('btnRegister');
+      if (btnRegister) btnRegister.addEventListener('click', registrarCuenta);
+
       verificarSesionActiva();
     });
 
@@ -885,12 +892,6 @@
       cargarDatosAlumnos();
       cargarLibroDiario();
       cargarHistorialLiquidaciones();
-    }
-
-    function validarLogin(email) {
-      const rol = (email === 'Ignaciozago7@gmail.com') ? 'admin' : 'usuario';
-      localStorage.setItem('userRole', rol);
-      aplicarPermisos(rol);
     }
 
     function guardarReservas() {
