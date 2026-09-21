@@ -1948,7 +1948,7 @@
       renderizarTablaPlanes(planesData);
     }
 
-    function renderizarListaPlanes(items) {
+    function renderizarTablaPlanes(items) {
       const contenedor = document.getElementById('tbodyPlanes');
       if (!contenedor) return;
       contenedor.innerHTML = '';
@@ -2054,8 +2054,8 @@
       }
     }
 
-    async function actualizarDiasPlan(id, novosDias) {
-      const { error } = await _supabase.from('planes_renovacion').update({ dias_semana: parseInt(novosDias, 10) }).eq('id', id);
+    async function actualizarDiasPlan(id, nuevosDias) {
+      const { error } = await _supabase.from('planes_renovacion').update({ dias_semana: parseInt(nuevosDias, 10) }).eq('id', id);
       if (error) alert('Error al actualizar días: ' + error.message);
     }
 
