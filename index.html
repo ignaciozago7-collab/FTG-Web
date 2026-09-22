@@ -739,6 +739,21 @@
         <ul id="listaAvisosDiarios"></ul>
       </div>
     </div>
+    
+    <!-- MODAL PARA INSCRIBIR EN CRONOGRAMA -->
+    <div id="modalInscribirCrono" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+      <div style="background: var(--bg-dark); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 400px;">
+        <h3 style="margin-bottom: 12px; color: var(--neon-green);" id="modalInscribirTitulo">Agregar Alumno</h3>
+        <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 8px;">Escribí el nombre y selecciona de la lista sugerida:</p>
+        <input type="text" id="inputInscribirCrono" list="cronoAlumnosDatalist" style="width: 100%; padding: 10px; margin-bottom: 16px; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;" placeholder="Buscar alumno...">
+        <datalist id="cronoAlumnosDatalist"></datalist>
+        
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button class="btn btn-outline" onclick="cerrarModalInscribirCrono()">Cancelar</button>
+          <button class="btn" onclick="confirmarInscribirCrono()">Agregar</button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <!-- MODAL LISTADO DE PRESENTES DEL DÍA -->
@@ -1347,7 +1362,7 @@
       const contenedorResumen = document.getElementById('resumenProfesores');
       if (contenedorResumen && staffData && alumnosData) {
         let resumenHTML = '';
-        const profesFiltrados = staffData.filter(s => s.rol === 'profesor');
+        const profesFiltrados = staffData.filter(s => s.rol === 'profesor' && !s.nombre.toLowerCase().includes('eugenio'));
         profesFiltrados.forEach(prof => {
            const cant = alumnosData.filter(a => a.profesor_cargo === prof.nombre).length;
            resumenHTML += `
@@ -2285,9 +2300,30 @@
       renderizarAvisosDiarios();
     }
 
-    async function inscribirAlumnoTurno(key) {
-      const nombre = prompt("Nombre del alumno a inscribir en " + key + ":");
-      if (!nombre) return;
+    function inscribirAlumnoTurno(key) {
+      window.cronoClaveActual = key;
+      document.getElementById('modalInscribirTitulo').innerText = `Agregar a ${key}`;
+      
+      const datalist = document.getElementById('cronoAlumnosDatalist');
+      if (datalist && alumnosData) {
+        datalist.innerHTML = alumnosData.map(a => `<option value="${a.nombre}">`).join('');
+      }
+      
+      document.getElementById('inputInscribirCrono').value = '';
+      document.getElementById('modalInscribirCrono').style.display = 'flex';
+    }
+
+    function cerrarModalInscribirCrono() {
+      document.getElementById('modalInscribirCrono').style.display = 'none';
+      window.cronoClaveActual = null;
+    }
+
+    async function confirmarInscribirCrono() {
+      const nombreInput = document.getElementById('inputInscribirCrono').value;
+      const nombre = formatearTitulo(nombreInput.trim());
+      const key = window.cronoClaveActual;
+      
+      if (!nombre || !key) return;
       
       const [dia, hora] = key.split('-');
       let claseId = cronogramaData.clasesMap[key];
@@ -2307,8 +2343,12 @@
       }
       
       const { error } = await _supabase.from('reservas_clases').insert([{ clase_id: claseId, nombre_alumno: nombre }]);
-      if (error) alert("Error al inscribir: " + error.message);
-      else await cargarTurnosSupabase();
+      if (error) {
+        alert("Error al inscribir: " + error.message);
+      } else {
+        cerrarModalInscribirCrono();
+        await cargarTurnosSupabase();
+      }
     }
 
     async function quitarAlumnoTurno(idReserva) {
