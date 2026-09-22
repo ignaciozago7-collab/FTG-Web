@@ -223,7 +223,7 @@
     /* ESTILOS DEL CRONOGRAMA DINÁMICO */
     .grid-cronograma {
       display: grid;
-      grid-template-columns: 80px repeat(5, 1fr);
+      grid-template-columns: 80px repeat(6, 1fr);
       gap: 8px;
       overflow-x: auto;
       margin-top: 16px;
@@ -830,8 +830,8 @@
 
     // ESTRUCTURA DE DATOS LOCALES PARA EL CRONOGRAMA DINÁMICO
     let cronogramaData = {
-      dias: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"],
-      horas: ["08:00", "09:00", "10:00", "11:00", "16:00", "17:00", "18:00", "19:00", "20:00"],
+      dias: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
+      horas: ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"],
       turnos: {},
       clasesMap: {},
       avisos: [
@@ -2158,17 +2158,25 @@
       cronogramaData.horas.forEach(hora => {
         html += `<div class="crono-hora">${hora}</div>`;
         cronogramaData.dias.forEach(dia => {
+          
+          if (dia === "Sábado" && !["09:00", "09:30", "10:00", "10:30"].includes(hora)) {
+             html += `<div class="crono-cell" style="background: transparent; border: none;"></div>`;
+             return;
+          }
+
           const key = `${dia}-${hora}`;
           const inscriptos = cronogramaData.turnos[key] || [];
           const cant = inscriptos.length;
           
+          let maxCap = (hora === "08:00" || hora === "14:00") ? 8 : 7;
           let cupoClass = 'cupo-disponible';
-          if (cant >= 6) cupoClass = 'cupo-lleno';
-          else if (cant === 5) cupoClass = 'cupo-alerta';
+          
+          if (cant >= maxCap) cupoClass = 'cupo-lleno';
+          else if (cant === maxCap - 1) cupoClass = 'cupo-alerta';
 
           html += `
             <div class="crono-cell">
-              <span class="cupo-tag ${cupoClass}">${cant}/6 pers.</span>
+              <span class="cupo-tag ${cupoClass}">${cant}/${maxCap} pers.</span>
               <div style="margin-top: 4px;">
                 ${inscriptos.map(r => `<div class="alumno-chip"><span>${r.nombre_alumno}</span><span style="cursor:pointer; opacity:0.6;" onclick="quitarAlumnoTurno('${r.id}')">❌</span></div>`).join('')}
               </div>
@@ -2186,19 +2194,20 @@
       const nombre = prompt("Nombre del alumno a inscribir en " + key + ":");
       if (!nombre) return;
       
+      const [dia, hora] = key.split('-');
       let claseId = cronogramaData.clasesMap[key];
+      let maxCap = (hora === "08:00" || hora === "14:00") ? 8 : 7;
       
       if (!claseId) {
-        const [dia, hora] = key.split('-');
-        const { data: nuevaClase, error: errC } = await _supabase.from('clases').insert([{ dia, hora, cupo_maximo: 6 }]).select().single();
+        const { data: nuevaClase, error: errC } = await _supabase.from('clases').insert([{ dia, hora, cupo_maximo: maxCap }]).select().single();
         if (errC) { alert("Error al crear clase: " + errC.message); return; }
         claseId = nuevaClase.id;
         cronogramaData.clasesMap[key] = claseId;
       }
       
       const inscriptosActuales = cronogramaData.turnos[key] || [];
-      if (inscriptosActuales.length >= 6) {
-        alert("El turno está completo (máximo 6 personas).");
+      if (inscriptosActuales.length >= maxCap) {
+        alert(`El turno está completo (máximo ${maxCap} personas).`);
         return;
       }
       
