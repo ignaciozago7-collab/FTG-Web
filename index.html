@@ -591,7 +591,12 @@
 
       <div class="card">
         <h3>Nómina de Personal</h3>
-        <ul id="listaStaff">Cargando staff...</ul>
+        
+        <h4 style="margin-top: 15px; margin-bottom: 10px; color: var(--neon-green);">Profesores</h4>
+        <ul id="listaStaffProfesores">Cargando profesores...</ul>
+
+        <h4 style="margin-top: 20px; margin-bottom: 10px; color: var(--neon-green);">Profesionales (Nutrición / Masajes / Kine)</h4>
+        <ul id="listaStaffProfesionales">Cargando profesionales...</ul>
       </div>
     </div>
 
@@ -1790,36 +1795,57 @@
       }
     }
 
+    function renderizarItemStaffHTML(s, esProfesor) {
+      return `
+        <li>
+          <div>
+            <strong>${s.nombre}</strong> 
+            <span style="font-size: 0.85em; color: var(--text-dim);">(${esProfesor ? 'Profesor' : 'Profesional'})</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            ${esProfesor 
+              ? `<input type="number" id="tarifa-${s.id}" value="${s.tarifa_hora || 0}" style="width: 100px;" placeholder="$/hora">`
+              : `<input type="number" id="pct-${s.id}" value="${s.porcentaje || 0}" style="width: 80px;" placeholder="%">`
+            }
+            <button class="btn btn-outline" onclick="actualizarConfigStaff(${s.id}, '${s.rol}')">Guardar</button>
+            <button class="btn btn-danger" onclick="borrarStaff(${s.id})">Eliminar</button>
+          </div>
+        </li>
+      `;
+    }
+
     function renderizarListaStaff(items) {
-      const ul = document.getElementById('listaStaff');
-      if (!ul) return;
-      ul.innerHTML = '';
+      const ulProfesores = document.getElementById('listaStaffProfesores');
+      const ulProfesionales = document.getElementById('listaStaffProfesionales');
+      if (!ulProfesores || !ulProfesionales) return;
+
+      ulProfesores.innerHTML = '';
+      ulProfesionales.innerHTML = '';
 
       if (!items || items.length === 0) {
-        ul.innerHTML = '<li>No hay personal registrado.</li>';
+        ulProfesores.innerHTML = '<li>No hay profesores registrados.</li>';
+        ulProfesionales.innerHTML = '<li>No hay profesionales registrados.</li>';
         return;
       }
 
-      items.forEach(s => {
-        const esProfesor = s.rol === 'profesor';
-        // CORRECCIÓN APLICADA: se reemplazó el texto mal generado `\vert{}\vert{}` por `||`
-        ul.innerHTML += `
-          <li>
-            <div>
-              <strong>${s.nombre}</strong> 
-              <span style="font-size: 0.85em; color: var(--text-dim);">(${esProfesor ? 'Profesor' : 'Profesional'})</span>
-            </div>
-            <div style="display: flex; gap: 8px; align-items: center;">
-              ${esProfesor 
-                ? `<input type="number" id="tarifa-${s.id}" value="${s.tarifa_hora || 0}" style="width: 100px;" placeholder="$/hora">`
-                : `<input type="number" id="pct-${s.id}" value="${s.porcentaje || 0}" style="width: 80px;" placeholder="%">`
-              }
-              <button class="btn btn-outline" onclick="actualizarConfigStaff(${s.id}, '${s.rol}')">Guardar</button>
-              <button class="btn btn-danger" onclick="borrarStaff(${s.id})">Eliminar</button>
-            </div>
-          </li>
-        `;
-      });
+      const profesores = items.filter(s => s.rol === 'profesor');
+      const profesionales = items.filter(s => s.rol !== 'profesor');
+
+      if (profesores.length === 0) {
+        ulProfesores.innerHTML = '<li>No hay profesores registrados.</li>';
+      } else {
+        profesores.forEach(s => {
+          ulProfesores.innerHTML += renderizarItemStaffHTML(s, true);
+        });
+      }
+
+      if (profesionales.length === 0) {
+        ulProfesionales.innerHTML = '<li>No hay profesionales registrados.</li>';
+      } else {
+        profesionales.forEach(s => {
+          ulProfesionales.innerHTML += renderizarItemStaffHTML(s, false);
+        });
+      }
     }
 
     function poblarSelectStaffLiquidacion() {
