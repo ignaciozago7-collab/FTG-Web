@@ -310,6 +310,12 @@
       <button class="nav-btn" onclick="cambiarSeccion('planesSection', this)">📋 Renovación de Planes</button>
       <button class="nav-btn" onclick="cambiarSeccion('cronogramaSection', this)">📅 Cronograma de Turnos</button>
     </nav>
+    
+    <div id="userProfile" style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-color); font-size: 0.85rem;">
+      <p style="color: var(--text-dim); margin-bottom: 4px;">Sesión iniciada como:</p>
+      <strong id="loggedUserEmail" style="color: var(--neon-green); word-break: break-all;">cargando...</strong>
+      <button class="btn btn-outline" style="width: 100%; margin-top: 12px; font-size: 0.8rem; padding: 8px;" onclick="cerrarSesion()">Cerrar Sesión / Cambiar</button>
+    </div>
   </aside>
 
   <main style="display: none;">
@@ -874,6 +880,7 @@
     async function verificarSesionActiva() {
       const { data: { session } } = await _supabase.auth.getSession();
       if (session) {
+        document.getElementById('loggedUserEmail').innerText = session.user.email;
         const { data: perfil } = await _supabase
           .from('profiles')
           .select('role')
@@ -884,6 +891,19 @@
         aplicarPermisos(rol);
       } else {
         document.getElementById('loginSection').style.display = 'flex';
+      }
+    }
+
+    async function cerrarSesion() {
+      const { error } = await _supabase.auth.signOut();
+      if (error) {
+        alert('Error al cerrar sesión: ' + error.message);
+      } else {
+        document.getElementById('loginSection').style.display = 'flex';
+        document.querySelector('aside').style.setProperty('display', 'none', 'important');
+        document.querySelector('main').style.setProperty('display', 'none', 'important');
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
       }
     }
 
@@ -922,6 +942,8 @@
       }
 
       await registrarUsuarioEnPerfiles(authData);
+
+      document.getElementById('loggedUserEmail').innerText = authData.user.email;
 
       const { data: perfil, error: perfilError } = await _supabase
         .from('profiles')
