@@ -417,6 +417,8 @@
           </div>
           <input type="text" id="buscadorAsistencia" placeholder="🔍 Buscar por nombre..." oninput="filtrarAsistencias()" style="width: 250px;">
         </div>
+        
+        <div id="resumenProfesores" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;"></div>
 
         <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 12px;">
           Presioná el botón <strong>"Marcar Presente"</strong> o escribí <strong>1</strong> en el casillero para registrar la asistencia.
@@ -1077,10 +1079,18 @@
       }
     }
 
+    function formatearTitulo(texto) {
+      if (!texto) return '';
+      return texto.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+
     async function cargarDatosAlumnos() {
       const { data: alumnos, error } = await _supabase.from('alumnos').select('*').eq('activo', true).order('nombre', { ascending: true });
       if (error) return;
-      alumnosData = alumnos;
+      alumnosData = alumnos.map(a => {
+        a.nombre = formatearTitulo(a.nombre);
+        return a;
+      });
       actualizarMetricasAlumnos();
       filtrarAlumnos();
       cargarAsistencias();
@@ -1092,7 +1102,7 @@
         const montoInput = document.getElementById('nuevoMontoCliente');
         const diasInput = document.getElementById('nuevosDiasCliente');
 
-        const nombre = nombreInput ? nombreInput.value.trim() : '';
+        const nombre = nombreInput ? formatearTitulo(nombreInput.value.trim()) : '';
         const monto = montoInput ? Number(montoInput.value) : 0;
         const dias = diasInput ? Number(diasInput.value) : 3;
 
@@ -1333,6 +1343,21 @@
       const tbody = document.getElementById('tbodyAsistencias');
       if (!tbody) return;
       tbody.innerHTML = '';
+
+      const contenedorResumen = document.getElementById('resumenProfesores');
+      if (contenedorResumen && staffData && alumnosData) {
+        let resumenHTML = '';
+        const profesFiltrados = staffData.filter(s => s.rol === 'profesor');
+        profesFiltrados.forEach(prof => {
+           const cant = alumnosData.filter(a => a.profesor_cargo === prof.nombre).length;
+           resumenHTML += `
+             <div style="background: rgba(43, 230, 150, 0.05); border: 1px solid rgba(43, 230, 150, 0.4); padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; color: #eee; display: flex; align-items: center; gap: 6px;">
+               <strong style="color: var(--neon-green);">${prof.nombre}:</strong> <span>${cant} a cargo</span>
+             </div>
+           `;
+        });
+        contenedorResumen.innerHTML = resumenHTML;
+      }
 
       const fechaSel = document.getElementById('fechaAsistencia').value;
 
@@ -1714,11 +1739,12 @@
     }
 
     async function guardarStaff() {
-      const nombre = document.getElementById('nombreStaff').value;
+      const nombreInput = document.getElementById('nombreStaff').value;
       const rol = document.getElementById('rolStaff').value;
       const tarifa = parseFloat(document.getElementById('tarifaHoraStaff').value) || 0;
       const porcentaje = parseFloat(document.getElementById('porcentajeStaff').value) || 0;
 
+      const nombre = formatearTitulo(nombreInput);
       if (!nombre) return alert('Ingresá el nombre');
 
       await _supabase.from('staff').insert([{
@@ -1735,7 +1761,10 @@
     async function cargarStaff() {
       const { data, error } = await _supabase.from('staff').select('*').eq('activo', true).order('nombre');
       if (!error && data) {
-        staffData = data;
+        staffData = data.map(s => {
+          s.nombre = formatearTitulo(s.nombre);
+          return s;
+        });
         renderizarListaStaff(staffData);
         poblarSelectStaffLiquidacion();
         poblarSelectsProfesorPlanes();
