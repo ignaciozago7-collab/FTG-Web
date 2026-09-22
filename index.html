@@ -674,11 +674,12 @@
       <div class="card">
         <h3>Asignar / Agregar Plan a Elaborar</h3>
         <div class="form-row">
-          <select id="planProfesor" style="flex: 1.5;" required>
+          <select id="planProfesor" style="flex: 1.5;" onchange="filtrarAlumnosPorProfesor()" required>
             <option value="">Seleccionar Profesor...</option>
           </select>
           <input type="text" id="planSemana" placeholder="Semana (ej: 21/9)" style="flex: 1;" required>
-          <input type="text" id="planAlumno" placeholder="Nombre del Alumno" style="flex: 1.5;" required>
+          <input type="text" id="planAlumno" list="listaAlumnosProfesor" placeholder="Nombre del Alumno" style="flex: 1.5;" required>
+          <datalist id="listaAlumnosProfesor"></datalist>
           <select id="planDias" style="flex: 1;">
             <option value="1">1 día/sem</option>
             <option value="2">2 días/sem</option>
@@ -1164,6 +1165,10 @@
         const fechaFormateada = a.fecha_pago ? new Date(a.fecha_pago + 'T12:00:00').toLocaleDateString('es-AR') : 'Sin fecha';
         const fechaInput = a.fecha_pago || hoy;
         
+        const opcionesProfesores = staffData.map(s => 
+          `<option value="${s.nombre}" ${s.nombre === a.profesor_cargo ? 'selected' : ''}>${s.nombre}</option>`
+        ).join('');
+
         return `
           <li>
             <div class="info-cliente">
@@ -1175,8 +1180,15 @@
                   : '<span style="color: var(--danger-red); font-size: 0.8rem; margin-left: 8px;">● Pendiente</span>'
                 }
               </div>
+              <div style="margin-top: 4px; display: flex; align-items: center; gap: 8px;">
+                 <span style="font-size: 0.85rem; color: var(--text-dim);">Prof. a cargo:</span>
+                 <select onchange="actualizarProfesorCargo(${a.id}, this.value)" style="padding: 2px; font-size: 0.8rem; border-radius: 4px; background: #14141D; border: 1px solid var(--border-color); color: var(--text-color);">
+                    <option value="">Sin asignar</option>
+                    ${opcionesProfesores}
+                 </select>
+              </div>
               ${estaPagado ? `
-                <div class="meta-pago">
+                <div class="meta-pago" style="margin-top: 6px;">
                   📅 Fecha de pago: <strong>${fechaFormateada}</strong> | 👤 Recibió el pago: <strong>${a.ultimo_cobrador || 'No especificado'}</strong>
                 </div>
               ` : ''}
@@ -1789,6 +1801,20 @@
 
       if (selectAgregar) selectAgregar.innerHTML = opciones;
       if (selectFiltro) selectFiltro.innerHTML = opcionesFiltro;
+    }
+
+    function filtrarAlumnosPorProfesor() {
+      const profesorSeleccionado = document.getElementById('planProfesor').value;
+      const datalist = document.getElementById('listaAlumnosProfesor');
+      if (!datalist) return;
+      
+      datalist.innerHTML = '';
+      if (!profesorSeleccionado) return;
+      
+      const alumnosACargo = alumnosData.filter(a => a.profesor_cargo === profesorSeleccionado);
+      alumnosACargo.forEach(a => {
+        datalist.innerHTML += `<option value="${a.nombre}">`;
+      });
     }
 
     async function actualizarConfigStaff(id, rol) {
