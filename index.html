@@ -832,14 +832,10 @@
     let cronogramaData = {
       dias: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"],
       horas: ["08:00", "09:00", "10:00", "11:00", "16:00", "17:00", "18:00", "19:00", "20:00"],
-      turnos: {
-        "Lunes-08:00": ["Carlos P.", "Ana M."],
-        "Lunes-18:00": ["Juan G.", "Pedro L.", "Sofía R.", "Lucas V.", "Maria K."],
-        "Miércoles-19:00": ["Marcos T.", "Lucía V.", "Diego S.", "Gonzalo F.", "Elena P.", "Esteban D."]
-      },
+      turnos: {},
+      clasesMap: {},
       avisos: [
-        { id: 1, texto: "Lunes 18:00 hs - Turno completo (6/6 personas max).", fecha: "Hoy" },
-        { id: 2, texto: "Ingreso nuevo: Juan Pérez asignado a los Martes 09:00 hs.", fecha: "Ayer" }
+        { id: 1, texto: "Recuerda cobrar cuotas del 1 al 10.", fecha: "Hoy" }
       ]
     };
 
@@ -989,8 +985,22 @@
         cargarStaff(),
         cargarDatosAlumnos(),
         cargarLibroDiario(),
-        cargarHistorialLiquidaciones()
-      ]).catch(err => console.error("Error al inicializar datos:", err));
+        cargarHistorialLiquidaciones(),
+        cargarTurnosSupabase()
+      ]).then(() => {
+        activarTiempoReal();
+      }).catch(err => console.error("Error al inicializar datos:", err));
+    }
+
+    function activarTiempoReal() {
+      if (window.realtimeSuscrito) return;
+      window.realtimeSuscrito = true;
+      
+      _supabase.channel('schema-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'alumnos' }, () => { cargarDatosAlumnos(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'caja_diaria' }, () => { cargarLibroDiario(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas_clases' }, () => { cargarTurnosSupabase(); })
+        .subscribe();
     }
 
     function guardarReservas() {
@@ -1035,7 +1045,7 @@
     }
 
     async function cargarDatosAlumnos() {
-      const { data: alumnos, error } = await _supabase.from('alumnos').select('*').order('nombre', { ascending: true });
+      const { data: alumnos, error } = await _supabase.from('alumnos').select('*').eq('activo', true).order('nombre', { ascending: true });
       if (error) return;
       alumnosData = alumnos;
       actualizarMetricasAlumnos();
@@ -1085,7 +1095,7 @@
         if (!id) throw new Error("ID inválido");
 
         if (confirm("¿Estás seguro de eliminar este cliente?")) {
-          const { error } = await _supabase.from('alumnos').delete().eq('id', id);
+          const { error } = await _supabase.from('alumnos').update({ activo: false }).eq('id', id);
           if (error) {
             alert('Error al borrar cliente: ' + error.message);
           } else {
@@ -1679,7 +1689,7 @@
     }
 
     async function cargarStaff() {
-      const { data, error } = await _supabase.from('staff').select('*').order('nombre');
+      const { data, error } = await _supabase.from('staff').select('*').eq('activo', true).order('nombre');
       if (!error && data) {
         staffData = data;
         renderizarListaStaff(staffData);
@@ -1762,7 +1772,7 @@
 
     async function borrarStaff(id) {
       if (!confirm('¿Eliminar a este integrante del personal?')) return;
-      const { error } = await _supabase.from('staff').delete().eq('id', id);
+      const { error } = await _supabase.from('staff').update({ activo: false }).eq('id', id);
       if (error) alert('Error al borrar: ' + error.message);
       else cargarStaff();
     }
@@ -2119,6 +2129,23 @@
     }
 
     // FUNCIONES DEL CRONOGRAMA DINÁMICO
+    async function cargarTurnosSupabase() {
+      const { data: clases } = await _supabase.from('clases').select('*');
+      const { data: reservas } = await _supabase.from('reservas_clases').select('*');
+      
+      cronogramaData.turnos = {};
+      cronogramaData.clasesMap = {};
+      
+      if (clases) {
+        clases.forEach(c => {
+          const key = `${c.dia}-${c.hora}`;
+          cronogramaData.clasesMap[key] = c.id;
+          cronogramaData.turnos[key] = reservas ? reservas.filter(r => r.clase_id === c.id) : [];
+        });
+      }
+      renderizarCronogramaDinamico();
+    }
+
     function renderizarCronogramaDinamico() {
       const container = document.getElementById('cronogramaGridContainer');
       if (!container) return;
@@ -2143,7 +2170,7 @@
             <div class="crono-cell">
               <span class="cupo-tag ${cupoClass}">${cant}/6 pers.</span>
               <div style="margin-top: 4px;">
-                ${inscriptos.map(al => `<div class="alumno-chip"><span>${al}</span><span style="cursor:pointer; opacity:0.6;" onclick="quitarAlumnoTurno('${key}', '${al}')">✕</span></div>`).join('')}
+                ${inscriptos.map(r => `<div class="alumno-chip"><span>${r.nombre_alumno}</span><span style="cursor:pointer; opacity:0.6;" onclick="quitarAlumnoTurno('${r.id}')">❌</span></div>`).join('')}
               </div>
               <button class="btn btn-outline" style="padding: 2px 4px; font-size: 0.7rem; margin-top: 4px;" onclick="inscribirAlumnoTurno('${key}')">+ Agregar</button>
             </div>
@@ -2155,23 +2182,36 @@
       renderizarAvisosDiarios();
     }
 
-    function inscribirAlumnoTurno(key) {
+    async function inscribirAlumnoTurno(key) {
       const nombre = prompt("Nombre del alumno a inscribir en " + key + ":");
-      if (nombre) {
-        if (!cronogramaData.turnos[key]) cronogramaData.turnos[key] = [];
-        if (cronogramaData.turnos[key].length >= 6) {
-          alert("El turno está completo (máximo 6 personas).");
-          return;
-        }
-        cronogramaData.turnos[key].push(nombre);
-        renderizarCronogramaDinamico();
+      if (!nombre) return;
+      
+      let claseId = cronogramaData.clasesMap[key];
+      
+      if (!claseId) {
+        const [dia, hora] = key.split('-');
+        const { data: nuevaClase, error: errC } = await _supabase.from('clases').insert([{ dia, hora, cupo_maximo: 6 }]).select().single();
+        if (errC) { alert("Error al crear clase: " + errC.message); return; }
+        claseId = nuevaClase.id;
+        cronogramaData.clasesMap[key] = claseId;
       }
+      
+      const inscriptosActuales = cronogramaData.turnos[key] || [];
+      if (inscriptosActuales.length >= 6) {
+        alert("El turno está completo (máximo 6 personas).");
+        return;
+      }
+      
+      const { error } = await _supabase.from('reservas_clases').insert([{ clase_id: claseId, nombre_alumno: nombre }]);
+      if (error) alert("Error al inscribir: " + error.message);
+      else await cargarTurnosSupabase();
     }
 
-    function quitarAlumnoTurno(key, nombre) {
-      if (cronogramaData.turnos[key]) {
-        cronogramaData.turnos[key] = cronogramaData.turnos[key].filter(a => a !== nombre);
-        renderizarCronogramaDinamico();
+    async function quitarAlumnoTurno(idReserva) {
+      if (confirm('¿Quitar alumno del turno?')) {
+        const { error } = await _supabase.from('reservas_clases').delete().eq('id', idReserva);
+        if (error) alert("Error: " + error.message);
+        else await cargarTurnosSupabase();
       }
     }
 
