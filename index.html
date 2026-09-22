@@ -998,6 +998,21 @@
       if (aside) aside.style.setProperty('display', 'flex', 'important');
       if (main) main.style.setProperty('display', 'block', 'important');
 
+      // Control de accesos por email
+      const emailActual = document.getElementById('loggedUserEmail').innerText.trim();
+      const esSuperAdmin = (emailActual === 'ignaciozago7@gmail.com' || emailActual === 'leandrovilliani7@gmail.com');
+      
+      const btnCierre = document.querySelector('button[onclick*="cierreMensualSection"]');
+      const btnStaff = document.querySelector('button[onclick*="staffSection"]');
+      
+      if (btnCierre) btnCierre.style.display = esSuperAdmin ? 'block' : 'none';
+      if (btnStaff) btnStaff.style.display = esSuperAdmin ? 'block' : 'none';
+
+      const seccionActiva = document.querySelector('.section-page.active');
+      if (!esSuperAdmin && seccionActiva && (seccionActiva.id === 'cierreMensualSection' || seccionActiva.id === 'staffSection')) {
+          cambiarSeccion('alumnosSection', document.querySelector('button[onclick*="alumnosSection"]'));
+      }
+
       Promise.allSettled([
         cargarStaff(),
         cargarDatosAlumnos(),
