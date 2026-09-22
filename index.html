@@ -742,15 +742,19 @@
     
     <!-- MODAL PARA INSCRIBIR EN CRONOGRAMA -->
     <div id="modalInscribirCrono" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
-      <div style="background: var(--bg-dark); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 400px;">
+      <div style="background: var(--bg-dark); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; display: flex; flex-direction: column; max-height: 90vh;">
         <h3 style="margin-bottom: 12px; color: var(--neon-green);" id="modalInscribirTitulo">Agregar Alumno</h3>
-        <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 8px;">Escribí el nombre y selecciona de la lista sugerida:</p>
-        <input type="text" id="inputInscribirCrono" list="cronoAlumnosDatalist" style="width: 100%; padding: 10px; margin-bottom: 16px; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;" placeholder="Buscar alumno...">
-        <datalist id="cronoAlumnosDatalist"></datalist>
+        <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 8px;" id="modalInscribirSubtitulo">Seleccioná a los alumnos a inscribir:</p>
         
-        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <input type="text" id="buscadorModalCrono" oninput="filtrarListaCrono()" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;" placeholder="🔍 Buscar alumno...">
+        
+        <div id="listaCheckboxesCrono" style="overflow-y: auto; flex: 1; min-height: 150px; max-height: 300px; border: 1px solid var(--border-color); border-radius: 6px; background: #1a1a24; padding: 10px; display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px;">
+          <!-- Checkboxes dynamically added -->
+        </div>
+        
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
           <button class="btn btn-outline" onclick="cerrarModalInscribirCrono()">Cancelar</button>
-          <button class="btn" onclick="confirmarInscribirCrono()">Agregar</button>
+          <button class="btn" onclick="confirmarInscribirCrono()">Agregar Seleccionados</button>
         </div>
       </div>
     </div>
@@ -2304,13 +2308,49 @@
       window.cronoClaveActual = key;
       document.getElementById('modalInscribirTitulo').innerText = `Agregar a ${key}`;
       
-      const datalist = document.getElementById('cronoAlumnosDatalist');
-      if (datalist && alumnosData) {
-        datalist.innerHTML = alumnosData.map(a => `<option value="${a.nombre}">`).join('');
+      const [dia, hora] = key.split('-');
+      let maxCap = (hora === "08:00" || hora === "14:00") ? 8 : 7;
+      const inscriptosActuales = cronogramaData.turnos[key] || [];
+      const cuposDisponibles = maxCap - inscriptosActuales.length;
+      
+      document.getElementById('modalInscribirSubtitulo').innerText = `Seleccioná a los alumnos (cupos disponibles: ${cuposDisponibles}):`;
+      
+      const listaDiv = document.getElementById('listaCheckboxesCrono');
+      if (listaDiv && alumnosData) {
+         const alumnosNoInscriptos = alumnosData.filter(a => !inscriptosActuales.some(ins => ins.nombre_alumno === a.nombre));
+         
+         listaDiv.innerHTML = alumnosNoInscriptos.map(a => `
+           <label class="crono-checkbox-item" style="display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: 4px; cursor: pointer;">
+             <input type="checkbox" name="alumnosCronoSel" value="${a.nombre}" onchange="validarCuposCrono(${cuposDisponibles}, this)">
+             <span style="font-size: 0.95rem;">${a.nombre}</span>
+           </label>
+         `).join('');
       }
       
-      document.getElementById('inputInscribirCrono').value = '';
+      document.getElementById('buscadorModalCrono').value = '';
+      filtrarListaCrono();
       document.getElementById('modalInscribirCrono').style.display = 'flex';
+    }
+
+    function validarCuposCrono(maximos, checkboxElement) {
+       const checkboxes = document.querySelectorAll('input[name="alumnosCronoSel"]:checked');
+       if(checkboxes.length > maximos) {
+         alert(`Solo quedan ${maximos} cupos disponibles para este horario.`);
+         checkboxElement.checked = false;
+       }
+    }
+
+    function filtrarListaCrono() {
+      const texto = document.getElementById('buscadorModalCrono').value.toLowerCase();
+      const labels = document.querySelectorAll('.crono-checkbox-item');
+      labels.forEach(lbl => {
+         const nombre = lbl.innerText.toLowerCase();
+         if(nombre.includes(texto)) {
+            lbl.style.display = 'flex';
+         } else {
+            lbl.style.display = 'none';
+         }
+      });
     }
 
     function cerrarModalInscribirCrono() {
@@ -2319,15 +2359,25 @@
     }
 
     async function confirmarInscribirCrono() {
-      const nombreInput = document.getElementById('inputInscribirCrono').value;
-      const nombre = formatearTitulo(nombreInput.trim());
       const key = window.cronoClaveActual;
+      if (!key) return;
       
-      if (!nombre || !key) return;
+      const seleccionados = Array.from(document.querySelectorAll('input[name="alumnosCronoSel"]:checked')).map(cb => cb.value);
+      if (seleccionados.length === 0) {
+        alert("Seleccioná al menos un alumno.");
+        return;
+      }
       
       const [dia, hora] = key.split('-');
       let claseId = cronogramaData.clasesMap[key];
       let maxCap = (hora === "08:00" || hora === "14:00") ? 8 : 7;
+      const inscriptosActuales = cronogramaData.turnos[key] || [];
+      const cuposDisponibles = maxCap - inscriptosActuales.length;
+
+      if (seleccionados.length > cuposDisponibles) {
+        alert(`No hay suficientes cupos. Intentas agregar ${seleccionados.length} pero quedan ${cuposDisponibles}.`);
+        return;
+      }
       
       if (!claseId) {
         const { data: nuevaClase, error: errC } = await _supabase.from('clases').insert([{ dia, hora, cupo_maximo: maxCap }]).select().single();
@@ -2336,13 +2386,9 @@
         cronogramaData.clasesMap[key] = claseId;
       }
       
-      const inscriptosActuales = cronogramaData.turnos[key] || [];
-      if (inscriptosActuales.length >= maxCap) {
-        alert(`El turno está completo (máximo ${maxCap} personas).`);
-        return;
-      }
+      const inserts = seleccionados.map(nombre => ({ clase_id: claseId, nombre_alumno: nombre }));
+      const { error } = await _supabase.from('reservas_clases').insert(inserts);
       
-      const { error } = await _supabase.from('reservas_clases').insert([{ clase_id: claseId, nombre_alumno: nombre }]);
       if (error) {
         alert("Error al inscribir: " + error.message);
       } else {
