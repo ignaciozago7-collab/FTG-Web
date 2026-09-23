@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -2215,29 +2215,6 @@
       }
     }
 
-    function filtrarPlanes() {
-      const cont = document.getElementById('tbodyPlanes');
-      if (!cont) return;
-
-      const profFiltro = document.getElementById('filtroProfesorPlan')?.value || '';
-      const textoBuscador = document.getElementById('buscadorPlan')?.value.toLowerCase().trim() || '';
-
-      const filtrados = planesData.filter(p => {
-        const coincideProf = !profFiltro || p.profesor === profFiltro;
-        const coincideTexto = !textoBuscador || 
-          (p.alumno && p.alumno.toLowerCase().includes(textoBuscador)) || 
-          (p.semana && p.semana.toLowerCase().includes(textoBuscador));
-        return coincideProf && coincideTexto;
-      });
-
-      if (filtrados.length === 0) {
-        cont.innerHTML = '<p style="color: var(--text-dim); padding: 12px 0;">No hay planes registrados o coincidentes con la búsqueda.</p>';
-        return;
-      }
-
-      cont.innerHTML = filtrados.map(p => `
-        <div style="background: #14141D; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-          <div>
     function parsearFechaSemana(str) {
       if (!str) return 0;
       const match = str.match(/(\d{1,2})\/(\d{1,2})/);
@@ -2253,7 +2230,7 @@
     async function actualizarEstadoPlan(id, estado) {
       const { error } = await _supabase.from('planes').update({ estado }).eq('id', id);
       if (error) {
-        alert('Error al actualizar estado. ¿Agregaste la columna "estado" a la base de datos? ' + error.message);
+        alert('Error al actualizar estado. Revisá que hayas ejecutado el código SQL. Error: ' + error.message);
       } else {
         const plan = planesData.find(p => p.id === id);
         if (plan) plan.estado = estado;
@@ -2332,6 +2309,29 @@
 
       cont.innerHTML = htmlContent;
     }
+
+    async function borrarPlan(id) {
+      if (!confirm('¿Desea eliminar esta planificación?')) return;
+      const { error } = await _supabase.from('planes').delete().eq('id', id);
+      if (error) alert('Error al borrar plan: ' + error.message);
+      else cargarPlanesRenovacion();
+    }
+
+    // FUNCIONES DEL CRONOGRAMA DINÁMICO
+    async function cargarTurnosSupabase() {
+      const { data: clases } = await _supabase.from('clases').select('*');
+      const { data: reservas } = await _supabase.from('reservas_clases').select('*');
+      
+      cronogramaData.turnos = {};
+      cronogramaData.clasesMap = {};
+      
+      if (clases) {
+        clases.forEach(c => {
+          const key = `${c.dia}-${c.hora}`;
+          cronogramaData.clasesMap[key] = c.id;
+          cronogramaData.turnos[key] = reservas ? reservas.filter(r => r.clase_id === c.id) : [];
+        });
+      }
       renderizarCronogramaDinamico();
     }
 
