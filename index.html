@@ -1261,13 +1261,14 @@
 
     async function actualizarPago(id, estado) {
       const cliente = alumnosData.find(a => String(a.id) === String(id));
-      const montoEl = document.getElementById(`monto-${id}`);
+      const tabActivo = document.querySelector('.tab-content.active') || document;
+      const montoEl = tabActivo.querySelector(`[id="monto-${id}"]`);
       const monto = montoEl ? parseFloat(montoEl.value) || 0 : (cliente ? cliente.monto : 0);
       
-      const cobradorEl = document.getElementById(`cobrador-${id}`);
+      const cobradorEl = tabActivo.querySelector(`[id="cobrador-${id}"]`);
       const cobrador = cobradorEl ? cobradorEl.value : 'Nacho';
       
-      const fechaEl = document.getElementById(`fecha-${id}`);
+      const fechaEl = tabActivo.querySelector(`[id="fecha-${id}"]`);
       const fechaPagoSeleccionada = fechaEl ? fechaEl.value : new Date().toISOString().split('T')[0];
 
       if (estado && !fechaPagoSeleccionada) {
