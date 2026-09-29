@@ -1776,12 +1776,10 @@
 
           const operador = mapearIntegrante(r.cobrador, r.persona, r.operador, r.usuario);
 
-          const esSueldo = tipo === 'sueldo' || 
-                           cat.includes('sueldo') || 
-                           cat.includes('honorario') || 
-                           cat.includes('liquidac') || 
-                           desc.includes('sueldo') || 
-                           desc.includes('liquidac');
+          const listadoStrs = ['nacho','lea','mariano','elias','ernesto'];
+          const esSocioText = listadoStrs.some(s => desc.includes(s) || cat.includes(s));
+          const pareceSueldo = tipo === 'sueldo' || cat.includes('sueldo') || cat.includes('honorario') || cat.includes('liquidac') || desc.includes('sueldo') || desc.includes('liquidac');
+          const esSueldo = cat === 'retiro socio' || (pareceSueldo && esSocioText);
 
           if (esSueldo) {
             liquidacion[operador].sueldo += monto;
@@ -2085,7 +2083,7 @@
         tipo: 'egreso',
         persona: operadorPago,
         detalle: detalleTexto,
-        categoria: 'Liquidacion',
+        categoria: (['nacho','ignacio','zago','lea','leandro','villiani','ernesto','gomez','mariano','elias'].some(s => String(integrante.nombre).toLowerCase().trim().includes(s))) ? 'Retiro Socio' : 'Pago Staff',
         cobrador: operadorPago,
         monto: montoTotal
       }]);
@@ -2169,6 +2167,7 @@
       let totalEgresos = 0;
 
       const filtrados = cajaData.filter(c => {
+         if (c.categoria === 'Retiro Socio') return false;
          let ok = true;
          if (filtro && !((c.persona && c.persona.toLowerCase().includes(filtro)) ||
                          (c.detalle && c.detalle.toLowerCase().includes(filtro)) ||
