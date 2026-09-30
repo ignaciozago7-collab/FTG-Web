@@ -2163,7 +2163,11 @@
       }
       
       ul.innerHTML = data.map(l => {
-        const fStr = new Date(l.fecha + 'T12:00:00').toLocaleDateString('es-AR');
+        let fStr = '-';
+        try {
+            if (l.fecha) fStr = new Date(l.fecha + 'T12:00:00').toLocaleDateString('es-AR');
+            else if (l.created_at) fStr = new Date(l.created_at).toLocaleDateString('es-AR');
+        } catch(e) {}
         const esIngreso = l.detalle && l.detalle.toLowerCase().includes('ingreso comision');
         const colorMonto = esIngreso ? 'var(--neon-green)' : 'var(--danger-red)';
         const signoMonto = esIngreso ? '+' : '-';
