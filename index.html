@@ -548,7 +548,8 @@
           Esta acción blanqueará la nómina de alumnos pasando las cuotas a <strong>PENDIENTE</strong> para iniciar el nuevo ciclo. Todos los registros contables e historial de asistencias previas permanecen resguardados.
         </p>
         <div style="margin-top: 16px;">
-          <button class="btn btn-warning" onclick="ejecutarCierreMensual()">⚡ Resetear Cuotas a Pendiente</button>
+          <button class="btn" style="padding: 16px 24px; font-size: 1.15rem; font-weight: bold; background: var(--danger-red); width: 100%; border: 2px solid #ff4d4d; box-shadow: 0 0 10px rgba(255,0,0,0.3);" onclick="ejecutarCierreMensual()">&#x26A0; REINICIAR MES (Resetear todas las cuotas a Pendiente)</button>
+          <p style="color: var(--text-dim); margin-top: 10px; font-size: 0.9rem;">Al presionar este bot&oacute;n, todas las cuotas de los clientes volver&aacute;n a estar pendientes para el nuevo mes. <strong>Tus notas escritas y montos se mantienen intactos</strong> para que sepas qu&eacute; pas&oacute; el mes anterior.<br>El Libro Diario y los Sueldos se reinician visualmente al cambiar al nuevo mes en sus respectivos filtros superiores.</p>
         </div>
       </div>
     </div>
@@ -598,7 +599,14 @@
       </div>
 
       <div class="card">
-        <h3>Historial de Liquidaciones Realizadas</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+            <h3 style="margin: 0;">Historial de Liquidaciones</h3>
+            <div style="display: flex; gap: 10px; align-items: center; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px;">
+                <label style="color: var(--text-dim); font-size: 0.85rem;">Ver mes:</label>
+                <input type="month" id="filtroMesLiq" onchange="renderizarHistorialLiquidaciones()" style="padding: 2px;">
+                <button class="btn btn-outline" style="padding: 2px 6px; font-size: 0.75rem;" onclick="document.getElementById('filtroMesLiq').value=''; renderizarHistorialLiquidaciones();">Todos</button>
+            </div>
+        </div>
         <ul id="historialLiquidaciones">Cargando historial...</ul>
       </div>
 
@@ -664,7 +672,14 @@
 
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <h3>Asientos Contables</h3>
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <h3>Asientos Contables</h3>
+              <div style="display: flex; gap: 10px; align-items: center; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px;">
+                <label style="color: var(--text-dim); font-size: 0.85rem;">Ver mes:</label>
+                <input type="month" id="filtroMesCaja" onchange="cargarLibroDiario()" style="padding: 2px;">
+                <button class="btn btn-outline" style="padding: 2px 6px; font-size: 0.75rem;" onclick="document.getElementById('filtroMesCaja').value=''; cargarLibroDiario();">Todos</button>
+              </div>
+          </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <input type="text" id="buscadorCaja" placeholder="Filtrar movimientos..." oninput="cargarLibroDiario()" style="width: 200px;">
             <input type="date" id="filtroFechaCaja" oninput="cargarLibroDiario()">
@@ -939,6 +954,8 @@
 
       const elFiltro = document.getElementById('cierreMesFiltro');
       if (elFiltro) elFiltro.value = mesActual;
+      if (document.getElementById('filtroMesCaja')) document.getElementById('filtroMesCaja').value = mesActual;
+      if (document.getElementById('filtroMesLiq')) document.getElementById('filtroMesLiq').value = mesActual;
       
       const elFechaCaja = document.getElementById('cajaFecha');
       if (elFechaCaja) elFechaCaja.value = hoy;
@@ -1271,7 +1288,12 @@
                 </div>
               ` : ''}
             </div>
-            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+                   <span style="font-size: 0.85rem; color: var(--text-dim);">Notas:</span>
+                   <input type="text" id="notas-al-${a.id}" value="${a.notas || ''}" placeholder="Ej: debe mes pasado..." style="padding: 4px; font-size: 0.8rem; background: #14141D; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; flex: 1;" onchange="guardarNotaAlumno(${a.id}, this.value)">
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
               <input type="date" value="${fechaInput}" id="fecha-${a.id}" style="padding: 6px 10px;">
               <input type="number" value="${a.monto || 0}" style="width: 100px;" id="monto-${a.id}" placeholder="Cuota $">
               <select id="cobrador-${a.id}" style="padding: 8px;">
@@ -2154,14 +2176,33 @@
         console.error("Supabase Select Error:", error);
         return;
       }
+      
+      liquidacionesData = data || [];
+      renderizarHistorialLiquidaciones();
+    }
 
-      if (!data || data.length === 0) {
+    function renderizarHistorialLiquidaciones() {
+      const ul = document.getElementById('historialLiquidaciones');
+      if (!ul) return;
+
+      if (liquidacionesData.length === 0) {
         ul.innerHTML = '<li>No hay liquidaciones registradas.</li>';
         return;
       }
 
-      liquidacionesData = data;
-      
+      const mesFiltro = document.getElementById('filtroMesLiq')?.value || '';
+      const data = liquidacionesData.filter(l => {
+         if (!mesFiltro) return true;
+         const d = l.fecha || l.created_at;
+         if (!d) return true;
+         return d.startsWith(mesFiltro);
+      });
+
+      if (data.length === 0) {
+        ul.innerHTML = '<li>No hay liquidaciones en este mes.</li>';
+        return;
+      }
+
       let totalSueldos = 0;
       let totalIngresosProf = 0;
       data.forEach(l => {
@@ -2276,6 +2317,7 @@
       const tbody = document.getElementById('tbodyCaja');
       if (!tbody) return;
       const filtro = document.getElementById('buscadorCaja')?.value.toLowerCase() || '';
+      const filtroMesCaja = document.getElementById('filtroMesCaja')?.value || '';
       const filtroFecha = document.getElementById('filtroFechaCaja')?.value || '';
       const filtroCobrador = document.getElementById('filtroCobradorCaja')?.value || '';
       const filtroMonto = parseFloat(document.getElementById('filtroMontoCaja')?.value) || 0;
@@ -2296,6 +2338,7 @@
          if (filtroFecha && c.fecha !== filtroFecha) ok = false;
          if (filtroCobrador && c.cobrador !== filtroCobrador) ok = false;
          if (filtroMonto > 0 && parseFloat(c.monto) !== filtroMonto) ok = false;
+         if (filtroMesCaja && c.fecha && !c.fecha.startsWith(filtroMesCaja)) ok = false;
          return ok;
       });
 
@@ -2795,6 +2838,16 @@
     function borrarAviso(id) {
       cronogramaData.avisos = cronogramaData.avisos.filter(a => a.id !== id);
       renderizarAvisosDiarios();
+    }
+    
+    async function guardarNotaAlumno(id, nota) {
+      const { error } = await _supabase.from('alumnos').update({ notas: nota }).eq('id', id);
+      if (error) {
+         alert('Error al guardar nota: ' + error.message);
+      } else {
+         const idx = alumnosData.findIndex(a => a.id == id);
+         if(idx !== -1) alumnosData[idx].notas = nota;
+      }
     }
   </script>
 </body>
