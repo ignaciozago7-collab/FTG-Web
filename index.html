@@ -2117,6 +2117,7 @@
         staff_nombre: integrante.nombre,
         operador: operadorPago,
         monto: montoTotal,
+        total_a_pagar: montoTotal,
         detalle: detalleTexto
       }]);
 
@@ -2145,10 +2146,11 @@
       let totalSueldos = 0;
       let totalIngresosProf = 0;
       data.forEach(l => {
+         const valorMonto = parseFloat(l.monto) || parseFloat(l.total_a_pagar) || 0;
          if (l.detalle && l.detalle.toLowerCase().includes('ingreso comision')) {
-             totalIngresosProf += parseFloat(l.monto) || 0;
+             totalIngresosProf += valorMonto;
          } else if (l.detalle && l.detalle.toLowerCase().includes('liquidaci')) {
-             totalSueldos += parseFloat(l.monto) || 0;
+             totalSueldos += valorMonto;
          }
       });
       
@@ -2165,10 +2167,11 @@
         const esIngreso = l.detalle && l.detalle.toLowerCase().includes('ingreso comision');
         const colorMonto = esIngreso ? 'var(--neon-green)' : 'var(--danger-red)';
         const signoMonto = esIngreso ? '+' : '-';
+        const valorMonto = parseFloat(l.monto) || parseFloat(l.total_a_pagar) || 0;
         return `
           <li>
             <div>
-              <strong>${l.staff_nombre}</strong> - <span style="color: ${colorMonto};">${signoMonto}$${l.monto.toLocaleString()}</span>
+              <strong>${l.staff_nombre}</strong> - <span style="color: ${colorMonto};">${signoMonto}$${valorMonto.toLocaleString()}</span>
               <div style="font-size: 0.8rem; color: var(--text-dim);">📅 ${fStr} | Pagó: <strong>${l.operador}</strong> | ${l.detalle}</div>
             </div>
                           <div style="display: flex; gap: 6px;">
@@ -2206,7 +2209,7 @@
 
     async function actualizarLiquidacion(liq, nuevoMonto, nuevoDetalle) {
       const { error: errLiq } = await _supabase.from('liquidaciones')
-          .update({ monto: nuevoMonto, detalle: nuevoDetalle })
+          .update({ monto: nuevoMonto, total_a_pagar: nuevoMonto, detalle: nuevoDetalle })
           .eq('id', liq.id);
       if (errLiq) return alert('Error al actualizar: ' + errLiq.message);
 
