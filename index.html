@@ -2130,17 +2130,69 @@
               <strong>${l.staff_nombre}</strong> - <span style="color: var(--neon-green);">$${l.monto.toLocaleString()}</span>
               <div style="font-size: 0.8rem; color: var(--text-dim);">📅 ${fStr} | Pagó: <strong>${l.operador}</strong> | ${l.detalle}</div>
             </div>
-            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="borrarLiquidacion(${l.id})">🗑️</button>
-          </li>
+                          <div style="display: flex; gap: 6px;">
+                <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="modificarLiquidacion(${l.id})">Editar</button>
+                <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="borrarLiquidacion(${l.id})">Borrar</button>
+              </div>
+            </li>
         `;
       }).join('');
     }
 
+        async function modificarLiquidacion(id) {
+      const liq = liquidacionesData.find(x => x.id === id);
+      if (!liq) return;
+      const integrante = staffData.find(s => s.nombre === liq.staff_nombre);
+      if (!integrante) {
+        alert('No se encontro el staff en la base de datos.');
+        return;
+      }
+
+      if (integrante.rol === 'profesor') {
+          const horas = prompt(`Tarifa actual: ${integrante.tarifa_hora}/hr.\nIngresa las nuevas horas trabajadas:`);
+          if (!horas || isNaN(horas)) return;
+          const monto = parseFloat(horas) * (integrante.tarifa_hora || 0);
+          const detalle = `Liquidacion Sueldo Profesor (${horas} hrs) - ${integrante.nombre}`;
+          await actualizarLiquidacion(liq, monto, detalle);
+      } else {
+          const recaudacion = prompt(`Porcentaje actual: ${integrante.porcentaje}%.\nIngresa la nueva recaudacion total:`);
+          if (!recaudacion || isNaN(recaudacion)) return;
+          const monto = parseFloat(recaudacion) * ((integrante.porcentaje || 0) / 100);
+          const detalle = `Liquidacion Comision Profesional (${integrante.porcentaje}%) - ${integrante.nombre}`;
+          await actualizarLiquidacion(liq, monto, detalle);
+      }
+    }
+
+    async function actualizarLiquidacion(liq, nuevoMonto, nuevoDetalle) {
+      const { error: errLiq } = await _supabase.from('liquidaciones')
+          .update({ monto: nuevoMonto, detalle: nuevoDetalle })
+          .eq('id', liq.id);
+      if (errLiq) return alert('Error al actualizar: ' + errLiq.message);
+
+      // Actualizar tambiÃ©n en caja_diaria
+      await _supabase.from('caja_diaria')
+          .update({ monto: nuevoMonto, detalle: nuevoDetalle })
+          .match({ fecha: liq.fecha, monto: liq.monto, persona: liq.operador, detalle: liq.detalle });
+          
+      alert('Liquidacion modificada con exito.');
+      cargarHistorialLiquidaciones();
+      cargarLibroDiario();
+    }
+
     async function borrarLiquidacion(id) {
-      if (!confirm('¿Confirmás eliminar esta liquidación?')) return;
+      if (!confirm('Seguro que deseas eliminar esta liquidacion?')) return;
+      const liq = liquidacionesData.find(x => x.id === id);
+      if (liq) {
+         // Borrar tambiÃ©n de caja_diaria
+         await _supabase.from('caja_diaria').delete().match({ fecha: liq.fecha, monto: liq.monto, persona: liq.operador, detalle: liq.detalle });
+      }
       const { error } = await _supabase.from('liquidaciones').delete().eq('id', id);
-      if (error) alert('Error al borrar: ' + error.message);
-      else cargarHistorialLiquidaciones();
+      if (error) {
+         alert('Error al borrar: ' + error.message);
+      } else {
+         cargarHistorialLiquidaciones();
+         cargarLibroDiario();
+      }
     }
 
     async function cargarLibroDiario() {
@@ -2167,7 +2219,6 @@
       let totalEgresos = 0;
 
       const filtrados = cajaData.filter(c => {
-         if (c.categoria === 'Retiro Socio') return false;
          let ok = true;
          if (filtro && !((c.persona && c.persona.toLowerCase().includes(filtro)) ||
                          (c.detalle && c.detalle.toLowerCase().includes(filtro)) ||
@@ -2184,12 +2235,13 @@
       if (filtrados.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8">No hay registros para mostrar.</td></tr>';
       } else {
-        filtrados.forEach(c => {
+                filtrados.forEach(c => {
           const monto = parseFloat(c.monto) || 0;
           const esIngreso = c.tipo === 'ingreso';
+          const esRetiroSocio = c.categoria === 'Retiro Socio';
 
           if (esIngreso) totalIngresos += monto;
-          else totalEgresos += monto;
+          else if (!esRetiroSocio) totalEgresos += monto;
 
           const fechaFormateada = new Date(c.fecha + 'T12:00:00').toLocaleDateString('es-AR');
 
