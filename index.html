@@ -423,7 +423,7 @@
             <h3>Fecha de Registro:</h3>
             <input type="date" id="fechaAsistencia" onchange="cargarAsistencias()" style="font-size: 1rem; padding: 8px 12px;">
             
-            <button class="btn" onclick="abrirModalAsistenciaMasiva()" style="background: var(--blue-accent);">Carga Masiva</button>
+            <button class="btn" onclick="abrirModalAsistenciaMasiva()" style="background: #ff9800; color: #fff; font-weight: bold; border: 1px solid #e68a00;">Carga Masiva</button>
             <button class="btn" onclick="abrirModalPresentesHoy()">
               📋 Presentes del Día (<span id="cantPresentesHoy">0</span>)
             </button>
@@ -1572,20 +1572,18 @@
       const fechaSel = document.getElementById('fechaAsistencia').value;
       if (!fechaSel) return;
       
-      const inserts = Array.from(chks).map(chk => ({
-         alumno_id: parseInt(chk.value, 10),
-         fecha: fechaSel
-      }));
-      
-      const { error } = await _supabase.from('asistencias').insert(inserts);
-      
-      if (error) {
-        alert('Error al guardar asistencias: ' + error.message);
-      } else {
-        alert(`Se registraron ${inserts.length} presentes correctamente!`);
-        cerrarModalAsistenciaMasiva();
-        cargarAsistencias();
+      let guardados = 0;
+      for (const chk of Array.from(chks)) {
+          const { error } = await _supabase.from('asistencias').insert([{
+              alumno_id: parseInt(chk.value, 10),
+              fecha: fechaSel
+          }]);
+          if (!error) guardados++;
       }
+      
+      alert(`Se registraron ${guardados} presentes correctamente!`);
+      cerrarModalAsistenciaMasiva();
+      cargarAsistencias();
     }
 
     function abrirModalPresentesHoy() {
