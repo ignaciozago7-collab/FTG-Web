@@ -2181,8 +2181,8 @@
         return `
           <li>
             <div>
-              <strong>${l.staff_nombre}</strong> - <span style="color: ${colorMonto};">${signoMonto}$${valorMonto.toLocaleString()}</span>
-              <div style="font-size: 0.8rem; color: var(--text-dim);">📅 ${fStr} | Pagó: <strong>${l.operador}</strong> | ${l.detalle}</div>
+              <strong>${l.staff_nombre || 'Desconocido'}</strong> - <span style="color: ${colorMonto};">${signoMonto}$${valorMonto.toLocaleString()}</span>
+              <div style="font-size: 0.8rem; color: var(--text-dim);">📅 ${fStr} | Pagó: <strong>${l.operador}</strong> | ${l.detalle || 'Sin detalle (Registro Antiguo)'}</div>
             </div>
                           <div style="display: flex; gap: 6px;">
                 <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="modificarLiquidacion(${l.id})">Editar</button>
