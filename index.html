@@ -1158,7 +1158,7 @@
       
       _supabase.channel('schema-db-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'alumnos' }, () => { cargarDatosAlumnos(); })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'caja_diaria' }, () => { renderizarLibroDiario(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'caja_diaria' }, () => { cargarLibroDiario(); })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas_clases' }, () => { cargarTurnosSupabase(); })
         .subscribe();
     }
@@ -1803,7 +1803,7 @@
         return;
       }
 
-      divFechas.innerHTML = '';
+      
       data.forEach(item => {
         const fStr = new Date(item.fecha + 'T12:00:00').toLocaleDateString('es-AR', {
           weekday: 'short',
@@ -1811,8 +1811,8 @@
           month: '2-digit',
           year: 'numeric'
         });
-        divFechas.innerHTML += `<div class="tag-fecha">📅 <strong>${fStr}</strong></div>`;
-      });
+        return `<div class="tag-fecha">📅 <strong>${fStr}</strong></div>`;
+      }).join('');
     }
 
     function cerrarModalHistorial() {
@@ -1951,9 +1951,7 @@
           if (keysIng.length === 0) {
             tbodyIngresos.innerHTML = '<tr><td colspan="2">No hay ingresos.</td></tr>';
           } else {
-            keysIng.forEach(cat => {
-              tbodyIngresos.innerHTML += `<tr><td><strong>${cat}</strong></td><td style="color: var(--neon-green); font-weight:700;">+$${resumenIngresos[cat].toLocaleString()}</td></tr>`;
-            });
+            tbodyIngresos.innerHTML = keysIng.map(cat => `<tr><td><strong>${cat}</strong></td><td style="color: var(--neon-green); font-weight:700;">+${resumenIngresos[cat].toLocaleString()}</td></tr>`).join('');
           }
         }
         const tbodyEgresos = document.getElementById('tbodyCierreCatEgresos');
@@ -1963,9 +1961,7 @@
           if (keysEgr.length === 0) {
             tbodyEgresos.innerHTML = '<tr><td colspan="2">No hay egresos.</td></tr>';
           } else {
-            keysEgr.forEach(cat => {
-              tbodyEgresos.innerHTML += `<tr><td><strong>${cat}</strong></td><td style="color: var(--danger-red); font-weight:700;">-$${resumenEgresos[cat].toLocaleString()}</td></tr>`;
-            });
+            tbodyEgresos.innerHTML = keysEgr.map(cat => `<tr><td><strong>${cat}</strong></td><td style="color: var(--danger-red); font-weight:700;">-${resumenEgresos[cat].toLocaleString()}</td></tr>`).join('');
           }
         }
 
@@ -2069,17 +2065,13 @@
       if (profesores.length === 0) {
         ulProfesores.innerHTML = '<li>No hay profesores registrados.</li>';
       } else {
-        profesores.forEach(s => {
-          ulProfesores.innerHTML += renderizarItemStaffHTML(s, true);
-        });
+        ulProfesores.innerHTML = profesores.map(s => renderizarItemStaffHTML(s, true)).join('');
       }
 
       if (profesionales.length === 0) {
         ulProfesionales.innerHTML = '<li>No hay profesionales registrados.</li>';
       } else {
-        profesionales.forEach(s => {
-          ulProfesionales.innerHTML += renderizarItemStaffHTML(s, false);
-        });
+        ulProfesionales.innerHTML = profesionales.map(s => renderizarItemStaffHTML(s, false)).join('');
       }
     }
 
@@ -2433,12 +2425,12 @@
         tbody.innerHTML = '<tr><td colspan="8">No hay registros para mostrar.</td></tr>';
       } else {
         const aMostrar = filtrados.slice(0, limiteLibroDiario);
-        aMostrar.forEach(c => {
+        let htmlStr = aMostrar.map(c => {
           const monto = parseFloat(c.monto) || 0;
           const esIngreso = c.tipo === 'ingreso';
           const fechaFormateada = new Date(c.fecha + 'T12:00:00').toLocaleDateString('es-AR');
 
-          tbody.innerHTML += `
+          return `
             <tr>
               <td>${fechaFormateada}</td>
               <td><span style="color: ${esIngreso ? 'var(--neon-green)' : 'var(--danger-red)'}; font-weight:700;">${c.tipo ? c.tipo.toUpperCase() : 'INGRESO'}</span></td>
@@ -2457,7 +2449,8 @@
               </td>
             </tr>
           `;
-        });
+        }).join('');
+        tbody.innerHTML += htmlStr;
         
         if (filtrados.length > limiteLibroDiario) {
             tbody.innerHTML += `<tr><td colspan="8"><button class="btn btn-outline" style="width: 100%;" onclick="cargarMasLibroDiario()">Cargar más (${filtrados.length - limiteLibroDiario} restantes)</button></td></tr>`;
