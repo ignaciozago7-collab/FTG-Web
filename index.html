@@ -2619,7 +2619,7 @@
                  </div>
                  
                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px;">
-                   <select onchange="actualizarEstadoPlan(${p.id}, this.value)" style="padding: 4px; font-size: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border-color); color: #fff; border-radius: 4px; flex: 1;">
+                   <select onchange="actualizarEstadoPlan('${p.id}', this.value)" style="padding: 4px; font-size: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border-color); color: #fff; border-radius: 4px; flex: 1;">
                      <option value="Sin hacer" ${esSinHacer}>Sin hacer</option>
                      <option value="Falta 1 dia" ${esFalta1}>Falta 1 dia</option>
                      <option value="Faltan 2 dias" ${esFalta2}>Faltan 2 dias</option>
@@ -2628,7 +2628,7 @@
                      <option value="Faltan 5 dias" ${esFalta5}>Faltan 5 dias</option>
                      <option value="Hecho">&#x2714; Marcar Hecho</option>
                    </select>
-                   <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="borrarPlan(${p.id})">&#x1F5D1; Borrar</button>
+                   <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="borrarPlan('${p.id}')">&#x1F5D1; Borrar</button>
                  </div>
                  
                  ${p.detalles ? `<div style="font-size: 0.85rem; color: #aaa; background: rgba(255,255,255,0.03); padding: 6px; border-radius: 4px;">&#x1F4DD; ${p.detalles}</div>` : ''}
