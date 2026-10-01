@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -945,6 +945,11 @@
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let alumnosData = [];
+
+    let limiteAlumnos = 50;
+    let limiteLibroDiario = 50;
+    let alumnosFiltradosCache = [];
+
     let asistenciasMesData = [];
     let staffData = [];
     let planesData = [];
@@ -1355,9 +1360,24 @@
       const pendientes = items.filter(a => !a.pago_confirmado);
       const pagados = items.filter(a => a.pago_confirmado);
 
-      if (listaTodos) listaTodos.innerHTML = renderizarListaAlumnosHTML(items);
-      if (listaPendientes) listaPendientes.innerHTML = renderizarListaAlumnosHTML(pendientes);
-      if (listaPagados) listaPagados.innerHTML = renderizarListaAlumnosHTML(pagados);
+      if (listaTodos) {
+          listaTodos.innerHTML = renderizarListaAlumnosHTML(items.slice(0, limiteAlumnos));
+          if (items.length > limiteAlumnos) {
+              listaTodos.innerHTML += `<button class="btn btn-outline" style="width: 100%; margin-top: 10px;" onclick="cargarMasAlumnos()">Cargar más (${items.length - limiteAlumnos} restantes)</button>`;
+          }
+      }
+      if (listaPendientes) {
+          listaPendientes.innerHTML = renderizarListaAlumnosHTML(pendientes.slice(0, limiteAlumnos));
+          if (pendientes.length > limiteAlumnos) {
+              listaPendientes.innerHTML += `<button class="btn btn-outline" style="width: 100%; margin-top: 10px;" onclick="cargarMasAlumnos()">Cargar más (${pendientes.length - limiteAlumnos} restantes)</button>`;
+          }
+      }
+      if (listaPagados) {
+          listaPagados.innerHTML = renderizarListaAlumnosHTML(pagados.slice(0, limiteAlumnos));
+          if (pagados.length > limiteAlumnos) {
+              listaPagados.innerHTML += `<button class="btn btn-outline" style="width: 100%; margin-top: 10px;" onclick="cargarMasAlumnos()">Cargar más (${pagados.length - limiteAlumnos} restantes)</button>`;
+          }
+      }
     }
 
     async function actualizarPago(id, estado) {
@@ -1412,12 +1432,13 @@
     }
 
     function filtrarAlumnos() {
+      limiteAlumnos = 50;
       const texto = document.getElementById('buscador')?.value.toLowerCase() || '';
       const fechaFiltro = document.getElementById('filtroFechaAlumnos')?.value || '';
       const cobradorFiltro = document.getElementById('filtroCobradorAlumnos')?.value || '';
       const montoFiltro = parseFloat(document.getElementById('filtroMontoAlumnos')?.value) || 0;
 
-      const filtrados = alumnosData.filter(a => {
+      alumnosFiltradosCache = alumnosData.filter(a => {
         let ok = true;
         if (texto && !a.nombre.toLowerCase().includes(texto)) ok = false;
         if (fechaFiltro && a.fecha_pago !== fechaFiltro) ok = false;
@@ -1425,7 +1446,12 @@
         if (montoFiltro > 0 && parseFloat(a.monto) !== montoFiltro) ok = false;
         return ok;
       });
-      renderizarListaAlumnos(filtrados);
+      renderizarListaAlumnos(alumnosFiltradosCache);
+    }
+    
+    function cargarMasAlumnos() {
+      limiteAlumnos += 50;
+      renderizarListaAlumnos(alumnosFiltradosCache);
     }
 
     async function cargarAsistencias() {
@@ -2361,7 +2387,10 @@
       renderizarLibroDiario();
     }
 
-    function renderizarLibroDiario() {
+    function renderizarLibroDiario(esCargarMas) {
+      if (esCargarMas !== true) {
+        limiteLibroDiario = 50;
+      }
       const tbody = document.getElementById('tbodyCaja');
       if (!tbody) return;
       const filtro = document.getElementById('buscadorCaja')?.value.toLowerCase() || '';
@@ -2390,17 +2419,22 @@
          return ok;
       });
 
-      if (filtrados.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8">No hay registros para mostrar.</td></tr>';
-      } else {
-                filtrados.forEach(c => {
+      filtrados.forEach(c => {
           const monto = parseFloat(c.monto) || 0;
           const esIngreso = c.tipo === 'ingreso';
           const esRetiroSocio = c.categoria === 'Retiro Socio';
 
           if (esIngreso) totalIngresos += monto;
           else if (!esRetiroSocio) totalEgresos += monto;
+      });
 
+      if (filtrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8">No hay registros para mostrar.</td></tr>';
+      } else {
+        const aMostrar = filtrados.slice(0, limiteLibroDiario);
+        aMostrar.forEach(c => {
+          const monto = parseFloat(c.monto) || 0;
+          const esIngreso = c.tipo === 'ingreso';
           const fechaFormateada = new Date(c.fecha + 'T12:00:00').toLocaleDateString('es-AR');
 
           tbody.innerHTML += `
@@ -2423,6 +2457,10 @@
             </tr>
           `;
         });
+        
+        if (filtrados.length > limiteLibroDiario) {
+            tbody.innerHTML += `<tr><td colspan="8"><button class="btn btn-outline" style="width: 100%;" onclick="cargarMasLibroDiario()">Cargar más (${filtrados.length - limiteLibroDiario} restantes)</button></td></tr>`;
+        }
       }
 
       const balanceNeto = totalIngresos - totalEgresos;
@@ -2436,6 +2474,11 @@
         elBalance.innerText = `$${balanceNeto.toLocaleString()}`;
         elBalance.style.color = balanceNeto >= 0 ? 'var(--neon-green)' : 'var(--danger-red)';
       }
+    }
+
+    function cargarMasLibroDiario() {
+      limiteLibroDiario += 50;
+      renderizarLibroDiario(true);
     }
 
     async function guardarMovimientoCaja() {
