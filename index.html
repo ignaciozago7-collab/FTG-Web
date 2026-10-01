@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -316,7 +316,7 @@
 
   <aside style="display: none;">
     <div style="font-weight: 800; font-size: 1.1rem;">
-      <span class="logo-badge">FTG</span> From the Ground
+      <img src="logo.png" alt="FTG Logo" style="max-width: 100%; height: 60px; object-fit: contain;">
     </div>
     <nav>
       <button class="nav-btn active" onclick="cambiarSeccion('alumnosSection', this)">👥 Clientes</button>
@@ -678,12 +678,13 @@
             <option value="Otros">Otros</option>
           </select>
           <select id="cajaOperadorManual" style="flex: 1;">
-            <option value="Nacho">Operó: Nacho</option>
-            <option value="Lea">Operó: Lea</option>
-            <option value="Ernesto">Operó: Ernesto</option>
-            <option value="Mariano">Operó: Mariano</option>
-            <option value="Elias">Operó: Elias</option>
-          </select>
+              <option value="" disabled selected>Seleccione operador...</option>
+              <option value="Nacho">Operó: Nacho</option>
+              <option value="Lea">Operó: Lea</option>
+              <option value="Ernesto">Operó: Ernesto</option>
+              <option value="Mariano">Operó: Mariano</option>
+              <option value="Elias">Operó: Elias</option>
+            </select>
           <input type="number" step="0.01" id="cajaMonto" placeholder="Monto ($)" style="flex: 1;" required>
           <button class="btn" onclick="guardarMovimientoCaja()">Registrar Movimiento</button>
         </div>
@@ -696,7 +697,7 @@
               <div style="display: flex; gap: 10px; align-items: center; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px;">
                 <label style="color: var(--text-dim); font-size: 0.85rem;">Ver mes:</label>
                 <input type="month" id="filtroMesCaja" onchange="cargarLibroDiario()" style="padding: 2px;">
-                <button class="btn btn-outline" style="padding: 2px 6px; font-size: 0.75rem;" onclick="document.getElementById('filtroMesCaja').value=''; document.getElementById('filtroMesCaja').dispatchEvent(new Event('change')); cargarLibroDiario();">Todos</button>
+                <button class="btn btn-outline" style="padding: 2px 6px; font-size: 0.75rem;" onclick="document.getElementById('filtroMesCaja').value=''; document.getElementById('filtroMesCaja').dispatchEvent(new Event('change')); renderizarLibroDiario();">Todos</button>
               </div>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -1151,7 +1152,7 @@
       
       _supabase.channel('schema-db-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'alumnos' }, () => { cargarDatosAlumnos(); })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'caja_diaria' }, () => { cargarLibroDiario(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'caja_diaria' }, () => { renderizarLibroDiario(); })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas_clases' }, () => { cargarTurnosSupabase(); })
         .subscribe();
     }
@@ -1170,14 +1171,14 @@
       if (btn) btn.classList.add('active');
 
       if (idSeccion === 'libroDiarioSection') {
-        cargarLibroDiario();
+        renderizarLibroDiario();
       } else if (idSeccion === 'cierreMensualSection') {
         cargarAuditoriaCierreMensual();
       } else if (idSeccion === 'asistenciasSection') {
         cargarAsistencias();
       } else if (idSeccion === 'planesSection') {
         poblarSelectsProfesorPlanes();
-        cargarPlanesRenovacion();
+        if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
       } else if (idSeccion === 'cronogramaSection') {
         renderizarCronogramaDinamico();
       }
@@ -1330,12 +1331,13 @@
               <input type="date" value="${fechaInput}" id="fecha-${a.id}" style="padding: 6px 10px;">
               <input type="number" value="${a.monto || 0}" style="width: 100px;" id="monto-${a.id}" placeholder="Cuota $">
               <select id="cobrador-${a.id}" style="padding: 8px;">
-                <option value="Nacho" ${a.ultimo_cobrador === 'Nacho' ? 'selected' : ''}>Recibe: Nacho</option>
-                <option value="Lea" ${a.ultimo_cobrador === 'Lea' ? 'selected' : ''}>Recibe: Lea</option>
-                <option value="Ernesto" ${a.ultimo_cobrador === 'Ernesto' ? 'selected' : ''}>Recibe: Ernesto</option>
-                <option value="Mariano" ${a.ultimo_cobrador === 'Mariano' ? 'selected' : ''}>Recibe: Mariano</option>
-                <option value="Elias" ${a.ultimo_cobrador === 'Elias' ? 'selected' : ''}>Recibe: Elias</option>
-              </select>
+                  <option value="" disabled selected>Seleccione...</option>
+                  <option value="Nacho">Recibe: Nacho</option>
+                  <option value="Lea">Recibe: Lea</option>
+                  <option value="Ernesto">Recibe: Ernesto</option>
+                  <option value="Mariano">Recibe: Mariano</option>
+                  <option value="Elias">Recibe: Elias</option>
+                </select>
               <button class="btn" onclick="actualizarPago(${a.id}, true)">Cobrar Cuota</button>
               <button class="btn btn-outline" onclick="actualizarPago(${a.id}, false)">Marcar Pendiente</button>
               <button class="btn btn-danger" onclick="borrarCliente(${a.id})">Eliminar</button>
@@ -1365,12 +1367,17 @@
       const monto = montoEl ? parseFloat(montoEl.value) || 0 : (cliente ? cliente.monto : 0);
       
       const cobradorEl = tabActivo.querySelector(`[id="cobrador-${id}"]`);
-      const cobrador = cobradorEl ? cobradorEl.value : 'Nacho';
-      
-      const fechaEl = tabActivo.querySelector(`[id="fecha-${id}"]`);
-      const fechaPagoSeleccionada = fechaEl ? fechaEl.value : new Date().toISOString().split('T')[0];
+      const cobrador = cobradorEl ? cobradorEl.value : null;
+        
+        const fechaEl = tabActivo.querySelector(`[id="fecha-${id}"]`);
+        const fechaPagoSeleccionada = fechaEl ? fechaEl.value : new Date().toISOString().split('T')[0];
 
-      if (estado && !fechaPagoSeleccionada) {
+        if (estado && !cobrador) {
+          alert('Por favor, seleccione quien recibe el pago.');
+          return;
+        }
+
+        if (estado && !fechaPagoSeleccionada) {
         alert('Por favor selecciona una fecha válida para el pago.');
         return;
       }
@@ -1590,34 +1597,44 @@
     }
     
     function renderizarListaMasivaAsistencia() {
-       const filtro = document.getElementById('buscadorMasivoAsistencia').value.toLowerCase();
        const contenedor = document.getElementById('listaAsistenciaMasiva');
        const fechaSel = document.getElementById('fechaAsistencia').value;
        
        let html = '';
        const activos = alumnosData.filter(a => a.activo);
+       let cantidadRenderizados = 0;
        
        activos.forEach(a => {
-         if (filtro && !a.nombre.toLowerCase().includes(filtro)) return;
-         
-         // ver si ya tiene asistencia hoy
          const yaTiene = asistenciasMesData.some(as => String(as.alumno_id) === String(a.id) && as.fecha === fechaSel);
-         if (yaTiene) return; // Ya esta presente
+         if (yaTiene) return;
          
+         cantidadRenderizados++;
          html += `
-           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px; border-radius: 4px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
+           <label class="item-masivo-asistencia" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px; border-radius: 4px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);" data-nombre="${a.nombre.toLowerCase()}">
              <input type="checkbox" class="chk-masivo-asistencia" value="${a.id}">
              <span>${a.nombre}</span>
            </label>
          `;
        });
        
-       if (html === '') html = '<div style="color: var(--text-dim); grid-column: 1/-1;">No hay alumnos disponibles o todos los coincidentes ya estan presentes hoy.</div>';
+       if (cantidadRenderizados === 0) {
+           html = '<div style="color: var(--text-dim); grid-column: 1/-1;">No hay alumnos disponibles o todos ya estan presentes hoy.</div>';
+       }
        contenedor.innerHTML = html;
+       filtrarListaMasivaAsistencia();
     }
-    
+
     function filtrarListaMasivaAsistencia() {
-       renderizarListaMasivaAsistencia();
+       const filtro = document.getElementById('buscadorMasivoAsistencia').value.toLowerCase();
+       const items = document.querySelectorAll('.item-masivo-asistencia');
+       items.forEach(item => {
+           const nombre = item.getAttribute('data-nombre');
+           if (filtro && !nombre.includes(filtro)) {
+               item.style.display = 'none';
+           } else {
+               item.style.display = 'flex';
+           }
+       });
     }
     
     async function guardarAsistenciaMasiva() {
@@ -1798,16 +1815,7 @@
         const ultimoDiaNum = new Date(anioNum, mesNum, 0).getDate();
         const fechaFin = `${anioNum}-${String(mesNum).padStart(2, '0')}-${String(ultimoDiaNum).padStart(2, '0')}`;
 
-        const { data: registros, error } = await _supabase
-          .from('caja_diaria')
-          .select('*')
-          .gte('fecha', fechaInicio)
-          .lte('fecha', fechaFin);
-
-        if (error) {
-          console.error('Error al consultar Supabase:', error.message);
-          return;
-        }
+        const registros = cajaData.filter(r => r.fecha >= fechaInicio && r.fecha <= fechaFin);
 
         let totalIngresos = 0;
         let totalEgresosGeneral = 0;
@@ -2201,7 +2209,7 @@
       } else {
         document.getElementById('resultadoLiquidacion').innerText = `¡Pago registrado con éxito por $${montoTotal.toLocaleString()}!`;
         cargarHistorialLiquidaciones();
-        cargarLibroDiario();
+        renderizarLibroDiario();
         cargarAuditoriaCierreMensual();
       }
     }
@@ -2324,7 +2332,7 @@
           
       alert('Liquidacion modificada con exito.');
       cargarHistorialLiquidaciones();
-      cargarLibroDiario();
+      renderizarLibroDiario();
     }
 
     async function borrarLiquidacion(id) {
@@ -2339,7 +2347,7 @@
          alert('Error al borrar: ' + error.message);
       } else {
          cargarHistorialLiquidaciones();
-         cargarLibroDiario();
+         renderizarLibroDiario();
       }
     }
 
@@ -2439,7 +2447,7 @@
       const cobrador = document.getElementById('cajaOperadorManual').value;
       const monto = parseFloat(document.getElementById('cajaMonto').value) || 0;
 
-      if (!fecha || !persona || !detalle || monto <= 0) {
+      if (!fecha || !persona || !detalle || monto <= 0 || !cobrador) {
         alert('Por favor completá todos los campos requeridos correctamente.');
         return;
       }
@@ -2456,7 +2464,7 @@
         document.getElementById('cajaPersona').value = '';
         document.getElementById('cajaDetalle').value = '';
         document.getElementById('cajaMonto').value = '';
-        cargarLibroDiario();
+        renderizarLibroDiario();
         cargarAuditoriaCierreMensual();
       }
     }
@@ -2504,7 +2512,7 @@
         alert('Error al guardar cambios: ' + error.message);
       } else {
         cerrarModalAsiento();
-        cargarLibroDiario();
+        renderizarLibroDiario();
         cargarAuditoriaCierreMensual();
       }
     }
@@ -2515,7 +2523,7 @@
       if (error) {
         alert('Error al borrar el asiento: ' + error.message);
       } else {
-        cargarLibroDiario();
+        renderizarLibroDiario();
         cargarAuditoriaCierreMensual();
       }
     }
@@ -2552,7 +2560,7 @@
         document.getElementById('planSemana').value = '';
         document.getElementById('planAlumno').value = '';
         document.getElementById('planDetalles').value = '';
-        cargarPlanesRenovacion();
+        if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
       }
     }
 
@@ -2675,7 +2683,7 @@
       if (!confirm('Seguro que deseas eliminar esta planificacion?')) return;
       const { error } = await _supabase.from('planes').delete().eq('id', id);
       if (error) alert('Error al borrar plan: ' + error.message);
-      else cargarPlanesRenovacion();
+      else if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
     }
 
     // FUNCIONES DEL CRONOGRAMA DINÁMICO
