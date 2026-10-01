@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -24,8 +24,8 @@
 
     aside {
       width: 260px;
-      background-color: #14141D;
-      border-right: 1px solid var(--border-color);
+      background-color: #d1d5db;
+      border-right: 1px solid #9ca3af;
       padding: 24px 16px;
       display: flex;
       flex-direction: column;
@@ -44,7 +44,7 @@
     .nav-btn {
       background: transparent;
       border: 1px solid transparent;
-      color: var(--text-dim);
+      color: #000000;
       padding: 12px;
       border-radius: 8px;
       text-align: left;
@@ -52,9 +52,10 @@
       cursor: pointer;
     }
     .nav-btn.active, .nav-btn:hover {
-      background-color: var(--card-bg);
-      color: var(--neon-green);
-      border-color: var(--border-color);
+      background-color: #ffffff;
+      color: #000000;
+      border-color: #9ca3af;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
     main { flex: 1; padding: 32px; overflow-y: auto; }
@@ -328,10 +329,10 @@
       <button class="nav-btn" onclick="cambiarSeccion('cronogramaSection', this)">📅 Cronograma de Turnos</button>
     </nav>
     
-    <div id="userProfile" style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-color); font-size: 0.85rem;">
-      <p style="color: var(--text-dim); margin-bottom: 4px;">Sesión iniciada como:</p>
-      <strong id="loggedUserEmail" style="color: var(--neon-green); word-break: break-all;">cargando...</strong>
-      <button class="btn btn-outline" style="width: 100%; margin-top: 12px; font-size: 0.8rem; padding: 8px;" onclick="cerrarSesion()">Cerrar Sesión / Cambiar</button>
+    <div id="userProfile" style="margin-top: auto; padding-top: 16px; border-top: 1px solid #9ca3af; font-size: 0.85rem; color: #000;">
+      <p style="color: #4b5563; margin-bottom: 4px;">Sesión iniciada como:</p>
+      <strong id="loggedUserEmail" style="color: #000000; word-break: break-all;">cargando...</strong>
+      <button class="btn btn-outline" style="width: 100%; margin-top: 12px; font-size: 0.8rem; padding: 8px; color: #000; border-color: #9ca3af;" onclick="cerrarSesion()">Cerrar Sesión / Cambiar</button>
     </div>
   </aside>
 
