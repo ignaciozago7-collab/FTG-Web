@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -1376,8 +1376,8 @@
                 </select>
               <button class="btn" onclick="actualizarPago(${a.id}, true)">Cobrar Cuota</button>
               <button class="btn btn-outline" onclick="actualizarPago(${a.id}, false)">Marcar Pendiente</button>
-              <button class="btn btn-outline" onclick="abrirModalEditCliente(${a.id})">✏️ Editar</button>
-                <button class="btn btn-danger" onclick="borrarCliente(${a.id})">🗑️ Eliminar</button>
+              <button class="btn btn-outline" style="padding: 6px 10px; font-size: 1.1rem;" onclick="abrirModalEditCliente(${a.id})">✏️</button>
+              <button class="btn btn-danger" style="padding: 6px 10px; font-size: 1.1rem;" onclick="borrarCliente(${a.id})">🗑️</button>
             </div>
           </li>
         `;
@@ -2070,7 +2070,7 @@
               : `<input type="number" id="pct-${s.id}" value="${s.porcentaje || 0}" style="width: 80px;" placeholder="%">`
             }
             <button class="btn btn-outline" onclick="actualizarConfigStaff(${s.id}, '${s.rol}')">Guardar</button>
-            <button class="btn btn-danger" onclick="borrarStaff(${s.id})">Eliminar</button>
+            <button class="btn btn-danger" style="padding: 6px 10px; font-size: 1.1rem;" onclick="borrarStaff(${s.id})">🗑️</button>
           </div>
         </li>
       `;
@@ -2337,8 +2337,8 @@
               <div style="font-size: 0.8rem; color: var(--text-dim);">📅 ${fStr} | Pagó: <strong>${l.operador}</strong> | ${l.detalle || 'Sin detalle (Registro Antiguo)'}</div>
             </div>
                           <div style="display: flex; gap: 6px;">
-                <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="modificarLiquidacion(${l.id})">Editar</button>
-                <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="borrarLiquidacion(${l.id})">Borrar</button>
+                <button class="btn btn-outline" style="padding: 4px 8px; font-size: 1.1rem;" onclick="modificarLiquidacion(${l.id})">✏️</button>
+                  <button class="btn btn-danger" style="padding: 4px 8px; font-size: 1.1rem;" onclick="borrarLiquidacion(${l.id})">🗑️</button>
               </div>
             </li>
         `;
