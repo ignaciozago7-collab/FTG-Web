@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -940,6 +940,36 @@
     </div>
   </div>
 
+
+  <div id="modalEditCliente" class="modal-overlay">
+    <div class="modal-content">
+      <h3>Modificar Cliente</h3>
+      <input type="hidden" id="editClienteId">
+
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.8rem; color: var(--text-dim);">Nombre del Cliente:</label>
+        <input type="text" id="editClienteNombre">
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.8rem; color: var(--text-dim);">Días por semana (1 a 7):</label>
+        <input type="number" id="editClienteDias" min="1" max="7">
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.8rem; color: var(--text-dim);">Profesor a cargo:</label>
+        <select id="editClienteProfesor">
+           <!-- se poblará dinámicamente -->
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 16px;">
+        <button class="btn btn-outline" style="flex: 1;" onclick="cerrarModalEditCliente()">Cancelar</button>
+        <button class="btn" style="flex: 1;" onclick="guardarEdicionCliente()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const SUPABASE_URL = 'https://ltoiylrqpbplfiuhvfbi.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0b2l5bHJxcGJwbGZpdWh2ZmJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzODE4MTQsImV4cCI6MjEwNDk1NzgxNH0.hMNtR9jD4hHb4EYDnjyq7NSMa7VBCp24j_0fH0zS4d4';
@@ -1346,7 +1376,8 @@
                 </select>
               <button class="btn" onclick="actualizarPago(${a.id}, true)">Cobrar Cuota</button>
               <button class="btn btn-outline" onclick="actualizarPago(${a.id}, false)">Marcar Pendiente</button>
-              <button class="btn btn-danger" onclick="borrarCliente(${a.id})">Eliminar</button>
+              <button class="btn btn-outline" onclick="abrirModalEditCliente(${a.id})">✏️ Editar</button>
+                <button class="btn btn-danger" onclick="borrarCliente(${a.id})">🗑️ Eliminar</button>
             </div>
           </li>
         `;
@@ -2933,6 +2964,61 @@
          const idx = alumnosData.findIndex(a => a.id == id);
          if(idx !== -1) alumnosData[idx].notas = nota;
       }
+    }
+
+    function abrirModalEditCliente(id) {
+        const cliente = alumnosData.find(a => String(a.id) === String(id));
+        if (!cliente) return;
+        
+        document.getElementById('editClienteId').value = cliente.id;
+        document.getElementById('editClienteNombre').value = cliente.nombre || '';
+        document.getElementById('editClienteDias').value = cliente.dias_semana || 3;
+        
+        const selectProfesor = document.getElementById('editClienteProfesor');
+        let opciones = '<option value="">Sin asignar</option>';
+        staffData.forEach(s => {
+            if (s.rol === 'profesor') {
+                opciones += `<option value="${s.nombre}" ${s.nombre === cliente.profesor_cargo ? 'selected' : ''}>${s.nombre}</option>`;
+            }
+        });
+        selectProfesor.innerHTML = opciones;
+        
+        document.getElementById('modalEditCliente').style.display = 'flex';
+    }
+
+    function cerrarModalEditCliente() {
+        document.getElementById('modalEditCliente').style.display = 'none';
+    }
+
+    async function guardarEdicionCliente() {
+        const id = document.getElementById('editClienteId').value;
+        const nombre = document.getElementById('editClienteNombre').value.trim();
+        const dias = document.getElementById('editClienteDias').value;
+        const profesor = document.getElementById('editClienteProfesor').value;
+
+        if (!nombre) {
+            alert("El nombre no puede estar vacío.");
+            return;
+        }
+
+        const { error } = await _supabase.from('alumnos').update({ 
+            nombre: formatearTitulo(nombre),
+            dias_semana: parseInt(dias) || 3,
+            profesor_cargo: profesor
+        }).eq('id', id);
+
+        if (error) {
+            alert("Error al actualizar cliente: " + error.message);
+        } else {
+            cerrarModalEditCliente();
+            const idx = alumnosData.findIndex(a => String(a.id) === String(id));
+            if (idx !== -1) {
+                alumnosData[idx].nombre = formatearTitulo(nombre);
+                alumnosData[idx].dias_semana = parseInt(dias) || 3;
+                alumnosData[idx].profesor_cargo = profesor;
+                filtrarAlumnos();
+            }
+        }
     }
   </script>
 </body>
