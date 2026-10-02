@@ -566,7 +566,7 @@
           Esta acción blanqueará la nómina de alumnos pasando las cuotas a <strong>PENDIENTE</strong> para iniciar el nuevo ciclo. Todos los registros contables e historial de asistencias previas permanecen resguardados.
         </p>
         <div style="margin-top: 16px;">
-          <button class="btn" style="padding: 16px 24px; font-size: 1.15rem; font-weight: bold; background: var(--danger-red); width: 100%; border: 2px solid #ff4d4d; box-shadow: 0 0 10px rgba(255,0,0,0.3);" onclick="ejecutarCierreMensual()">&#x26A0; REINICIAR MES (Resetear todas las cuotas a Pendiente)</button>
+          <button class="btn" style="padding: 16px 24px; font-size: 1.15rem; font-weight: bold; background: var(--danger-red); width: 100%; border: 2px solid #ff4d4d; box-shadow: 0 0 10px rgba(255,0,0,0.3);" onclick="abrirModalCierre()">&#x26A0; REINICIAR MES (Resetear todas las cuotas a Pendiente)</button>
           <p style="color: var(--text-dim); margin-top: 10px; font-size: 0.9rem;">Al presionar este bot&oacute;n, todas las cuotas de los clientes volver&aacute;n a estar pendientes para el nuevo mes. <strong>Tus notas escritas y montos se mantienen intactos</strong> para que sepas qu&eacute; pas&oacute; el mes anterior.<br>El Libro Diario y los Sueldos se reinician visualmente al cambiar al nuevo mes en sus respectivos filtros superiores.</p>
         </div>
       </div>
@@ -964,6 +964,24 @@
       <div style="display: flex; gap: 8px; margin-top: 16px;">
         <button class="btn btn-outline" style="flex: 1;" onclick="cerrarModalEditCliente()">Cancelar</button>
         <button class="btn" style="flex: 1;" onclick="guardarEdicionCliente()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="modalConfirmarCierre" class="modal-overlay">
+    <div class="modal-content">
+      <h3>⚠️ Confirmación de Seguridad</h3>
+      <p style="color: var(--text-dim); font-size: 0.9rem; margin-top: 10px; margin-bottom: 10px;">
+        Estás a punto de pasar TODAS las cuotas de los alumnos a PENDIENTE. Esta acción es irreversible.
+      </p>
+      <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 15px;">
+        Para continuar, escribí la palabra <strong style="color: var(--danger-red);">REINICIAR</strong> en el siguiente casillero:
+      </p>
+      <input type="text" id="inputConfirmarCierre" placeholder="Escribí REINICIAR" oninput="validarInputCierre()" autocomplete="off">
+      <div style="display: flex; gap: 8px; margin-top: 20px;">
+        <button class="btn btn-outline" style="flex: 1;" onclick="cerrarModalCierre()">Cancelar</button>
+        <button id="btnEjecutarCierre" class="btn btn-danger" style="flex: 1; opacity: 0.5; pointer-events: none;" onclick="ejecutarCierreMensualConfirmado()">Confirmar Blanqueo</button>
       </div>
     </div>
   </div>
@@ -1993,24 +2011,47 @@
       }
     }
 
-    async function ejecutarCierreMensual() {
-      if (!confirm('¿Estás seguro de que deseas reiniciar las cuotas de todos los clientes a PENDIENTE?')) return;
-
-      const { error } = await _supabase.from('alumnos').update({
-        pago_confirmado: false,
-        ultimo_cobrador: null,
-        fecha_pago: null
-      }).neq('id', 0);
-
-      if (error) {
-        alert('Error al realizar el cierre mensual: ' + error.message);
-      } else {
-        alert('Cierre mensual ejecutado correctamente. Se resetearon las cuotas a pendientes.');
-        cargarDatosAlumnos();
+    
+      function abrirModalCierre() {
+          document.getElementById('inputConfirmarCierre').value = '';
+          validarInputCierre();
+          document.getElementById('modalConfirmarCierre').style.display = 'flex';
       }
-    }
 
-    function toggleCamposRol() {
+      function cerrarModalCierre() {
+          document.getElementById('modalConfirmarCierre').style.display = 'none';
+      }
+
+      function validarInputCierre() {
+          const input = document.getElementById('inputConfirmarCierre').value;
+          const btn = document.getElementById('btnEjecutarCierre');
+          if (input === 'REINICIAR') {
+              btn.style.opacity = '1';
+              btn.style.pointerEvents = 'auto';
+          } else {
+              btn.style.opacity = '0.5';
+              btn.style.pointerEvents = 'none';
+          }
+      }
+
+      async function ejecutarCierreMensualConfirmado() {
+          cerrarModalCierre();
+          
+          const { error } = await _supabase.from('alumnos').update({
+            pago_confirmado: false,
+            ultimo_cobrador: null,
+            fecha_pago: null
+          }).neq('id', 0);
+
+          if (error) {
+            alert('Error al realizar el blanqueo mensual: ' + error.message);
+          } else {
+            alert('Blanqueo ejecutado correctamente. Se resetearon todas las cuotas a pendientes.');
+            cargarDatosAlumnos();
+          }
+      }
+
+      function toggleCamposRol() {
       const rol = document.getElementById('rolStaff').value;
       document.getElementById('tarifaHoraStaff').style.display = rol === 'profesor' ? 'block' : 'none';
       document.getElementById('porcentajeStaff').style.display = rol === 'profesional' ? 'block' : 'none';
