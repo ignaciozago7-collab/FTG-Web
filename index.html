@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -382,14 +382,7 @@
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <input type="text" id="buscador" placeholder="Buscar cliente..." oninput="filtrarAlumnos()" style="width: 200px;">
             <input type="date" id="filtroFechaAlumnos" oninput="filtrarAlumnos()">
-            <select id="filtroCobradorAlumnos" onchange="filtrarAlumnos()">
-              <option value="">Cualquier Operador</option>
-              <option value="Nacho">Nacho</option>
-              <option value="Lea">Lea</option>
-              <option value="Ernesto">Ernesto</option>
-              <option value="Mariano">Mariano</option>
-              <option value="Elias">Elias</option>
-            </select>
+            <select id="filtroCobradorAlumnos" onchange="filtrarAlumnos()"></select>
             <input type="number" id="filtroMontoAlumnos" placeholder="Valor $" oninput="filtrarAlumnos()" style="width: 100px;">
           </div>
         </div>
@@ -597,13 +590,7 @@
             <option value="">Cargando personal...</option>
           </select>
     
-          <select id="selectOperadorLiquidacion" style="flex: 1;">
-            <option value="Nacho">Paga: Nacho</option>
-            <option value="Lea">Paga: Lea</option>
-            <option value="Ernesto">Paga: Ernesto</option>
-            <option value="Mariano">Paga: Mariano</option>
-            <option value="Elias">Paga: Elias</option>
-          </select>
+          <select id="selectOperadorLiquidacion" style="flex: 1;"></select>
 
           <div id="wrapperHoras" style="display: flex; gap: 8px; flex: 2;">
             <input type="number" id="inputHoras" placeholder="Horas trabajadas" style="width: 100%;">
@@ -676,14 +663,7 @@
             <option value="Liquidacion">Liquidación Staff</option>
             <option value="Otros">Otros</option>
           </select>
-          <select id="cajaOperadorManual" style="flex: 1;">
-              <option value="" disabled selected>Seleccione operador...</option>
-              <option value="Nacho">Operó: Nacho</option>
-              <option value="Lea">Operó: Lea</option>
-              <option value="Ernesto">Operó: Ernesto</option>
-              <option value="Mariano">Operó: Mariano</option>
-              <option value="Elias">Operó: Elias</option>
-            </select>
+          <select id="cajaOperadorManual" style="flex: 1;"></select>
           <input type="number" step="0.01" id="cajaMonto" placeholder="Monto ($)" style="flex: 1;" required>
           <button class="btn" onclick="guardarMovimientoCaja()">Registrar Movimiento</button>
         </div>
@@ -702,14 +682,7 @@
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <input type="text" id="buscadorCaja" placeholder="Filtrar movimientos..." oninput="cargarLibroDiario()" style="width: 200px;">
             <input type="date" id="filtroFechaCaja" oninput="cargarLibroDiario()">
-            <select id="filtroCobradorCaja" onchange="cargarLibroDiario()">
-              <option value="">Cualquier Operador</option>
-              <option value="Nacho">Nacho</option>
-              <option value="Lea">Lea</option>
-              <option value="Ernesto">Ernesto</option>
-              <option value="Mariano">Mariano</option>
-              <option value="Elias">Elias</option>
-            </select>
+            <select id="filtroCobradorCaja" onchange="cargarLibroDiario()"></select>
             <input type="number" id="filtroMontoCaja" placeholder="Valor $" oninput="cargarLibroDiario()" style="width: 100px;">
           </div>
         </div>
@@ -905,13 +878,7 @@
 
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <label style="font-size: 0.8rem; color: var(--text-dim);">Operador / Receptor:</label>
-        <select id="editAsientoCobrador">
-          <option value="Nacho">Nacho</option>
-          <option value="Lea">Lea</option>
-          <option value="Ernesto">Ernesto</option>
-          <option value="Mariano">Mariano</option>
-          <option value="Elias">Elias</option>
-        </select>
+        <select id="editAsientoCobrador"></select>
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -1229,7 +1196,8 @@
       } else if (idSeccion === 'asistenciasSection') {
         cargarAsistencias();
       } else if (idSeccion === 'planesSection') {
-        poblarSelectsProfesorPlanes();
+        poblarSelectoresOperadores();
+          poblarSelectsProfesorPlanes();
         if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
       } else if (idSeccion === 'cronogramaSection') {
         renderizarCronogramaDinamico();
@@ -1384,11 +1352,7 @@
               <input type="number" value="${a.monto || 0}" style="width: 100px;" id="monto-${a.id}" placeholder="Cuota $">
               <select id="cobrador-${a.id}" style="padding: 8px;">
                   <option value="" disabled selected>Seleccione...</option>
-                  <option value="Nacho">Recibe: Nacho</option>
-                  <option value="Lea">Recibe: Lea</option>
-                  <option value="Ernesto">Recibe: Ernesto</option>
-                  <option value="Mariano">Recibe: Mariano</option>
-                  <option value="Elias">Recibe: Elias</option>
+                  ${staffData.map(s => `<option value="${s.nombre}">Recibe: ${s.nombre.split(' ')[0]}</option>`).join('')}
                 </select>
               <button class="btn" onclick="actualizarPago(${a.id}, true)">Cobrar Cuota</button>
               <button class="btn btn-outline" onclick="actualizarPago(${a.id}, false)">Marcar Pendiente</button>
@@ -2090,7 +2054,37 @@
       }
     }
 
-    function renderizarItemStaffHTML(s, esProfesor) {
+    
+      function poblarSelectoresOperadores() {
+          let opcionesFiltro = '<option value="">Cualquier Operador</option>';
+          let opcionesOperador = '<option value="" disabled selected>Seleccione operador...</option>';
+          let opcionesLiquidacion = '<option value="" disabled selected>Seleccionar pagador...</option>';
+          let opcionesBasicas = '<option value="" disabled selected>Seleccione operador...</option>';
+
+          staffData.forEach(s => {
+              opcionesFiltro += `<option value="${s.nombre}">${s.nombre}</option>`;
+              opcionesOperador += `<option value="${s.nombre}">Operó: ${s.nombre.split(' ')[0]}</option>`;
+              opcionesLiquidacion += `<option value="${s.nombre}">Paga: ${s.nombre.split(' ')[0]}</option>`;
+              opcionesBasicas += `<option value="${s.nombre}">${s.nombre}</option>`;
+          });
+
+          const fAlumnos = document.getElementById('filtroCobradorAlumnos');
+          if (fAlumnos) fAlumnos.innerHTML = opcionesFiltro;
+
+          const fCaja = document.getElementById('filtroCobradorCaja');
+          if (fCaja) fCaja.innerHTML = opcionesFiltro;
+
+          const cManual = document.getElementById('cajaOperadorManual');
+          if (cManual) cManual.innerHTML = opcionesOperador;
+
+          const sLiq = document.getElementById('selectOperadorLiquidacion');
+          if (sLiq) sLiq.innerHTML = opcionesLiquidacion;
+
+          const eAsiento = document.getElementById('editAsientoCobrador');
+          if (eAsiento) eAsiento.innerHTML = opcionesBasicas;
+      }
+        
+      function renderizarItemStaffHTML(s, esProfesor) {
       return `
         <li>
           <div>
