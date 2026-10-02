@@ -1076,6 +1076,23 @@
   </div>
 
   <!-- FIN MODALES ALTA -->
+
+  <!-- MODAL EDITAR LIQUIDACION -->
+  <div id="modalEditLiquidacion" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px;">
+      <h3 id="modalEditLiqTitulo">Modificar Liquidación</h3>
+      <p id="modalEditLiqSubtitulo" style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 12px;"></p>
+      
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <input type="number" id="inputEditLiqValor" placeholder="Nuevo valor">
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+          <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('modalEditLiquidacion').style.display='none'">Cancelar</button>
+          <button class="btn" style="flex: 1;" onclick="confirmarModificarLiquidacion()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const SUPABASE_URL = 'https://ltoiylrqpbplfiuhvfbi.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0b2l5bHJxcGJwbGZpdWh2ZmJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzODE4MTQsImV4cCI6MjEwNDk1NzgxNH0.hMNtR9jD4hHb4EYDnjyq7NSMa7VBCp24j_0fH0zS4d4';
@@ -1136,13 +1153,11 @@
       const elFechaCaja = document.getElementById('cajaFecha');
       if (elFechaCaja) elFechaCaja.value = hoy;
 
-      const arsGuardado = localStorage.getItem("reserva_gym_ars");
-      const usdGuardado = localStorage.getItem("reserva_gym_usd");
-      if (arsGuardado !== null && document.getElementById("reservaARS")) {
-        document.getElementById("reservaARS").value = arsGuardado;
-      }
-      if (usdGuardado !== null && document.getElementById("reservaUSD")) {
-        document.getElementById("reservaUSD").value = usdGuardado;
+      // Load from Supabase DB configuracion table
+      const { data: cfgData } = await _supabase.from('configuracion').select('*').eq('id', 1).single();
+      if (cfgData) {
+          if (document.getElementById('reservaARS')) document.getElementById('reservaARS').value = cfgData.reserva_ars || 0;
+          if (document.getElementById('reservaUSD')) document.getElementById('reservaUSD').value = cfgData.reserva_usd || 0;
       }
 
       const btnLogin = document.getElementById('btnLogin');
@@ -1299,11 +1314,14 @@
         .subscribe();
     }
 
-    function guardarReservas() {
-      const valARS = document.getElementById("reservaARS").value;
-      const valUSD = document.getElementById("reservaUSD").value;
-      localStorage.setItem("reserva_gym_ars", valARS);
-      localStorage.setItem("reserva_gym_usd", valUSD);
+    async function guardarReservas() {
+      const valARS = parseFloat(document.getElementById("reservaARS").value) || 0;
+      const valUSD = parseFloat(document.getElementById("reservaUSD").value) || 0;
+      await _supabase.from('configuracion').upsert({
+          id: 1,
+          reserva_ars: valARS,
+          reserva_usd: valUSD
+      });
     }
 
     function cambiarSeccion(idSeccion, btn) {
@@ -2385,7 +2403,7 @@
 
       const fechaHoy = new Date().toISOString().split('T')[0];
 
-      const { error: errCaja } = await _supabase.from('caja_diaria').insert([{
+      const { data: dataCaja, error: errCaja } = await _supabase.from('caja_diaria').insert([{
         fecha: fechaHoy,
         tipo: tipoCaja,
         persona: operadorPago,
@@ -2393,20 +2411,22 @@
         categoria: catCaja,
         cobrador: operadorPago,
         monto: montoTotal
-      }]);
+      }]).select();
 
       if (errCaja) {
         alert('Error al registrar pago en Caja: ' + errCaja.message);
         return;
       }
 
+      const cajaIdObj = (dataCaja && dataCaja.length > 0) ? dataCaja[0].id : null;
       const { error: errLiq } = await _supabase.from('liquidaciones').insert([{
         fecha: fechaHoy,
         staff_nombre: integrante.nombre,
         operador: operadorPago,
         monto: montoTotal,
         total_a_pagar: montoTotal,
-        detalle: detalleTexto
+        detalle: detalleTexto,
+        caja_id: cajaIdObj
       }]);
 
       if (errLiq) {
@@ -2500,28 +2520,44 @@
       }).join('');
     }
 
-        async function modificarLiquidacion(id) {
+        let currentEditLiqId = null;
+    
+    function modificarLiquidacion(id) {
       const liq = liquidacionesData.find(x => x.id === id);
       if (!liq) return;
       const integrante = staffData.find(s => s.nombre === liq.staff_nombre);
-      if (!integrante) {
-        alert('No se encontro el staff en la base de datos.');
-        return;
+      if (!integrante) return alert('No se encontró el staff en la BD.');
+
+      currentEditLiqId = id;
+      if (integrante.rol === 'profesor') {
+          document.getElementById('modalEditLiqSubtitulo').innerText = `Tarifa actual: $${integrante.tarifa_hora || 0}/hr.\nIngresá las nuevas horas trabajadas:`;
+          document.getElementById('inputEditLiqValor').placeholder = 'Ej: 10';
+      } else {
+          document.getElementById('modalEditLiqSubtitulo').innerText = `Porcentaje actual: ${integrante.porcentaje || 0}%.\nIngresá la nueva recaudación total:`;
+          document.getElementById('inputEditLiqValor').placeholder = 'Ej: 150000';
+      }
+      document.getElementById('inputEditLiqValor').value = '';
+      document.getElementById('modalEditLiquidacion').style.display = 'flex';
+    }
+
+    async function confirmarModificarLiquidacion() {
+      const val = parseFloat(document.getElementById('inputEditLiqValor').value);
+      if (isNaN(val)) return alert('Ingresá un valor numérico válido.');
+
+      const liq = liquidacionesData.find(x => x.id === currentEditLiqId);
+      const integrante = staffData.find(s => s.nombre === liq.staff_nombre);
+      
+      let monto, detalle;
+      if (integrante.rol === 'profesor') {
+          monto = val * (integrante.tarifa_hora || 0);
+          detalle = `Liquidacion Sueldo Profesor (${val} hrs) - ${integrante.nombre}`;
+      } else {
+          monto = val * ((integrante.porcentaje || 0) / 100);
+          detalle = `Liquidacion Comision Profesional (${integrante.porcentaje}%) - ${integrante.nombre}`;
       }
 
-      if (integrante.rol === 'profesor') {
-          const horas = prompt(`Tarifa actual: ${integrante.tarifa_hora}/hr.\nIngresa las nuevas horas trabajadas:`);
-          if (!horas || isNaN(horas)) return;
-          const monto = parseFloat(horas) * (integrante.tarifa_hora || 0);
-          const detalle = `Liquidacion Sueldo Profesor (${horas} hrs) - ${integrante.nombre}`;
-          await actualizarLiquidacion(liq, monto, detalle);
-      } else {
-          const recaudacion = prompt(`Porcentaje actual: ${integrante.porcentaje}%.\nIngresa la nueva recaudacion total:`);
-          if (!recaudacion || isNaN(recaudacion)) return;
-          const monto = parseFloat(recaudacion) * ((integrante.porcentaje || 0) / 100);
-          const detalle = `Liquidacion Comision Profesional (${integrante.porcentaje}%) - ${integrante.nombre}`;
-          await actualizarLiquidacion(liq, monto, detalle);
-      }
+      document.getElementById('modalEditLiquidacion').style.display = 'none';
+      await actualizarLiquidacion(liq, monto, detalle);
     }
 
     async function actualizarLiquidacion(liq, nuevoMonto, nuevoDetalle) {
@@ -2531,9 +2567,15 @@
       if (errLiq) return alert('Error al actualizar: ' + errLiq.message);
 
       // Actualizar tambiÃ©n en caja_diaria
-      await _supabase.from('caja_diaria')
-          .update({ monto: nuevoMonto, detalle: nuevoDetalle })
-          .match({ fecha: liq.fecha, monto: liq.monto, persona: liq.operador, detalle: liq.detalle });
+      if (liq.caja_id) {
+          await _supabase.from('caja_diaria')
+            .update({ monto: nuevoMonto, detalle: nuevoDetalle })
+            .eq('id', liq.caja_id);
+      } else {
+          await _supabase.from('caja_diaria')
+            .update({ monto: nuevoMonto, detalle: nuevoDetalle })
+            .match({ fecha: liq.fecha, monto: liq.monto, persona: liq.operador, detalle: liq.detalle });
+      }
           
       alert('Liquidacion modificada con exito.');
       cargarHistorialLiquidaciones();
@@ -2604,7 +2646,7 @@
           const esRetiroSocio = c.categoria === 'Retiro Socio';
 
           if (esIngreso) totalIngresos += monto;
-          else if (!esRetiroSocio) totalEgresos += monto;
+          else totalEgresos += monto;
       });
 
       if (filtrados.length === 0) {
