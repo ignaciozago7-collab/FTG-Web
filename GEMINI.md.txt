@@ -1,0 +1,6 @@
+# Antigravity System Rules
+
+- **Formato de respuesta:** Generá únicamente micro-diffs o fragmentos de código específicos. Está estrictamente prohibido reescribir archivos HTML, CSS o JS completos si solo se modifica una sección.
+- **Interacciones:** Evitá introducciones, saludos, explicaciones teóricas o conclusiones amables. Ve directo a la edición del código.
+- **Uso de Herramientas Visuales:** Desactivá las capturas de pantalla automáticas (browser screenshots) del agente. No verifiques visualmente el diseño a menos que te lo pida explícitamente en el prompt.
+- **Límites:** Si la solución requiere modificar más de 3 archivos en simultáneo, detené la ejecución y pedí confirmación al usuario para evitar bucles de consumo masivo de tokens.

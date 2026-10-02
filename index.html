@@ -3148,7 +3148,26 @@
       const { data: clases } = await _supabase.from('clases').select('*');
       const { data: reservas } = await _supabase.from('reservas_clases').select('*');
         const { data: avisosData } = await _supabase.from('avisos_cronograma').select('*');
-        cronogramaData.avisos = avisosData || [];
+        if (avisosData) {
+            const ahora = new Date();
+            const validos = [];
+            for (let a of avisosData) {
+                if (a.fecha) {
+                    const [y, m, d] = a.fecha.split('-').map(Number);
+                    const limite = new Date(y, m - 1, d, 1, 0, 0); 
+                    limite.setDate(limite.getDate() + 1); // Al dia siguiente a la 1:00 AM
+                    if (ahora > limite) {
+                        // Borrar aviso expirado
+                        _supabase.from('avisos_cronograma').delete().eq('id', a.id).then();
+                        continue;
+                    }
+                }
+                validos.push(a);
+            }
+            cronogramaData.avisos = validos;
+        } else {
+            cronogramaData.avisos = [];
+        }
       
       cronogramaData.turnos = {};
       cronogramaData.clasesMap = {};
