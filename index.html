@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -1352,7 +1352,7 @@
               <input type="number" value="${a.monto || 0}" style="width: 100px;" id="monto-${a.id}" placeholder="Cuota $">
               <select id="cobrador-${a.id}" style="padding: 8px;">
                   <option value="" disabled selected>Seleccione...</option>
-                  ${staffData.map(s => `<option value="${s.nombre}">Recibe: ${s.nombre.split(' ')[0]}</option>`).join('')}
+                  ${staffData.filter(s => ['nacho','ignacio','zago','lea','leandro','villiani','ernesto','gomez','mariano','elias'].some(kw => String(s.nombre).toLowerCase().includes(kw))).map(s => `<option value="${s.nombre}">Recibe: ${s.nombre.split(' ')[0]}</option>`).join('')}
                 </select>
               <button class="btn" onclick="actualizarPago(${a.id}, true)">Cobrar Cuota</button>
               <button class="btn btn-outline" onclick="actualizarPago(${a.id}, false)">Marcar Pendiente</button>
@@ -2061,11 +2061,16 @@
           let opcionesLiquidacion = '<option value="" disabled selected>Seleccionar pagador...</option>';
           let opcionesBasicas = '<option value="" disabled selected>Seleccione operador...</option>';
 
+          const ownerKeywords = ['nacho','ignacio','zago','lea','leandro','villiani','ernesto','gomez','mariano','elias'];
+
           staffData.forEach(s => {
-              opcionesFiltro += `<option value="${s.nombre}">${s.nombre}</option>`;
-              opcionesOperador += `<option value="${s.nombre}">Operó: ${s.nombre.split(' ')[0]}</option>`;
-              opcionesLiquidacion += `<option value="${s.nombre}">Paga: ${s.nombre.split(' ')[0]}</option>`;
-              opcionesBasicas += `<option value="${s.nombre}">${s.nombre}</option>`;
+              const isSocio = ownerKeywords.some(kw => String(s.nombre).toLowerCase().includes(kw));
+              if (isSocio) {
+                  opcionesFiltro += `<option value="${s.nombre}">${s.nombre}</option>`;
+                  opcionesOperador += `<option value="${s.nombre}">Operó: ${s.nombre.split(' ')[0]}</option>`;
+                  opcionesLiquidacion += `<option value="${s.nombre}">Paga: ${s.nombre.split(' ')[0]}</option>`;
+                  opcionesBasicas += `<option value="${s.nombre}">${s.nombre}</option>`;
+              }
           });
 
           const fAlumnos = document.getElementById('filtroCobradorAlumnos');
