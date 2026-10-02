@@ -69,7 +69,22 @@
       margin-bottom: 24px;
     }
 
-    .metric-card {
+    
+      @keyframes shimmer {
+        0% { background-position: -400px 0; }
+        100% { background-position: 400px 0; }
+      }
+      .skeleton {
+        background: var(--card-bg);
+        background-image: linear-gradient(to right, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.1) 20%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0) 100%);
+        background-repeat: no-repeat;
+        background-size: 800px 100%;
+        animation: shimmer 1.5s infinite linear;
+        border-radius: 4px;
+      }
+      .skeleton-text { height: 20px; width: 100%; margin-bottom: 8px; }
+      .skeleton-row { height: 40px; width: 100%; margin-bottom: 8px; }
+      .metric-card {
       background-color: var(--card-bg);
       border: 1px solid var(--border-color);
       border-radius: 12px;
@@ -339,7 +354,10 @@
   <main style="display: none;">
     <!-- SECCIÓN CLIENTES -->
     <div id="alumnosSection" class="section-page active">
-      <h1 style="margin-bottom: 20px;">Panel de Clientes y Gestión de Cuotas</h1>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h1 style="margin: 0;">Panel de Clientes y Gestión de Cuotas</h1>
+          <button class="btn" style="padding: 10px 16px; font-weight: bold;" onclick="document.getElementById('modalAltaAlumno').style.display='flex'">+ Nuevo Cliente</button>
+        </div>
 
       <div class="card">
         <h3>Agregar Nuevo Cliente</h3>
@@ -394,15 +412,15 @@
         </div>
 
         <div id="tabTodos" class="tab-content active">
-          <ul id="listaAlumnos">Cargando base de datos...</ul>
+          <ul id="listaAlumnos"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></ul>
         </div>
 
         <div id="tabPendientes" class="tab-content">
-          <ul id="listaAlumnosPendientes">Cargando pendientes...</ul>
+          <ul id="listaAlumnosPendientes"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></ul>
         </div>
 
         <div id="tabPagados" class="tab-content">
-          <ul id="listaAlumnosPagados">Cargando pagados...</ul>
+          <ul id="listaAlumnosPagados"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></ul>
         </div>
       </div>
     </div>
@@ -442,7 +460,7 @@
             </tr>
           </thead>
           <tbody id="tbodyAsistencias">
-            <tr><td colspan="7">Cargando nómina de alumnos...</td></tr>
+            <tr><td colspan="7"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -567,7 +585,10 @@
 
     <!-- SECCIÓN STAFF & LIQUIDACIÓN -->
     <div id="staffSection" class="section-page">
-      <h1 style="margin-bottom: 20px;">Liquidación de Personal</h1>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h1 style="margin: 0;">Liquidación de Personal</h1>
+          <button class="btn" style="padding: 10px 16px; font-weight: bold;" onclick="document.getElementById('modalAltaStaff').style.display='flex'">+ Nuevo Personal</button>
+        </div>
 
       <div class="card">
         <h3>Alta de Profesor / Profesional</h3>
@@ -612,23 +633,26 @@
                 <button class="btn btn-outline" style="padding: 2px 6px; font-size: 0.75rem;" onclick="document.getElementById('filtroMesLiq').value=''; document.getElementById('filtroMesLiq').dispatchEvent(new Event('change')); renderizarHistorialLiquidaciones();">Todos</button>
             </div>
         </div>
-        <ul id="historialLiquidaciones">Cargando historial...</ul>
+        <ul id="historialLiquidaciones"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></ul>
       </div>
 
       <div class="card">
         <h3>Nómina de Personal</h3>
         
         <h4 style="margin-top: 15px; margin-bottom: 10px; color: var(--neon-green);">Profesores</h4>
-        <ul id="listaStaffProfesores">Cargando profesores...</ul>
+        <ul id="listaStaffProfesores"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></ul>
 
         <h4 style="margin-top: 20px; margin-bottom: 10px; color: var(--neon-green);">Profesionales (Nutrición / Masajes / Kine)</h4>
-        <ul id="listaStaffProfesionales">Cargando profesionales...</ul>
+        <ul id="listaStaffProfesionales"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></ul>
       </div>
     </div>
 
     <!-- SECCIÓN LIBRO DIARIO -->
     <div id="libroDiarioSection" class="section-page">
-      <h1 style="margin-bottom: 20px;">Libro Diario y Balance de Caja</h1>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h1 style="margin: 0;">Libro Diario y Balance de Caja</h1>
+          <button class="btn" style="padding: 10px 16px; font-weight: bold;" onclick="document.getElementById('modalAltaCaja').style.display='flex'">+ Registrar Movimiento</button>
+        </div>
 
       <div class="metrics-grid">
         <div class="metric-card">
@@ -700,7 +724,7 @@
             </tr>
           </thead>
           <tbody id="tbodyCaja">
-            <tr><td colspan="8">Cargando libro diario...</td></tr>
+            <tr><td colspan="8"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -708,7 +732,10 @@
 
     <!-- SECCIÓN RENOVACIÓN DE PLANES DE ENTRENAMIENTO -->
     <div id="planesSection" class="section-page">
-      <h1 style="margin-bottom: 20px;">Renovación y Planificación de Planes</h1>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h1 style="margin: 0;">Renovación y Planificación de Planes</h1>
+          <button class="btn" style="padding: 10px 16px; font-weight: bold;" onclick="document.getElementById('modalAltaPlan').style.display='flex'">+ Asignar Plan</button>
+        </div>
 
       <div class="card">
         <h3>Asignar / Agregar Plan a Elaborar</h3>
@@ -746,7 +773,7 @@
         </div>
 
         <div id="tbodyPlanes">
-          <p>Cargando planificación de planes...</p>
+          <p><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></p>
         </div>
       </div>
     </div>
@@ -953,6 +980,102 @@
     </div>
   </div>
 
+
+  <!-- MODAL ALTA ALUMNO -->
+  <div id="modalAltaAlumno" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+      <h3>Agregar Nuevo Cliente</h3>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+        <input type="text" id="nuevoNombreCliente" placeholder="Nombre completo" required>
+        <input type="number" id="nuevoMontoCliente" placeholder="Cuota Base ($)">
+        <select id="nuevosDiasCliente">
+          <option value="1">1 día/sem</option>
+          <option value="2">2 días/sem</option>
+          <option value="3" selected>3 días/sem</option>
+          <option value="4">4 días/sem</option>
+          <option value="5">5 días/sem</option>
+        </select>
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+          <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('modalAltaAlumno').style.display='none'">Cancelar</button>
+          <button class="btn" style="flex: 1;" onclick="agregarAlumno(); document.getElementById('modalAltaAlumno').style.display='none';">Inscribir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ALTA STAFF -->
+  <div id="modalAltaStaff" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+      <h3>Alta de Profesor / Profesional</h3>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+        <input type="text" id="nombreStaff" placeholder="Nombre completo">
+        <select id="rolStaff" onchange="toggleCamposRol()">
+          <option value="profesor">Profesor (Por hora)</option>
+          <option value="profesional">Profesional (Porcentaje %)</option>
+        </select>
+        <input type="number" id="tarifaHoraStaff" placeholder="Tarifa por Hora ($)">
+        <input type="number" id="porcentajeStaff" placeholder="Porcentaje (%)" style="display: none;">
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+          <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('modalAltaStaff').style.display='none'">Cancelar</button>
+          <button class="btn" style="flex: 1;" onclick="guardarStaff(); document.getElementById('modalAltaStaff').style.display='none';">Guardar Staff</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ALTA CAJA -->
+  <div id="modalAltaCaja" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+      <h3>Registrar Movimiento Manual</h3>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+        <input type="date" id="cajaFecha" required>
+        <select id="cajaTipo" required>
+          <option value="ingreso">Ingreso</option>
+          <option value="egreso">Egreso</option>
+        </select>
+        <input type="text" id="cajaPersona" placeholder="Persona / Entidad">
+        <input type="text" id="cajaDetalle" placeholder="Detalle / Concepto">
+        <select id="cajaCategoria" required>
+          <option value="" disabled selected>Categoría...</option>
+          <option value="Cuota">Cuota de Alumno</option>
+          <option value="Alquiler">Alquiler de Espacio</option>
+          <option value="Servicios">Servicios e Impuestos</option>
+          <option value="Limpieza">Insumos y Limpieza</option>
+          <option value="Equipamiento">Compra/Arreglo Equipamiento</option>
+          <option value="Retiro">Retiro de Socios</option>
+          <option value="Liquidacion">Liquidación Staff</option>
+          <option value="Otros">Otros</option>
+        </select>
+        <select id="cajaOperadorManual"></select>
+        <input type="number" step="0.01" id="cajaMonto" placeholder="Monto ($)" required>
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+          <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('modalAltaCaja').style.display='none'">Cancelar</button>
+          <button class="btn" style="flex: 1;" onclick="guardarMovimientoCaja(); document.getElementById('modalAltaCaja').style.display='none';">Registrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ALTA PLAN -->
+  <div id="modalAltaPlan" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+      <h3>Asignar / Agregar Plan</h3>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+        <select id="planProfesor" onchange="filtrarAlumnosPorProfesor()" required>
+          <option value="">Seleccionar Profesor...</option>
+        </select>
+        <input type="text" id="planSemana" placeholder="Semana (ej: 21/9)" required>
+        <input type="text" id="planAlumno" list="listaAlumnosProfesor" placeholder="Nombre del Alumno" required>
+        <input type="text" id="planDetalles" placeholder="📝 Detalles a tener en cuenta">
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+          <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('modalAltaPlan').style.display='none'">Cancelar</button>
+          <button class="btn" style="flex: 1;" onclick="guardarPlanRenovacion(); document.getElementById('modalAltaPlan').style.display='none';">Agregar Plan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIN MODALES ALTA -->
   <script>
     const SUPABASE_URL = 'https://ltoiylrqpbplfiuhvfbi.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0b2l5bHJxcGJwbGZpdWh2ZmJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzODE4MTQsImV4cCI6MjEwNDk1NzgxNH0.hMNtR9jD4hHb4EYDnjyq7NSMa7VBCp24j_0fH0zS4d4';
@@ -1789,7 +1912,7 @@
     async function verHistorialAlumno(alumnoId, nombreAlumno) {
       document.getElementById('modalAlumnoTitulo').innerText = `Historial: ${nombreAlumno}`;
       const divFechas = document.getElementById('modalListaFechas');
-      divFechas.innerHTML = 'Cargando asistencias...';
+      divFechas.innerHTML = '<div class="skeleton skeleton-row"></div>';
       document.getElementById('modalHistorialAsistencia').style.display = 'flex';
 
       const { data, error } = await _supabase
