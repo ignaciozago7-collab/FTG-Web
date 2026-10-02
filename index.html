@@ -1315,7 +1315,6 @@
       } else if (idSeccion === 'asistenciasSection') {
         cargarAsistencias();
       } else if (idSeccion === 'planesSection') {
-        poblarSelectoresOperadores();
           poblarSelectsProfesorPlanes();
         if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
       } else if (idSeccion === 'cronogramaSection') {
@@ -2170,6 +2169,7 @@
         renderizarListaStaff(staffData);
         poblarSelectStaffLiquidacion();
         poblarSelectsProfesorPlanes();
+        poblarSelectoresOperadores();
       }
     }
 
