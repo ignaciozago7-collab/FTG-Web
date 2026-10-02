@@ -1121,7 +1121,7 @@
       ]
     };
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       // Uso de un split local simple
       const fechaLocal = new Date();
       fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
