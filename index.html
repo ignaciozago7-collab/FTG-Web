@@ -434,9 +434,7 @@
         
         <div id="resumenProfesores" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;"></div>
 
-        <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 12px;">
-          Presioná el botón <strong>"Marcar Presente"</strong> o escribí <strong>1</strong> en el casillero para registrar la asistencia.
-        </p>
+        
 
         <table>
           <thead>
@@ -1573,7 +1571,7 @@
         return;
       }
 
-      items.forEach(a => {
+      tbody.innerHTML = items.map(a => {
         const diasSemana = a.dias_semana || 3;
         const idAlumnoStr = String(a.id);
         const profActual = a.profesor_cargo || '';
@@ -1586,7 +1584,7 @@
           `<option value="${s.nombre}" ${s.nombre === profActual ? 'selected' : ''}>${s.nombre}</option>`
         ).join('');
 
-        tbody.innerHTML += `
+        return `
           <tr>
             <td><strong>${a.nombre}</strong></td>
             <td>
@@ -1612,13 +1610,7 @@
             </td>
             <td>
               <div style="display: flex; gap: 8px; align-items: center;">
-                <input 
-                  type="text" 
-                  maxlength="1" 
-                  class="input-asistencia" 
-                  placeholder="1"
-                  onkeydown="capturarAsistencia(event, ${a.id})"
-                />
+                
                 ${yaVinoHoy 
                   ? `<button class="btn btn-danger" style="padding: 4px 8px; font-size:0.8rem;" onclick="quitarAsistenciaFecha(${a.id})">Quitar Presente</button>`
                   : `<button class="btn" style="padding: 6px 10px;" onclick="marcarAsistenciaFecha(${a.id})">Marcar Presente</button>`
@@ -1632,7 +1624,7 @@
             </td>
           </tr>
         `;
-      });
+      }).join('');
     }
 
     function abrirModalAsistenciaMasiva() {
