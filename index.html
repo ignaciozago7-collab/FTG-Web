@@ -1072,6 +1072,142 @@
   </div>
 
   <script>
+    
+    // --- UX GLOBAL ---
+    window.alert = function(msg) {
+      const isError = msg.toLowerCase().includes('error') || msg.toLowerCase().includes('por favor') || msg.toLowerCase().includes('inválido') || msg.toLowerCase().includes('vlido');
+      mostrarToast(msg, isError ? 'error' : 'success');
+    };
+
+    function mostrarToast(mensaje, tipo = 'success') {
+      let container = document.getElementById('toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;';
+        document.body.appendChild(container);
+      }
+
+      const toast = document.createElement('div');
+      const bg = tipo === 'success' ? '#2e7d32' : '#d32f2f';
+      const icon = tipo === 'success' ? '✅' : '⚠️';
+      toast.style.cssText = `background: ${bg}; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 0.95rem; font-weight: 500; display: flex; align-items: center; gap: 8px; opacity: 0; transform: translateY(20px); transition: all 0.3s ease;`;
+      toast.innerHTML = `<span>${icon}</span> <span>${mensaje}</span>`;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; }, 10);
+      setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(20px)'; setTimeout(() => toast.remove(), 300); }, 3500);
+    }
+
+    window.confirmAsync = function(mensaje) {
+      return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.style.display = 'flex';
+        overlay.style.zIndex = '10000';
+        
+        const box = document.createElement('div');
+        box.className = 'modal-content';
+        box.style.maxWidth = '350px';
+        box.style.textAlign = 'center';
+        
+        const title = document.createElement('h3');
+        title.innerText = 'Confirmar';
+        title.style.marginBottom = '15px';
+        
+        const text = document.createElement('p');
+        text.innerText = mensaje;
+        text.style.color = 'var(--text-dim)';
+        text.style.marginBottom = '20px';
+        
+        const btnRow = document.createElement('div');
+        btnRow.style.display = 'flex';
+        btnRow.style.gap = '10px';
+        
+        const btnCancel = document.createElement('button');
+        btnCancel.className = 'btn btn-outline';
+        btnCancel.style.flex = '1';
+        btnCancel.innerText = 'Cancelar';
+        btnCancel.onclick = () => { overlay.remove(); resolve(false); };
+        
+        const btnOk = document.createElement('button');
+        btnOk.className = 'btn';
+        if (mensaje.toLowerCase().includes('eliminar') || mensaje.toLowerCase().includes('quitar')) {
+             btnOk.classList.add('btn-danger');
+        }
+        btnOk.style.flex = '1';
+        btnOk.innerText = 'Aceptar';
+        btnOk.onclick = () => { overlay.remove(); resolve(true); };
+        
+        btnRow.appendChild(btnCancel);
+        btnRow.appendChild(btnOk);
+        box.appendChild(title);
+        box.appendChild(text);
+        box.appendChild(btnRow);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+      });
+    };
+
+    window.promptAsync = function(mensaje, placeholder = '') {
+      return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.style.display = 'flex';
+        overlay.style.zIndex = '10000';
+        
+        const box = document.createElement('div');
+        box.className = 'modal-content';
+        box.style.maxWidth = '350px';
+        box.style.textAlign = 'center';
+        
+        const title = document.createElement('h3');
+        title.innerText = 'Ingresar Dato';
+        title.style.marginBottom = '10px';
+        
+        const text = document.createElement('p');
+        text.innerText = mensaje;
+        text.style.color = 'var(--text-dim)';
+        text.style.marginBottom = '15px';
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = placeholder;
+        input.style.width = '100%';
+        input.style.marginBottom = '15px';
+        input.style.boxSizing = 'border-box';
+        
+        const btnRow = document.createElement('div');
+        btnRow.style.display = 'flex';
+        btnRow.style.gap = '10px';
+        
+        const btnCancel = document.createElement('button');
+        btnCancel.className = 'btn btn-outline';
+        btnCancel.style.flex = '1';
+        btnCancel.innerText = 'Cancelar';
+        btnCancel.onclick = () => { overlay.remove(); resolve(null); };
+        
+        const btnOk = document.createElement('button');
+        btnOk.className = 'btn';
+        btnOk.style.flex = '1';
+        btnOk.innerText = 'Aceptar';
+        btnOk.onclick = () => { overlay.remove(); resolve(input.value); };
+        
+        btnRow.appendChild(btnCancel);
+        btnRow.appendChild(btnOk);
+        box.appendChild(title);
+        box.appendChild(text);
+        box.appendChild(input);
+        box.appendChild(btnRow);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        
+        setTimeout(() => input.focus(), 100);
+      });
+    };
+    // --- FIN UX GLOBAL ---
+
     const SUPABASE_URL = 'https://ltoiylrqpbplfiuhvfbi.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0b2l5bHJxcGJwbGZpdWh2ZmJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzODE4MTQsImV4cCI6MjEwNDk1NzgxNH0.hMNtR9jD4hHb4EYDnjyq7NSMa7VBCp24j_0fH0zS4d4';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1100,6 +1236,23 @@
     };
 
     document.addEventListener('DOMContentLoaded', async () => {
+
+      document.body.addEventListener('focusin', (e) => {
+          if (e.target.tagName === 'INPUT' && (e.target.type === 'number' || e.target.type === 'text')) {
+              e.target.select();
+          }
+      });
+      document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+              document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+          }
+      });
+      document.addEventListener('click', (e) => {
+          if (e.target.classList.contains('modal-overlay')) {
+              e.target.style.display = 'none';
+          }
+      });
+
       // Uso de un split local simple
       const fechaLocal = new Date();
       fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
@@ -1394,7 +1547,7 @@
       try {
         if (!id) throw new Error("ID inválido");
 
-        if (confirm("¿Estás seguro de eliminar este cliente?")) {
+        if (await confirmAsync("¿Estás seguro de eliminar este cliente?")) {
           const { error } = await _supabase.from('alumnos').update({ activo: false }).eq('id', id);
           if (error) {
             alert('Error al borrar cliente: ' + error.message);
@@ -2312,7 +2465,7 @@
     }
 
     async function borrarStaff(id) {
-      if (!confirm('¿Eliminar a este integrante del personal?')) return;
+      if (!(await confirmAsync('¿Eliminar a este integrante del personal?'))) return;
       const { error } = await _supabase.from('staff').update({ activo: false }).eq('id', id);
       if (error) alert('Error al borrar: ' + error.message);
       else cargarStaff();
@@ -2561,7 +2714,7 @@
     }
 
     async function borrarLiquidacion(id) {
-      if (!confirm('Seguro que deseas eliminar esta liquidacion?')) return;
+      if (!(await confirmAsync('Seguro que deseas eliminar esta liquidacion?'))) return;
       const liq = liquidacionesData.find(x => x.id === id);
       if (liq) {
          // Borrar tambiÃ©n de caja_diaria
@@ -2761,7 +2914,7 @@
     }
 
     async function borrarAsiento(id) {
-      if (!confirm('¿Desea eliminar este registro contable?')) return;
+      if (!(await confirmAsync('¿Desea eliminar este registro contable?'))) return;
       const { error } = await _supabase.from('caja_diaria').delete().eq('id', id);
       if (error) {
         alert('Error al borrar el asiento: ' + error.message);
@@ -2923,7 +3076,7 @@
     }
 
     async function borrarPlan(id) {
-      if (!confirm('Seguro que deseas eliminar esta planificacion?')) return;
+      if (!(await confirmAsync('Seguro que deseas eliminar esta planificacion?'))) return;
       const { error } = await _supabase.from('planes').delete().eq('id', id);
       if (error) alert('Error al borrar plan: ' + error.message);
       else if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
@@ -3093,7 +3246,7 @@
     }
 
     async function quitarAlumnoTurno(idReserva) {
-      if (confirm('¿Quitar alumno del turno?')) {
+      if (await confirmAsync('¿Quitar alumno del turno?')) {
         const { error } = await _supabase.from('reservas_clases').delete().eq('id', idReserva);
         if (error) alert("Error: " + error.message);
         else await cargarTurnosSupabase();
@@ -3115,7 +3268,7 @@
     }
 
     function agregarAvisoDiario() {
-      const texto = prompt("Ingresá el texto del aviso o novedad:");
+      const texto = await promptAsync("Ingresá el texto del aviso o novedad:");
       if (texto) {
         cronogramaData.avisos.unshift({
           id: Date.now(),
