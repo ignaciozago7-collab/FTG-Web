@@ -3338,34 +3338,56 @@
     function renderizarAvisosDiarios() {
       const ul = document.getElementById('listaAvisosDiarios');
       if (!ul) return;
-      ul.innerHTML = cronogramaData.avisos.map(a => `
-        <li>
+      const avisos = cronogramaData.avisos || [];
+      if (avisos.length === 0) {
+        ul.innerHTML = '<li style="color: var(--text-dim);">No hay avisos registrados.</li>';
+        return;
+      }
+      ul.innerHTML = avisos.map(a => `
+        <li style="padding: 10px; background: rgba(255,255,255,0.05); margin-bottom: 5px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <strong>${a.texto}</strong>
-            <div style="font-size:0.8rem; color:var(--text-dim);">${a.fecha}</div>
+            <strong style="color: ${a.tipo.includes('Persona') ? 'var(--neon-green)' : '#ffea00'};">${a.tipo}</strong>: ${a.nombre}
+            <span style="font-size: 0.85rem; color: var(--text-dim); margin-left: 8px;">-> ${a.dia} ${a.hora} (${a.fecha ? a.fecha.split('-').reverse().join('/') : ''})</span>
           </div>
-          <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="borrarAviso(${a.id})">🗑️</button>
+          <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.8rem;" onclick="borrarAviso(${a.id})">🗑️</button>
         </li>
       `).join('');
     }
 
-    async function agregarAvisoDiario() {
-      const texto = await promptAsync("Ingresá el texto del aviso o novedad:");
-      if (texto) {
-        cronogramaData.avisos.unshift({
-          id: Date.now(),
-          texto: texto,
-          fecha: "Hace un momento"
-        });
-        renderizarAvisosDiarios();
+    async function guardarAvisoCrono() {
+        const tipo = document.getElementById('avisoCronoTipo').value;
+        const nombre = document.getElementById('avisoCronoNombre').value;
+        const dia = document.getElementById('avisoCronoDia').value;
+        const hora = document.getElementById('avisoCronoHora').value;
+        const fecha = document.getElementById('avisoCronoFecha').value;
+        
+        if (!tipo || !nombre || !dia || !hora || !fecha) {
+            alert('Por favor completá todos los campos.');
+            return;
+        }
+
+        const { error } = await _supabase.from('avisos_cronograma').insert([{ tipo, nombre, dia, hora, fecha }]);
+        if (error) {
+            alert('Error al guardar el aviso: ' + error.message);
+        } else {
+            alert('Aviso registrado con éxito.');
+            document.getElementById('modalAltaAvisoCrono').style.display = 'none';
+            document.getElementById('avisoCronoNombre').value = '';
+            document.getElementById('avisoCronoFecha').value = '';
+            await cargarTurnosSupabase();
+        }
+    }
+
+    async function borrarAviso(id) {
+      if (!(await confirmAsync('¿Seguro que deseas eliminar este aviso?'))) return;
+      const { error } = await _supabase.from('avisos_cronograma').delete().eq('id', id);
+      if (error) {
+          alert('Error al borrar aviso: ' + error.message);
+      } else {
+          await cargarTurnosSupabase();
       }
     }
 
-    function borrarAviso(id) {
-      cronogramaData.avisos = cronogramaData.avisos.filter(a => a.id !== id);
-      renderizarAvisosDiarios();
-    }
-    
     async function guardarNotaAlumno(id, nota) {
       const { error } = await _supabase.from('alumnos').update({ notas: nota }).eq('id', id);
       if (error) {
