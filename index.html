@@ -586,28 +586,6 @@
           <tbody id="tbodyCierreIntegrantes"></tbody>
         </table>
       </div>
-
-      <div class="card" style="margin-top: 20px;">
-        <h3>Fondo de Reservas del Gym</h3>
-        <div class="metrics-grid">
-          <div class="metric-card" style="border-left: 5px solid var(--neon-green);">
-            <h4>Reserva Total (ARS $)</h4>
-            <div style="display: flex; align-items: center; gap: 5px; margin-top: 8px;">
-              <span style="font-size: 1.5em; font-weight: bold; color: var(--neon-green);">$</span>
-              <input type="number" id="reservaARS" placeholder="0" oninput="guardarReservas()" 
-                style="background: transparent; border: none; border-bottom: 1px dashed #666; color: var(--neon-green); font-size: 1.5em; font-weight: bold; width: 100%; outline: none;">
-            </div>
-          </div>
-
-          <div class="metric-card" style="border-left: 5px solid #00bfff;">
-            <h4>Reserva Total (USD u$s)</h4>
-            <div style="display: flex; align-items: center; gap: 5px; margin-top: 8px;">
-              <span style="font-size: 1.5em; font-weight: bold; color: #00bfff;">u$s</span>
-              <input type="number" id="reservaUSD" placeholder="0" oninput="guardarReservas()" 
-                style="background: transparent; border: none; border-bottom: 1px dashed #666; color: #00bfff; font-size: 1.5em; font-weight: bold; width: 100%; outline: none;">
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="card" style="margin-top: 20px;">
@@ -643,6 +621,29 @@
           </div>
         </div>
       </div>
+
+
+      <div class="card" style="margin-top: 20px;">
+        <h3>Fondo de Reservas del Gym</h3>
+        <div class="metrics-grid">
+          <div class="metric-card" style="border-left: 5px solid var(--neon-green);">
+            <h4>Reserva Total (ARS $)</h4>
+            <div style="display: flex; align-items: center; gap: 5px; margin-top: 8px;">
+              <span style="font-size: 1.5em; font-weight: bold; color: var(--neon-green);">$</span>
+              <input type="number" id="reservaARS" placeholder="0" oninput="guardarReservas()" 
+                style="background: transparent; border: none; border-bottom: 1px dashed #666; color: var(--neon-green); font-size: 1.5em; font-weight: bold; width: 100%; outline: none;">
+            </div>
+          </div>
+
+          <div class="metric-card" style="border-left: 5px solid #00bfff;">
+            <h4>Reserva Total (USD u$s)</h4>
+            <div style="display: flex; align-items: center; gap: 5px; margin-top: 8px;">
+              <span style="font-size: 1.5em; font-weight: bold; color: #00bfff;">u$s</span>
+              <input type="number" id="reservaUSD" placeholder="0" oninput="guardarReservas()" 
+                style="background: transparent; border: none; border-bottom: 1px dashed #666; color: #00bfff; font-size: 1.5em; font-weight: bold; width: 100%; outline: none;">
+            </div>
+          </div>
+        </div>
 
       <div class="card" style="margin-top: 20px;">
         <h3>Reiniciar Estados de Cuota para el Nuevo Período</h3>
