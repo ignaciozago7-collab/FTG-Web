@@ -1709,69 +1709,79 @@
     }
 
     function renderizarListaAlumnosHTML(items) {
-      const hoy = new Date().toISOString().split('T')[0];
-      
-      if (!items || items.length === 0) {
-        return '<li style="color: var(--text-dim);">No hay alumnos para mostrar.</li>';
-      }
-
-      return items.map(a => {
-        const estaPagado = a.pago_confirmado;
-        // Ajuste sencillo de fechas para evitar desfase de UTC a local.
-        const fechaFormateada = a.fecha_pago ? new Date(a.fecha_pago + 'T12:00:00').toLocaleDateString('es-AR') : 'Sin fecha';
-        const fechaInput = a.fecha_pago || hoy;
+        const hoy = new Date().toISOString().split('T')[0];
         
-        const opcionesProfesores = staffData.map(s => 
-          `<option value="${s.nombre}" ${s.nombre === a.profesor_cargo ? 'selected' : ''}>${s.nombre}</option>`
-        ).join('');
+        if (!items || items.length === 0) {
+          return '<li style="color: var(--text-dim);">No hay alumnos para mostrar.</li>';
+        }
+  
+        return items.map(a => {
+          const estaPagado = a.pago_confirmado;
+          const fechaFormateada = a.fecha_pago ? new Date(a.fecha_pago + 'T12:00:00').toLocaleDateString('es-AR') : 'Sin fecha';
+          const fechaInput = a.fecha_pago || hoy;
+          
+          const opcionesProfesores = staffData.map(s => 
+            `<option value="${s.nombre}" ${s.nombre === a.profesor_cargo ? 'selected' : ''}>${s.nombre}</option>`
+          ).join('');
+  
+          return `
+            <li style="padding: 14px 16px; background: rgba(255,255,255,0.01); border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; border: 1px solid var(--border-color);">
+              
+              <div class="info-cliente" style="flex: 1; min-width: 250px;">
+                <div style="margin-bottom: 8px;">
+                  <strong style="font-size: 1.1rem;">${a.nombre}</strong> 
+                  <span style="font-size: 0.85em; color: var(--text-dim); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 6px;">${a.dias_semana || 3} días/sem</span>
+                  ${estaPagado 
+                    ? `<span style="color: var(--bg-dark); background-color: var(--neon-green); font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 6px; margin-left: 8px;">✔ Pagado</span>` 
+                    : `<span style="color: var(--danger-red); border: 1px solid var(--danger-red); background-color: rgba(255, 83, 83, 0.1); font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 6px; margin-left: 8px;">⏳ Pendiente</span>`
+                  }
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                     <span style="font-size: 0.85rem; color: var(--text-dim);">Prof. a cargo:</span>
+                     <select onchange="actualizarProfesorCargo(${a.id}, this.value)" style="padding: 4px 8px; font-size: 0.85rem; border-radius: 8px; background: #14141D; border: 1px solid var(--border-color); color: #fff;">
+                        <option value="">Sin asignar</option>
+                        ${opcionesProfesores}
+                     </select>
+                  </div>
+                  
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                     <span style="font-size: 0.85rem; color: var(--text-dim);">Notas:</span>
+                     <input type="text" id="notas-al-${a.id}" value="${a.notas || ''}" placeholder="Ej: debe mes pasado..." style="padding: 4px 8px; font-size: 0.85rem; background: #14141D; border: 1px solid var(--border-color); color: #fff; border-radius: 8px; width: 200px;" onchange="guardarNotaAlumno(${a.id}, this.value)">
+                  </div>
+                </div>
 
-        return `
-          <li>
-            <div class="info-cliente">
-              <div>
-                <strong>${a.nombre}</strong> 
-                <span style="font-size: 0.85em; color: var(--text-dim);">(${a.dias_semana || 3} días/sem)</span>
-                ${estaPagado 
-                  ? `<span style="color: var(--neon-green); font-size: 0.8rem; margin-left: 8px;">● Pagado</span>` 
-                  : '<span style="color: var(--danger-red); font-size: 0.8rem; margin-left: 8px;">● Pendiente</span>'
-                }
+                ${estaPagado ? `
+                  <div class="meta-pago" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-dim);">
+                    📅 Fecha de pago: <strong style="color: var(--neon-green);">${fechaFormateada}</strong> | 👤 Cobró: <strong style="color: var(--neon-green);">${a.ultimo_cobrador || 'No especificado'}</strong>
+                  </div>
+                ` : ''}
               </div>
-              <div style="margin-top: 4px; display: flex; align-items: center; gap: 8px;">
-                 <span style="font-size: 0.85rem; color: var(--text-dim);">Prof. a cargo:</span>
-                 <select onchange="actualizarProfesorCargo(${a.id}, this.value)" style="padding: 2px; font-size: 0.8rem; border-radius: 4px; background: #14141D; border: 1px solid var(--border-color); color: var(--text-color);">
-                    <option value="">Sin asignar</option>
-                    ${opcionesProfesores}
-                 </select>
-              </div>
-              ${estaPagado ? `
-                <div class="meta-pago" style="margin-top: 6px;">
-                  📅 Fecha de pago: <strong>${fechaFormateada}</strong> | 👤 Recibió el pago: <strong>${a.ultimo_cobrador || 'No especificado'}</strong>
-                </div>
-              ` : ''}
-            </div>
-            <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
-                   <span style="font-size: 0.85rem; color: var(--text-dim);">Notas:</span>
-                   <input type="text" id="notas-al-${a.id}" value="${a.notas || ''}" placeholder="Ej: debe mes pasado..." style="padding: 4px; font-size: 0.8rem; background: #14141D; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; flex: 1;" onchange="guardarNotaAlumno(${a.id}, this.value)">
-                </div>
-              </div>
-              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-              <input type="date" value="${fechaInput}" id="fecha-${a.id}" style="padding: 6px 10px;">
-              <input type="number" value="${a.monto || 0}" style="width: 100px;" id="monto-${a.id}" placeholder="Cuota $">
-              <select id="cobrador-${a.id}" style="padding: 8px;">
-                  <option value="" disabled selected>Seleccione...</option>
-                  ${staffData.filter(s => ['nacho','ignacio','zago','lea','leandro','villiani','ernesto','gomez','mariano','elias'].some(kw => String(s.nombre).toLowerCase().includes(kw))).map(s => `<option value="${s.nombre}">Recibe: ${s.nombre.split(' ')[0]}</option>`).join('')}
+              
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+                <input type="date" value="${fechaInput}" id="fecha-${a.id}" style="padding: 6px 10px; border-radius: 8px;">
+                <input type="number" value="${a.monto || 0}" style="width: 90px; padding: 6px 10px; border-radius: 8px;" id="monto-${a.id}" placeholder="Cuota $">
+                <select id="cobrador-${a.id}" style="padding: 6px 10px; border-radius: 8px;">
+                    <option value="" disabled selected>Seleccione...</option>
+                    ${staffData.filter(s => ['nacho','ignacio','zago','lea','leandro','villiani','ernesto','gomez','mariano','elias'].some(kw => String(s.nombre).toLowerCase().includes(kw))).map(s => `<option value="${s.nombre}">Recibe: ${s.nombre.split(' ')[0]}</option>`).join('')}
                 </select>
-              <button class="btn" onclick="actualizarPago(${a.id}, true)">Cobrar Cuota</button>
-              <button class="btn btn-outline" onclick="actualizarPago(${a.id}, false)">Marcar Pendiente</button>
-              <button class="btn btn-outline" style="padding: 6px 10px; font-size: 1.1rem;" onclick="abrirModalEditCliente(${a.id})">✏️</button>
-              <button class="btn btn-danger" style="padding: 6px 10px; font-size: 1.1rem;" onclick="borrarCliente(${a.id})">🗑️</button>
-            </div>
-          </li>
-        `;
-      }).join('');
-    }
-
-    function renderizarListaAlumnos(items) {
+                
+                ${estaPagado ? `
+                   <button class="btn btn-outline" style="padding: 6px 12px; border-radius: 8px; font-size: 0.85rem;" onclick="actualizarPago(${a.id}, false)">Marcar Pendiente</button>
+                ` : `
+                   <button class="btn" style="padding: 6px 14px; border-radius: 8px; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(149, 255, 83, 0.2);" onclick="actualizarPago(${a.id}, true)">Cobrar Cuota</button>
+                `}
+                
+                <button class="btn btn-outline" style="padding: 6px 10px; font-size: 1rem; border-radius: 8px;" onclick="abrirModalEditCliente(${a.id})" title="Editar">✏️</button>
+                <button class="btn btn-danger" style="padding: 6px 10px; font-size: 1rem; border-radius: 8px;" onclick="borrarCliente(${a.id})" title="Borrar">🗑️</button>
+              </div>
+            </li>
+          `;
+        }).join('');
+      }
+  
+      function renderizarListaAlumnos(items) {
       const listaTodos = document.getElementById('listaAlumnos');
       const listaPendientes = document.getElementById('listaAlumnosPendientes');
       const listaPagados = document.getElementById('listaAlumnosPagados');
