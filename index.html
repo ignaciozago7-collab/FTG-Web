@@ -3304,23 +3304,23 @@
             
             let contenidoAvisos = avisosCelda.map(a => {
                 let colorBase = a.tipo.includes('Persona') ? 'var(--neon-green)' : '#ffea00';
-                return `<div style="font-size: 0.65rem; background: rgba(0,0,0,0.3); border-left: 3px solid ${colorBase}; padding: 2px 4px; margin-bottom: 4px; border-radius: 3px;">
+                return `<div style="font-size: 0.6rem; background: rgba(0,0,0,0.3); border-left: 2px solid ${colorBase}; padding: 2px; margin-bottom: 2px; border-radius: 2px; line-height: 1.1;">
                    <strong style="color: ${colorBase};">${a.tipo}</strong>: ${a.nombre}
                 </div>`;
             }).join('');
 
             html += `
-              <div class="crono-cell" style="position: relative; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.15); padding: 6px; display: flex; flex-direction: column; gap: 4px; min-height: 80px;">
+              <div class="crono-cell" style="position: relative; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.15); padding: 4px; display: flex; flex-direction: column; gap: 2px;">
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                  <span style="font-size: 0.7rem; color: ${colorTexto}; font-weight: bold; letter-spacing: 0.5px; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 10px;">${cant} / ${maxCap}</span>
+                  <span style="font-size: 0.65rem; color: ${colorTexto}; font-weight: bold; background: rgba(255,255,255,0.05); padding: 2px 4px; border-radius: 4px;">${cant} / ${maxCap}</span>
                 </div>
                 
                 ${contenidoAvisos}
                 
                 <div style="display: flex; flex-direction: column; gap: 3px; flex: 1;">
                   ${inscriptos.map(r => `
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 4px 6px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.02); font-size: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 2px 4px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.02); font-size: 0.7rem;">
                       <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%;">${r.nombre_alumno}</span>
                       <span style="cursor: pointer; color: var(--danger-red); opacity: 0.5; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'" onclick="quitarAlumnoTurno('${r.id}')" title="Quitar">✖</span>
                     </div>
