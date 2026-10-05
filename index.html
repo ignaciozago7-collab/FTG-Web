@@ -331,7 +331,8 @@
       margin-right: 6px;
       opacity: 0.8;
     }
-    .month-filter-pill input[type="month"] {
+    .month-filter-pill input[type="month"],
+    .month-filter-pill input[type="date"] {
       background: transparent;
       border: none;
       color: #fff;
@@ -343,12 +344,14 @@
       padding: 4px 0;
       color-scheme: dark;
     }
-    .month-filter-pill input[type="month"]::-webkit-calendar-picker-indicator {
+    .month-filter-pill input[type="month"],
+    .month-filter-pill input[type="date"]::-webkit-calendar-picker-indicator {
       cursor: pointer;
       opacity: 0.6;
       transition: 0.2s;
     }
-    .month-filter-pill input[type="month"]::-webkit-calendar-picker-indicator:hover {
+    .month-filter-pill input[type="month"],
+    .month-filter-pill input[type="date"]::-webkit-calendar-picker-indicator:hover {
       opacity: 1;
     }
     .month-filter-pill .divider {
@@ -497,14 +500,16 @@
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
           <div style="display: flex; align-items: center; gap: 12px;">
-            <h3>Fecha de Registro:</h3>
-            <input type="date" id="fechaAsistencia" onchange="cargarAsistencias()" style="font-size: 1rem; padding: 8px 12px;">
-            
-            <button class="btn" onclick="abrirModalAsistenciaMasiva()" style="background: #ff9800; color: #fff; font-weight: bold; border: 1px solid #e68a00;">Carga Masiva</button>
-            <button class="btn" onclick="abrirModalPresentesHoy()">
-              📋 Presentes del Día (<span id="cantPresentesHoy">0</span>)
-            </button>
-          </div>
+              <h3 style="margin: 0;">Fecha de Registro:</h3>
+              <div class="month-filter-pill">
+                <span class="icon">📅</span>
+                <input type="date" id="fechaAsistencia" onchange="cargarAsistencias()">
+              </div>
+              <button class="btn" onclick="abrirModalAsistenciaMasiva()" style="background: #ff9800; color: #fff; font-weight: bold; border: 1px solid #e68a00;">Carga Masiva</button>
+              <button class="btn" onclick="abrirModalPresentesHoy()">
+                📋 Presentes del Día (<span id="cantPresentesHoy">0</span>)
+              </button>
+            </div>
           <input type="text" id="buscadorAsistencia" placeholder="🔍 Buscar por nombre..." oninput="filtrarAsistencias()" style="width: 250px;">
         </div>
         
@@ -536,9 +541,12 @@
       <h1 style="margin-bottom: 20px;">Cierre de Mes, Auditoría y Blanqueo</h1>
 
       <div class="card">
-        <h3>Filtro del Período a Analizar</h3>
-        <div class="form-row">
-          <input type="month" id="cierreMesFiltro" onchange="cargarAuditoriaCierreMensual()">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <h3 style="margin: 0;">Período a Analizar:</h3>
+          <div class="month-filter-pill">
+            <span class="icon">📅</span>
+            <input type="month" id="cierreMesFiltro" onchange="cargarAuditoriaCierreMensual()">
+          </div>
         </div>
       </div>
 
