@@ -381,6 +381,7 @@
       background: rgba(255, 255, 255, 0.2);
     }
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -605,6 +606,9 @@
                 <tr><td colspan="2" style="padding: 10px;">Cargando...</td></tr>
               </tbody>
             </table>
+              <div style="margin-top: 16px; height: 200px; display: flex; justify-content: center;">
+                <canvas id="graficoIngresos"></canvas>
+              </div>
           </div>
           <div style="flex: 1; min-width: 300px;">
             <h4 style="color: var(--danger-red); margin-bottom: 10px;">&#x1F4B8; Gastos / Egresos</h4>
@@ -619,6 +623,9 @@
                 <tr><td colspan="2" style="padding: 10px;">Cargando...</td></tr>
               </tbody>
             </table>
+              <div style="margin-top: 16px; height: 200px; display: flex; justify-content: center;">
+                <canvas id="graficoEgresos"></canvas>
+              </div>
           </div>
         </div>
       </div>
@@ -1360,6 +1367,8 @@
     let asistenciasMesData = [];
     let staffData = [];
     let planesData = [];
+      let chartIngresosInstance = null;
+      let chartEgresosInstance = null;
     let liquidacionesData = [];
     let cajaData = [];
 
