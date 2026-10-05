@@ -87,7 +87,7 @@
       .metric-card {
       background-color: var(--card-bg);
       border: 1px solid var(--border-color);
-      border-radius: 12px;
+      border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);
       padding: 16px;
     }
 
@@ -96,7 +96,7 @@
 
     .card {
       background-color: var(--card-bg);
-      border-radius: 12px;
+      border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);
       padding: 20px;
       border: 1px solid var(--border-color);
       margin-bottom: 24px;
@@ -173,7 +173,7 @@
       background: var(--card-bg);
       border: 1px solid var(--border-color);
       padding: 24px;
-      border-radius: 12px;
+      border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);
       width: 480px;
       display: flex;
       flex-direction: column;
@@ -505,7 +505,7 @@
                 <span class="icon">📅</span>
                 <input type="date" id="fechaAsistencia" onchange="cargarAsistencias()">
               </div>
-              <button class="btn" onclick="abrirModalAsistenciaMasiva()" style="background: #ff9800; color: #fff; font-weight: bold; border: 1px solid #e68a00;">Carga Masiva</button>
+              <button class="btn btn-warning" onclick="abrirModalAsistenciaMasiva()" style="font-weight: bold;">Carga Masiva</button>
               <button class="btn" onclick="abrirModalPresentesHoy()">
                 📋 Presentes del Día (<span id="cantPresentesHoy">0</span>)
               </button>
@@ -3419,7 +3419,7 @@
         return;
       }
       ul.innerHTML = avisos.map(a => `
-        <li style="padding: 10px; background: rgba(255,255,255,0.05); margin-bottom: 5px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+        <li style="padding: 10px; background: rgba(255,255,255,0.05); margin-bottom: 5px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
           <div>
             <strong style="color: ${a.tipo.includes('Persona') ? 'var(--neon-green)' : '#ffea00'};">${a.tipo}</strong>: ${a.nombre}
             <span style="font-size: 0.85rem; color: var(--text-dim); margin-left: 8px;">-> ${a.dia} ${a.hora} (${a.fecha ? a.fecha.split('-').reverse().join('/') : ''})</span>
