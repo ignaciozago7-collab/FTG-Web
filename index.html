@@ -310,7 +310,72 @@
       display: flex;
       justify-content: space-between;
     }
-  </style>
+  
+    /* --- NEW AESTHETIC MONTH FILTER --- */
+    .month-filter-pill {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 30px;
+      padding: 3px 4px 3px 12px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .month-filter-pill:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.06);
+    }
+    .month-filter-pill .icon {
+      font-size: 0.95rem;
+      margin-right: 6px;
+      opacity: 0.8;
+    }
+    .month-filter-pill input[type="month"] {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+      padding: 4px 0;
+      color-scheme: dark;
+    }
+    .month-filter-pill input[type="month"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      opacity: 0.6;
+      transition: 0.2s;
+    }
+    .month-filter-pill input[type="month"]::-webkit-calendar-picker-indicator:hover {
+      opacity: 1;
+    }
+    .month-filter-pill .divider {
+      width: 1px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.15);
+      margin: 0 8px;
+    }
+    .month-filter-pill button {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 20px;
+      transition: all 0.2s ease;
+    }
+    .month-filter-pill button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .month-filter-pill button:active {
+      background: rgba(255, 255, 255, 0.2);
+    }
+</style>
 </head>
 <body>
 
@@ -627,10 +692,11 @@
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
             <h3 style="margin: 0;">Historial de Liquidaciones</h3>
-            <div style="display: flex; gap: 10px; align-items: center; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px;">
-                <label style="color: var(--text-dim); font-size: 0.85rem;">Ver mes:</label>
-                <input type="month" id="filtroMesLiq" onchange="renderizarHistorialLiquidaciones()" style="padding: 2px;">
-                <button class="btn btn-outline" style="padding: 2px 6px; font-size: 0.75rem;" onclick="document.getElementById('filtroMesLiq').value=''; document.getElementById('filtroMesLiq').dispatchEvent(new Event('change')); renderizarHistorialLiquidaciones();">Todos</button>
+            <div class="month-filter-pill">
+                <span class="icon">📅</span>
+                <input type="month" id="filtroMesLiq" onchange="renderizarHistorialLiquidaciones()">
+                <div class="divider"></div>
+                <button onclick="document.getElementById('filtroMesLiq').value=''; document.getElementById('filtroMesLiq').dispatchEvent(new Event('change')); renderizarHistorialLiquidaciones();">Todos</button>
             </div>
         </div>
         <ul id="historialLiquidaciones"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></ul>
@@ -675,10 +741,11 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
               <h3>Asientos Contables</h3>
-              <div style="display: flex; gap: 10px; align-items: center; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px;">
-                <label style="color: var(--text-dim); font-size: 0.85rem;">Ver mes:</label>
-                <input type="month" id="filtroMesCaja" onchange="cargarLibroDiario()" style="padding: 2px;">
-                <button class="btn btn-outline" style="padding: 2px 6px; font-size: 0.75rem;" onclick="document.getElementById('filtroMesCaja').value=''; document.getElementById('filtroMesCaja').dispatchEvent(new Event('change')); renderizarLibroDiario();">Todos</button>
+              <div class="month-filter-pill">
+                <span class="icon">📅</span>
+                <input type="month" id="filtroMesCaja" onchange="cargarLibroDiario()">
+                <div class="divider"></div>
+                <button onclick="document.getElementById('filtroMesCaja').value=''; document.getElementById('filtroMesCaja').dispatchEvent(new Event('change')); renderizarLibroDiario();">Todos</button>
               </div>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
