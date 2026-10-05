@@ -238,32 +238,34 @@
 
     /* ESTILOS DEL CRONOGRAMA DINÁMICO */
     .grid-cronograma {
-      display: grid;
-      grid-template-columns: 80px repeat(6, 1fr);
-      gap: 8px;
-      overflow-x: auto;
-      margin-top: 16px;
-    }
+        display: grid;
+        grid-template-columns: 50px repeat(6, minmax(0, 1fr));
+        gap: 4px;
+        overflow-x: auto;
+        margin-top: 10px;
+        font-size: 0.85rem;
+      }
     .crono-header {
-      background: #14141D;
-      padding: 10px;
-      text-align: center;
-      font-weight: bold;
-      border-radius: 6px;
-      border: 1px solid var(--border-color);
-    }
+        background: rgba(0,0,0,0.2);
+        padding: 6px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 0.8rem;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+      }
     .crono-hora {
-      background: #14141D;
-      padding: 12px 6px;
-      text-align: center;
-      font-size: 0.85rem;
-      color: var(--text-dim);
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid var(--border-color);
-    }
+        background: rgba(0,0,0,0.2);
+        padding: 6px 2px;
+        text-align: center;
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: var(--text-dim);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
     .crono-divider {
       grid-column: 1 / -1;
       background: var(--card-bg);
@@ -3320,8 +3322,8 @@
                 
                 <div style="display: flex; flex-direction: column; gap: 3px; flex: 1;">
                   ${inscriptos.map(r => `
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 2px 4px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.02); font-size: 0.7rem;">
-                      <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%;">${r.nombre_alumno}</span>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; background: rgba(255,255,255,0.03); padding: 2px 4px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.02); font-size: 0.7rem;">
+                      <span style="word-break: break-word; line-height: 1.2; flex: 1; padding-right: 4px;">${r.nombre_alumno}</span>
                       <span style="cursor: pointer; color: var(--danger-red); opacity: 0.5; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'" onclick="quitarAlumnoTurno('${r.id}')" title="Quitar">✖</span>
                     </div>
                   `).join('')}
