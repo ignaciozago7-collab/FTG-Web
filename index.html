@@ -2423,7 +2423,96 @@
           }
         }
 
-      } catch (err) {
+      // RENDERIZAR GRAFICOS
+          if (typeof Chart !== 'undefined') {
+            const canvasIngresos = document.getElementById('graficoIngresos');
+            if (canvasIngresos) {
+              if (chartIngresosInstance) chartIngresosInstance.destroy();
+              const keysIng = Object.keys(resumenIngresos);
+              const valsIng = keysIng.map(k => resumenIngresos[k]);
+              if (keysIng.length > 0) {
+                chartIngresosInstance = new Chart(canvasIngresos, {
+                  type: 'doughnut',
+                  data: {
+                    labels: keysIng,
+                    datasets: [{
+                      data: valsIng,
+                      backgroundColor: ['#95FF53', '#76cc41', '#b1ff80', '#56992d', '#35661b', '#d1ffb3'],
+                      borderWidth: 1,
+                      borderColor: '#14141D'
+                    }]
+                  },
+                  options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#ccc', font: {size: 10} } } } }
+                });
+              }
+            }
+  
+            const canvasEgresos = document.getElementById('graficoEgresos');
+            if (canvasEgresos) {
+              if (chartEgresosInstance) chartEgresosInstance.destroy();
+              const keysEgr = Object.keys(resumenEgresos);
+              const valsEgr = keysEgr.map(k => resumenEgresos[k]);
+              if (keysEgr.length > 0) {
+                chartEgresosInstance = new Chart(canvasEgresos, {
+                  type: 'doughnut',
+                  data: {
+                    labels: keysEgr,
+                    datasets: [{
+                      data: valsEgr,
+                      backgroundColor: ['#ff4d4d', '#cc3d3d', '#ff8080', '#992e2e', '#661f1f', '#ffb3b3'],
+                      borderWidth: 1,
+                      borderColor: '#14141D'
+                    }]
+                  },
+                  options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#ccc', font: {size: 10} } } } }
+                });
+              }
+            }
+  
+            const canvasComp = document.getElementById('graficoComparativo');
+            if (canvasComp) {
+              if (chartComparativoInstance) chartComparativoInstance.destroy();
+              
+              let totalIngresos = Object.values(resumenIngresos).reduce((acc, val) => acc + val, 0);
+              let totalEgresos = Object.values(resumenEgresos).reduce((acc, val) => acc + val, 0);
+  
+              if (totalIngresos > 0 || totalEgresos > 0) {
+                chartComparativoInstance = new Chart(canvasComp, {
+                  type: 'bar',
+                  data: {
+                    labels: [''],
+                    datasets: [
+                      {
+                        label: 'Ingresos',
+                        data: [totalIngresos],
+                        backgroundColor: '#95FF53',
+                        borderRadius: 4
+                      },
+                      {
+                        label: 'Egresos',
+                        data: [totalEgresos],
+                        backgroundColor: '#ff4d4d',
+                        borderRadius: 4
+                      }
+                    ]
+                  },
+                  options: { 
+                    maintainAspectRatio: false, 
+                    responsive: true,
+                    plugins: { 
+                      legend: { position: 'bottom', labels: { color: '#ccc' } } 
+                    },
+                    scales: {
+                      y: { beginAtZero: true, ticks: { color: '#ccc' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                      x: { ticks: { color: '#ccc' }, grid: { display: false } }
+                    }
+                  }
+                });
+              }
+            }
+          }
+  
+        } catch (err) {
         console.error("ERROR CRÍTICO EN CIERRE MENSUAL:", err);
       }
     }
