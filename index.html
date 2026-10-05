@@ -1641,7 +1641,8 @@
         cargarAsistencias();
       } else if (idSeccion === 'planesSection') {
           poblarSelectsProfesorPlanes();
-        if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
+        if (planesData.length === 0) { cargarPlanesRenovacion();
+        cargarReservas(); } else { filtrarPlanes(); }
       } else if (idSeccion === 'cronogramaSection') {
         renderizarCronogramaDinamico();
       }
@@ -3227,7 +3228,8 @@
         document.getElementById('planSemana').value = '';
         document.getElementById('planAlumno').value = '';
         document.getElementById('planDetalles').value = '';
-        if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
+        if (planesData.length === 0) { cargarPlanesRenovacion();
+        cargarReservas(); } else { filtrarPlanes(); }
       }
     }
 
@@ -3350,7 +3352,8 @@
       if (!(await confirmAsync('Seguro que deseas eliminar esta planificacion?'))) return;
       const { error } = await _supabase.from('planes').delete().eq('id', id);
       if (error) alert('Error al borrar plan: ' + error.message);
-      else if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
+      else if (planesData.length === 0) { cargarPlanesRenovacion();
+        cargarReservas(); } else { filtrarPlanes(); }
     }
 
     // FUNCIONES DEL CRONOGRAMA DINÁMICO
