@@ -1450,6 +1450,38 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
 
+        // Auto-cargar mes actual de forma global y sincronicar todos los selectores
+        const hoyGlobal = new Date();
+        const strMesGlobal = `${hoyGlobal.getFullYear()}-${(hoyGlobal.getMonth() + 1).toString().padStart(2, '0')}`;
+        
+        const monthInputsIds = ['cierreMesFiltro', 'filtroMesLiq', 'filtroMesCaja', 'mesHorasFiltro'];
+        
+        monthInputsIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                // Set default month if empty
+                if (!el.value) el.value = strMesGlobal;
+                
+                // Add sync listener
+                el.addEventListener('change', function(e) {
+                    const newVal = e.target.value;
+                    monthInputsIds.forEach(otherId => {
+                        const otherEl = document.getElementById(otherId);
+                        if (otherEl && otherEl !== e.target && otherEl.value !== newVal) {
+                            otherEl.value = newVal;
+                            // Optionally dispatch 'change' to update the other component's data?
+                            // For now just visually syncs it. Let's dispatch change so they reload their data too!
+                            if (otherEl.offsetParent !== null) { 
+                                // Only trigger refresh if the element is visible
+                                otherEl.dispatchEvent(new Event('change'));
+                            }
+                        }
+                    });
+                });
+            }
+        });
+        
+
       document.body.addEventListener('focusin', (e) => {
           if (e.target.tagName === 'INPUT' && (e.target.type === 'number' || e.target.type === 'text')) {
               e.target.select();
@@ -1906,30 +1938,7 @@
         cargarAsistencias();
       } else if (idSeccion === 'planesSection') {
           poblarSelectsProfesorPlanes();
-        if (planesData.length === 0) { cargarPlanesRenovacion();
-        cargarReservas();
-
-        // Auto-cargar mes actual en inputs de tipo month
-        const hoyGlobal = new Date();
-        const mesGlobal = (hoyGlobal.getMonth() + 1).toString().padStart(2, '0');
-        const anioGlobal = hoyGlobal.getFullYear();
-        const strMesGlobal = `${anioGlobal}-${mesGlobal}`;
-        
-        const inCierre = document.getElementById('cierreMesFiltro');
-        if (inCierre && !inCierre.value) inCierre.value = strMesGlobal;
-        
-        const inLiq = document.getElementById('filtroMesLiq');
-        if (inLiq && !inLiq.value) inLiq.value = strMesGlobal;
-        
-        const inCaja = document.getElementById('filtroMesCaja');
-        if (inCaja && !inCaja.value) inCaja.value = strMesGlobal;
-        
-        const inHoras = document.getElementById('mesHorasFiltro');
-        if (inHoras && !inHoras.value) inHoras.value = strMesGlobal;
-        
-        
-        initHorasTrabajadas();
-        cargarHorasMesDesdeDB().then(() => renderizarGrillaHoras()); } else { filtrarPlanes(); }
+        if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
       } else if (idSeccion === 'cronogramaSection') {
         renderizarCronogramaDinamico();
       }
@@ -3515,30 +3524,7 @@
         document.getElementById('planSemana').value = '';
         document.getElementById('planAlumno').value = '';
         document.getElementById('planDetalles').value = '';
-        if (planesData.length === 0) { cargarPlanesRenovacion();
-        cargarReservas();
-
-        // Auto-cargar mes actual en inputs de tipo month
-        const hoyGlobal = new Date();
-        const mesGlobal = (hoyGlobal.getMonth() + 1).toString().padStart(2, '0');
-        const anioGlobal = hoyGlobal.getFullYear();
-        const strMesGlobal = `${anioGlobal}-${mesGlobal}`;
-        
-        const inCierre = document.getElementById('cierreMesFiltro');
-        if (inCierre && !inCierre.value) inCierre.value = strMesGlobal;
-        
-        const inLiq = document.getElementById('filtroMesLiq');
-        if (inLiq && !inLiq.value) inLiq.value = strMesGlobal;
-        
-        const inCaja = document.getElementById('filtroMesCaja');
-        if (inCaja && !inCaja.value) inCaja.value = strMesGlobal;
-        
-        const inHoras = document.getElementById('mesHorasFiltro');
-        if (inHoras && !inHoras.value) inHoras.value = strMesGlobal;
-        
-        
-        initHorasTrabajadas();
-        cargarHorasMesDesdeDB().then(() => renderizarGrillaHoras()); } else { filtrarPlanes(); }
+        if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
       }
     }
 
@@ -3661,30 +3647,7 @@
       if (!(await confirmAsync('Seguro que deseas eliminar esta planificacion?'))) return;
       const { error } = await _supabase.from('planes').delete().eq('id', id);
       if (error) alert('Error al borrar plan: ' + error.message);
-      else if (planesData.length === 0) { cargarPlanesRenovacion();
-        cargarReservas();
-
-        // Auto-cargar mes actual en inputs de tipo month
-        const hoyGlobal = new Date();
-        const mesGlobal = (hoyGlobal.getMonth() + 1).toString().padStart(2, '0');
-        const anioGlobal = hoyGlobal.getFullYear();
-        const strMesGlobal = `${anioGlobal}-${mesGlobal}`;
-        
-        const inCierre = document.getElementById('cierreMesFiltro');
-        if (inCierre && !inCierre.value) inCierre.value = strMesGlobal;
-        
-        const inLiq = document.getElementById('filtroMesLiq');
-        if (inLiq && !inLiq.value) inLiq.value = strMesGlobal;
-        
-        const inCaja = document.getElementById('filtroMesCaja');
-        if (inCaja && !inCaja.value) inCaja.value = strMesGlobal;
-        
-        const inHoras = document.getElementById('mesHorasFiltro');
-        if (inHoras && !inHoras.value) inHoras.value = strMesGlobal;
-        
-        
-        initHorasTrabajadas();
-        cargarHorasMesDesdeDB().then(() => renderizarGrillaHoras()); } else { filtrarPlanes(); }
+      else if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
     }
 
     // FUNCIONES DEL CRONOGRAMA DINÁMICO
