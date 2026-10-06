@@ -801,7 +801,7 @@
             <tr>
               <th>Fecha</th>
               <th>Tipo</th>
-              <th>Persona</th>
+              
               <th>Detalle</th>
               <th>Operó / Cobró</th>
               <th>Categoría</th>
@@ -979,10 +979,7 @@
         <input type="date" id="editAsientoFecha">
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <label style="font-size: 0.8rem; color: var(--text-dim);">Persona / Entidad:</label>
-        <input type="text" id="editAsientoPersona">
-      </div>
+      
 
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <label style="font-size: 0.8rem; color: var(--text-dim);">Detalle:</label>
@@ -1119,7 +1116,7 @@
           <option value="ingreso">Ingreso</option>
           <option value="egreso">Egreso</option>
         </select>
-        <input type="text" id="cajaPersona" placeholder="Persona / Entidad">
+        
         <input type="text" id="cajaDetalle" placeholder="Detalle / Concepto">
         <select id="cajaCategoria" required>
           <option value="" disabled selected>Categoría...</option>
@@ -1884,7 +1881,7 @@
         const { error: errCaja } = await _supabase.from('caja_diaria').insert([{
           fecha: fechaPagoSeleccionada,
           tipo: 'ingreso',
-          persona: cobrador,
+          
           detalle: `Cobro Cuota Mensual - ${cliente.nombre}`,
           categoria: 'Cuota',
           cobrador: cobrador,
@@ -2809,7 +2806,7 @@
       const { data: dataCaja, error: errCaja } = await _supabase.from('caja_diaria').insert([{
         fecha: fechaHoy,
         tipo: tipoCaja,
-        persona: operadorPago,
+        
         detalle: detalleTexto,
         categoria: catCaja,
         cobrador: operadorPago,
@@ -2977,7 +2974,7 @@
       } else {
           await _supabase.from('caja_diaria')
             .update({ monto: nuevoMonto, detalle: nuevoDetalle })
-            .match({ fecha: liq.fecha, monto: liq.monto, persona: liq.operador, detalle: liq.detalle });
+            .match({ fecha: liq.fecha, monto: liq.monto, detalle: liq.detalle });
       }
           
       alert('Liquidacion modificada con exito.');
@@ -2990,7 +2987,7 @@
       const liq = liquidacionesData.find(x => x.id === id);
       if (liq) {
          // Borrar tambiÃ©n de caja_diaria
-         await _supabase.from('caja_diaria').delete().match({ fecha: liq.fecha, monto: liq.monto, persona: liq.operador, detalle: liq.detalle });
+         await _supabase.from('caja_diaria').delete().match({ fecha: liq.fecha, monto: liq.monto, detalle: liq.detalle });
       }
       const { error } = await _supabase.from('liquidaciones').delete().eq('id', id);
       if (error) {
@@ -3030,7 +3027,7 @@
 
       const filtrados = cajaData.filter(c => {
          let ok = true;
-         if (filtro && !((c.persona && c.persona.toLowerCase().includes(filtro)) ||
+         if (filtro && !(
                          (c.detalle && c.detalle.toLowerCase().includes(filtro)) ||
                          (c.categoria && c.categoria.toLowerCase().includes(filtro)) ||
                          (c.cobrador && c.cobrador.toLowerCase().includes(filtro)))) {
@@ -3065,7 +3062,7 @@
             <tr>
               <td>${fechaFormateada}</td>
               <td><span style="color: ${esIngreso ? 'var(--neon-green)' : 'var(--danger-red)'}; font-weight:700;">${c.tipo ? c.tipo.toUpperCase() : 'INGRESO'}</span></td>
-              <td><strong>${c.persona || '-'}</strong></td>
+              
               <td>${c.detalle || c.descripcion || '-'}</td>
               <td>${c.cobrador || '-'}</td>
               <td><span style="font-size:0.8rem; padding:4px 8px; border-radius:4px; background:rgba(255,255,255,0.05);">${c.categoria || 'Otros'}</span></td>
@@ -3109,19 +3106,19 @@
     async function guardarMovimientoCaja() {
       const fecha = document.getElementById('cajaFecha').value;
       const tipo = document.getElementById('cajaTipo').value;
-      const persona = document.getElementById('cajaPersona').value;
+      
       const detalle = document.getElementById('cajaDetalle').value;
       const categoria = document.getElementById('cajaCategoria').value;
       const cobrador = document.getElementById('cajaOperadorManual').value;
       const monto = parseFloat(document.getElementById('cajaMonto').value) || 0;
 
-      if (!fecha || !persona || !detalle || monto <= 0 || !cobrador) {
+      if (!fecha || !detalle || monto <= 0 || !cobrador) {
         alert('Por favor completá todos los campos requeridos correctamente.');
         return;
       }
 
       const { error } = await _supabase.from('caja_diaria').insert([{
-        fecha, tipo, persona, detalle, categoria, cobrador, monto
+        fecha, tipo, detalle, categoria, cobrador, monto
       }]);
 
       if (error) {
@@ -3129,7 +3126,7 @@
       } else {
         // Alerta de éxito para feedback del usuario
         alert('Movimiento registrado con éxito.');
-        document.getElementById('cajaPersona').value = '';
+        
         document.getElementById('cajaDetalle').value = '';
         document.getElementById('cajaMonto').value = '';
         renderizarLibroDiario();
@@ -3144,7 +3141,7 @@
       document.getElementById('editAsientoId').value = asiento.id;
       document.getElementById('editAsientoTipo').value = asiento.tipo || 'ingreso';
       document.getElementById('editAsientoFecha').value = asiento.fecha;
-      document.getElementById('editAsientoPersona').value = asiento.persona || '';
+      
       document.getElementById('editAsientoDetalle').value = asiento.detalle || asiento.descripcion || '';
       document.getElementById('editAsientoCobrador').value = asiento.cobrador || 'Nacho';
       document.getElementById('editAsientoCategoria').value = asiento.categoria || 'Cuota';
@@ -3161,7 +3158,7 @@
       const id = document.getElementById('editAsientoId').value;
       const tipo = document.getElementById('editAsientoTipo').value;
       const fecha = document.getElementById('editAsientoFecha').value;
-      const persona = document.getElementById('editAsientoPersona').value;
+      
       const detalle = document.getElementById('editAsientoDetalle').value;
       const cobrador = document.getElementById('editAsientoCobrador').value;
       const categoria = document.getElementById('editAsientoCategoria').value;
@@ -3173,7 +3170,7 @@
       }
 
       const { error } = await _supabase.from('caja_diaria').update({
-        tipo, fecha, persona, detalle, cobrador, categoria, monto
+        tipo, fecha, detalle, cobrador, categoria, monto
       }).eq('id', id);
 
       if (error) {
