@@ -569,7 +569,13 @@
 
     <!-- SECCIÓN CIERRE MENSUAL -->
     <div id="cierreMensualSection" class="section-page">
-      <h1 style="margin-bottom: 20px;">Cierre de Mes, Auditoría y Blanqueo</h1>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+          <h1 style="margin: 0;">Cierre de Mes, Auditoría y Blanqueo</h1>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button class="btn" style="background: #ef4444; color: white; border: none; font-weight: bold; padding: 8px 12px; border-radius: 6px;" onclick="exportarCierrePDF()">📄 Descargar PDF</button>
+            <button class="btn" style="background: #10b981; color: white; border: none; font-weight: bold; padding: 8px 12px; border-radius: 6px;" onclick="exportarCierreExcel()">📊 Descargar Excel</button>
+          </div>
+        </div>
 
       <div class="card">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
