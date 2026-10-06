@@ -382,15 +382,15 @@
     }
 
     /* ESTILOS HORAS TRABAJADAS */
-    #tablaHoras th { padding: 12px 8px; border-bottom: 1px solid #334155; border-right: 1px solid #334155; white-space: nowrap; }
-    #tablaHoras td { padding: 0; border-bottom: 1px solid #1e293b; border-right: 1px solid #1e293b; height: 35px; }
+    #tablaHoras th { padding: 8px 6px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); white-space: nowrap; font-size: 0.8rem; }
+    #tablaHoras td { padding: 0; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); height: 30px; }
     #tablaHoras th:last-child, #tablaHoras td:last-child { border-right: none; }
-    .input-horas { width: 100%; height: 100%; background: transparent; border: none; color: #f8fafc; text-align: center; outline: none; font-size: 0.85rem; font-family: monospace; }
+    .input-horas { width: 100%; height: 100%; background: transparent; border: none; color: var(--text-main); text-align: center; outline: none; font-size: 0.8rem; font-family: monospace; transition: 0.1s; }
     .input-horas:focus { background: rgba(255,255,255,0.05); }
-    .horas-num { color: #34d399; font-weight: 600; }
-    .horas-badge { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-radius: 4px; padding: 2px 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
-    .fila-domingo { background: rgba(2, 6, 23, 0.6); opacity: 0.7; }
-    .fila-domingo .input-horas { color: #64748b; }
+    .horas-num { color: var(--neon-green); font-weight: 700; }
+    .horas-badge { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-radius: 3px; padding: 2px 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; }
+    .fila-domingo { background: rgba(255, 255, 255, 0.02); opacity: 0.6; }
+    .fila-domingo .input-horas { color: var(--text-dim); }
 
 </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -922,11 +922,11 @@
     </div>
   
         <!-- NUEVO MODULO DE HORAS TRABAJADAS -->
-        <div class="card" style="margin-top: 30px; background: #0f172a; border: 1px solid #1e293b;">
+        <div class="card" style="margin-top: 30px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 15px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
             <h3 style="color: #f8fafc; margin: 0; font-size: 1.2rem;">Registro de Horas Trabajadas</h3>
             <div style="display: flex; gap: 10px; align-items: center;">
-              <select id="mesHoras" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; padding: 8px; border-radius: 6px; outline: none;" onchange="cambioPeriodoHoras()">
+              <select id="mesHoras" style="background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; outline: none;" onchange="cambioPeriodoHoras()">
                 <option value="1">Enero</option>
                 <option value="2">Febrero</option>
                 <option value="3">Marzo</option>
@@ -940,18 +940,18 @@
                 <option value="11">Noviembre</option>
                 <option value="12">Diciembre</option>
               </select>
-              <select id="anioHoras" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; padding: 8px; border-radius: 6px; outline: none;" onchange="cambioPeriodoHoras()">
+              <select id="anioHoras" style="background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; outline: none;" onchange="cambioPeriodoHoras()">
                 <option value="2025">2025</option>
                 <option value="2026" selected>2026</option>
                 <option value="2027">2027</option>
               </select>
-              <button class="btn" style="background: #10b981; color: #022c22; font-weight: bold; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: 0.2s;" id="btnGuardarHoras" onclick="guardarCambiosHoras()">Guardar Cambios</button>
+              <button class="btn" style="background: var(--neon-green); color: #000; font-weight: bold; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: 0.2s;" id="btnGuardarHoras" onclick="guardarCambiosHoras()">Guardar Cambios</button>
             </div>
           </div>
           
-          <div style="overflow-x: auto; border: 1px solid #1e293b; border-radius: 8px;">
+          <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; margin-top: 10px;">
             <table id="tablaHoras" style="width: 100%; border-collapse: collapse; color: #cbd5e1; text-align: center; font-size: 0.85rem;">
-              <thead style="background: #1e293b;">
+              <thead style="background: var(--bg-card);">
                 <tr id="theadHorasRow">
                   <!-- Generado dinamicamente -->
                 </tr>
@@ -959,10 +959,9 @@
               <tbody id="tbodyHoras">
                 <!-- Generado dinamicamente -->
               </tbody>
-              <tfoot style="background: #1e293b; font-weight: bold;">
-                <tr id="tfootHorasRow">
-                  <!-- Generado dinamicamente -->
-                </tr>
+              <tfoot style="background: var(--bg-card); font-weight: bold;">
+                <tr id="tfootHorasRow"></tr>
+                <tr id="tfootSueldoRow"></tr>
               </tfoot>
             </table>
           </div>
@@ -1686,39 +1685,45 @@
 
     
       // --- LOGICA MODULO HORAS TRABAJADAS ---
-      const profesHoras = ['Lea', 'Nacho', 'Euge', 'Vicki', 'Valentina', 'Negro'];
-      let datosHoras = {}; // key: YYYY-MM-DD_Prof -> valor string
+      
+      // --- LOGICA MODULO HORAS TRABAJADAS DINAMICO ---
+      let datosHoras = {}; // key: YYYY-MM-DD_ProfID -> valor string
 
       function initHorasTrabajadas() {
         const hoy = new Date();
         document.getElementById('mesHoras').value = hoy.getMonth() + 1;
         document.getElementById('anioHoras').value = hoy.getFullYear();
-        renderizarGrillaHoras();
+        // La carga se disparará al terminar cargarStaff(), no acá directamente para evitar data race.
       }
 
       function cambioPeriodoHoras() {
-        // Al cambiar de mes, recargamos de base de datos
         datosHoras = {};
         cargarHorasMesDesdeDB().then(() => {
             renderizarGrillaHoras();
         });
       }
 
+      function obtenerProfesoresActivos() {
+          if (typeof staffData === 'undefined') return [];
+          return staffData.filter(s => s.activo && (s.rol === 'profesor' || (s.tarifa_hora && s.tarifa_hora > 0)));
+      }
+
       function renderizarGrillaHoras() {
         const mes = parseInt(document.getElementById('mesHoras').value);
         const anio = parseInt(document.getElementById('anioHoras').value);
         const diasEnMes = new Date(anio, mes, 0).getDate();
+        const profesActivos = obtenerProfesoresActivos();
 
         // Thead
-        let theadHtml = `<th style="min-width: 100px; position: sticky; left: 0; background: #1e293b; z-index: 2;">Día</th><th style="min-width: 80px;">Fecha</th>`;
-        profesHoras.forEach(p => {
-            theadHtml += `<th style="min-width: 80px;">${p}</th>`;
+        let theadHtml = `<th style="min-width: 90px; position: sticky; left: 0; background: var(--bg-card); z-index: 2;">Día</th><th style="min-width: 70px;">Fecha</th>`;
+        profesActivos.forEach(p => {
+            theadHtml += `<th style="min-width: 70px;">${p.nombre}</th>`;
         });
         document.getElementById('theadHorasRow').innerHTML = theadHtml;
 
         // Tbody
         let tbodyHtml = '';
-        const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
         
         for (let d = 1; d <= diasEnMes; d++) {
             const fechaObj = new Date(anio, mes - 1, d);
@@ -1731,16 +1736,15 @@
             let rowClass = esDomingo ? 'fila-domingo' : '';
             
             let rowHtml = `<tr class="${rowClass}">
-                <td style="position: sticky; left: 0; background: ${esDomingo ? '#020617' : '#0f172a'}; z-index: 1; border-right: 1px solid #334155; font-size: 0.8rem; font-weight: 500;">${strDiaSemana}</td>
-                <td style="font-family: monospace; font-size: 0.75rem;">${strFecha}</td>`;
+                <td style="position: sticky; left: 0; background: ${esDomingo ? 'rgba(0,0,0,0.2)' : 'var(--bg-card)'}; z-index: 1; border-right: 1px solid var(--border-color); font-size: 0.75rem; font-weight: 600;">${strDiaSemana}</td>
+                <td style="font-family: monospace; font-size: 0.7rem;">${strFecha}</td>`;
 
-            profesHoras.forEach((p, index) => {
-                const key = `${strFechaDB}_${p}`;
+            profesActivos.forEach((p, index) => {
+                const key = `${strFechaDB}_${p.id}`;
                 const val = datosHoras[key] || '';
-                // Soporte navegacion agil (Tab/Enter). Indexamos tabindex por columna y luego fila
                 const tabIndex = d + (index * 100);
                 rowHtml += `<td>
-                    <input type="text" class="input-horas" id="hora_${key}" data-prof="${p}" data-fecha="${strFechaDB}" value="${val}" 
+                    <input type="text" class="input-horas" id="hora_${key}" data-prof="${p.id}" data-fecha="${strFechaDB}" value="${val}" 
                     ${esDomingo ? 'disabled' : ''} tabindex="${tabIndex}"
                     oninput="actualizarDatoHora(this)" onblur="formatearCeldaHora(this)" onkeydown="navHoras(event, this)">
                 </td>`;
@@ -1750,10 +1754,7 @@
         }
         document.getElementById('tbodyHoras').innerHTML = tbodyHtml;
 
-        // Tfoot
         calcularTotalesHoras();
-
-        // Aplicar estilos iniciales
         document.querySelectorAll('.input-horas').forEach(input => formatearCeldaHora(input));
       }
 
@@ -1767,10 +1768,8 @@
          const val = input.value.trim().toLowerCase();
          input.classList.remove('horas-num');
          
-         // Remove old badge wrapper if exists
          if (input.parentElement.querySelector('.badge-wrapper')) {
              input.parentElement.innerHTML = input.outerHTML; 
-             // re-fetch input ref after DOM replace
              input = document.getElementById(input.id);
          }
 
@@ -1806,31 +1805,39 @@
       }
 
       function calcularTotalesHoras() {
+          const profesActivos = obtenerProfesoresActivos();
           let totales = {};
-          profesHoras.forEach(p => totales[p] = 0);
+          profesActivos.forEach(p => totales[p.id] = 0);
 
           Object.keys(datosHoras).forEach(k => {
               const parts = k.split('_');
               if(parts.length === 2) {
-                  const p = parts[1];
+                  const pId = parts[1];
                   const num = parseFloat(datosHoras[k].replace(',','.'));
-                  if(!isNaN(num)) {
-                      totales[p] += num;
+                  if(!isNaN(num) && totales[pId] !== undefined) {
+                      totales[pId] += num;
                   }
               }
           });
 
-          let tfootHtml = `<td style="position: sticky; left: 0; background: #1e293b; z-index: 2; border-right: 1px solid #334155; padding: 12px 8px;">TOTALES</td><td></td>`;
-          profesHoras.forEach(p => {
-              tfootHtml += `<td style="color: #10b981; font-family: monospace; font-size: 0.95rem;">${totales[p]} hs</td>`;
+          let row1 = `<td style="position: sticky; left: 0; background: var(--bg-card); z-index: 2; border-right: 1px solid var(--border-color); padding: 8px 6px; font-size: 0.75rem;">TOTAL HORAS</td><td></td>`;
+          let row2 = `<td style="position: sticky; left: 0; background: var(--bg-card); z-index: 2; border-right: 1px solid var(--border-color); padding: 8px 6px; font-size: 0.75rem;">SUELDO EST.</td><td></td>`;
+
+          profesActivos.forEach(p => {
+              const hs = totales[p.id];
+              const sueldo = hs * (p.tarifa_hora || 0);
+              row1 += `<td style="color: var(--neon-green); font-family: monospace; font-size: 0.85rem;">${hs} hs</td>`;
+              row2 += `<td style="color: var(--text-main); font-family: monospace; font-size: 0.85rem;">${sueldo.toLocaleString('es-AR')}</td>`;
           });
-          document.getElementById('tfootHorasRow').innerHTML = tfootHtml;
+          
+          document.getElementById('tfootHorasRow').innerHTML = row1;
+          const r2 = document.getElementById('tfootSueldoRow');
+          if(r2) r2.innerHTML = row2;
       }
 
       function navHoras(e, input) {
           if (e.key === 'Enter') {
               e.preventDefault();
-              // Mover hacia abajo
               const currentTabIndex = parseInt(input.getAttribute('tabindex'));
               const nextEl = document.querySelector(`.input-horas[tabindex="${currentTabIndex + 1}"]`);
               if (nextEl && !nextEl.disabled) nextEl.focus();
@@ -1866,24 +1873,18 @@
             const anio = document.getElementById('anioHoras').value;
             const prefix = `${anio}-${mes}-`;
 
-            // Prepare upsert array
             const inserts = [];
             Object.keys(datosHoras).forEach(k => {
                 if (k.startsWith(prefix) && datosHoras[k] !== '') {
-                    const prof = k.split('_')[1];
+                    const profId = k.split('_')[1];
                     const fecha = k.split('_')[0];
                     inserts.push({
                         id: k,
                         fecha: fecha,
-                        profesor: prof,
+                        profesor: profId,
                         valor: datosHoras[k]
                     });
                 }
-            });
-
-            // Also, we might need to delete empty values that were previously saved, but upserting an empty string is fine too.
-            // Wait, if valor is empty, let's delete it or save as empty.
-            Object.keys(datosHoras).forEach(k => {
                 if (k.startsWith(prefix) && datosHoras[k] === '') {
                     inserts.push({
                         id: k,
