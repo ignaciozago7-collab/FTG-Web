@@ -1844,11 +1844,13 @@
       }
 
       function calcularTotalesHoras() {
-          const profesActivos = obtenerProfesoresActivos();
-          let totales = {};
-          profesActivos.forEach(p => totales[p.id] = 0);
-
-          Object.keys(datosHoras).forEach(k => {
+            const profesActivos = obtenerProfesoresActivos();
+            let totales = {};
+            profesActivos.forEach(p => totales[p.id] = 0);
+            const mesLiq = document.getElementById('mesHorasFiltro').value;
+            const prefix = mesLiq ? `${mesLiq}-` : '';
+            Object.keys(datosHoras).forEach(k => {
+                if (prefix && !k.startsWith(prefix)) return;
               const parts = k.split('_');
               if(parts.length === 2) {
                   const pId = parts[1];
@@ -1884,7 +1886,8 @@
       }
 
       async function cargarHorasMesDesdeDB() {
-        const mesLiq = document.getElementById('mesHorasFiltro').value;
+          datosHoras = {}; // Reset state to avoid summing previous months
+          const mesLiq = document.getElementById('mesHorasFiltro').value;
         if (!mesLiq) return;
         const prefix = `${mesLiq}-`;
 
