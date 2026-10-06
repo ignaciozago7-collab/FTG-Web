@@ -926,7 +926,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
             <h3 style="color: #f8fafc; margin: 0; font-size: 1.2rem;">Registro de Horas Trabajadas</h3>
             <div style="display: flex; gap: 10px; align-items: center;">
-              <select id="mesHoras" style="background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; outline: none;" onchange="cambioPeriodoHoras()">
+              <select id="mesHoras" style="background: #1e1e1e; color: #ffffff; border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; outline: none;" onchange="cambioPeriodoHoras()">
                 <option value="1">Enero</option>
                 <option value="2">Febrero</option>
                 <option value="3">Marzo</option>
@@ -940,7 +940,7 @@
                 <option value="11">Noviembre</option>
                 <option value="12">Diciembre</option>
               </select>
-              <select id="anioHoras" style="background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; outline: none;" onchange="cambioPeriodoHoras()">
+              <select id="anioHoras" style="background: #1e1e1e; color: #ffffff; border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; outline: none;" onchange="cambioPeriodoHoras()">
                 <option value="2025">2025</option>
                 <option value="2026" selected>2026</option>
                 <option value="2027">2027</option>
@@ -1926,6 +1926,22 @@
           poblarSelectsProfesorPlanes();
         if (planesData.length === 0) { cargarPlanesRenovacion();
         cargarReservas();
+
+        // Auto-cargar mes actual en inputs de tipo month
+        const hoyGlobal = new Date();
+        const mesGlobal = (hoyGlobal.getMonth() + 1).toString().padStart(2, '0');
+        const anioGlobal = hoyGlobal.getFullYear();
+        const strMesGlobal = `${anioGlobal}-${mesGlobal}`;
+        
+        const inCierre = document.getElementById('cierreMesFiltro');
+        if (inCierre && !inCierre.value) inCierre.value = strMesGlobal;
+        
+        const inLiq = document.getElementById('filtroMesLiq');
+        if (inLiq && !inLiq.value) inLiq.value = strMesGlobal;
+        
+        const inCaja = document.getElementById('filtroMesCaja');
+        if (inCaja && !inCaja.value) inCaja.value = strMesGlobal;
+        
         initHorasTrabajadas();
         cargarHorasMesDesdeDB().then(() => renderizarGrillaHoras()); } else { filtrarPlanes(); }
       } else if (idSeccion === 'cronogramaSection') {
@@ -3515,6 +3531,22 @@
         document.getElementById('planDetalles').value = '';
         if (planesData.length === 0) { cargarPlanesRenovacion();
         cargarReservas();
+
+        // Auto-cargar mes actual en inputs de tipo month
+        const hoyGlobal = new Date();
+        const mesGlobal = (hoyGlobal.getMonth() + 1).toString().padStart(2, '0');
+        const anioGlobal = hoyGlobal.getFullYear();
+        const strMesGlobal = `${anioGlobal}-${mesGlobal}`;
+        
+        const inCierre = document.getElementById('cierreMesFiltro');
+        if (inCierre && !inCierre.value) inCierre.value = strMesGlobal;
+        
+        const inLiq = document.getElementById('filtroMesLiq');
+        if (inLiq && !inLiq.value) inLiq.value = strMesGlobal;
+        
+        const inCaja = document.getElementById('filtroMesCaja');
+        if (inCaja && !inCaja.value) inCaja.value = strMesGlobal;
+        
         initHorasTrabajadas();
         cargarHorasMesDesdeDB().then(() => renderizarGrillaHoras()); } else { filtrarPlanes(); }
       }
@@ -3641,6 +3673,22 @@
       if (error) alert('Error al borrar plan: ' + error.message);
       else if (planesData.length === 0) { cargarPlanesRenovacion();
         cargarReservas();
+
+        // Auto-cargar mes actual en inputs de tipo month
+        const hoyGlobal = new Date();
+        const mesGlobal = (hoyGlobal.getMonth() + 1).toString().padStart(2, '0');
+        const anioGlobal = hoyGlobal.getFullYear();
+        const strMesGlobal = `${anioGlobal}-${mesGlobal}`;
+        
+        const inCierre = document.getElementById('cierreMesFiltro');
+        if (inCierre && !inCierre.value) inCierre.value = strMesGlobal;
+        
+        const inLiq = document.getElementById('filtroMesLiq');
+        if (inLiq && !inLiq.value) inLiq.value = strMesGlobal;
+        
+        const inCaja = document.getElementById('filtroMesCaja');
+        if (inCaja && !inCaja.value) inCaja.value = strMesGlobal;
+        
         initHorasTrabajadas();
         cargarHorasMesDesdeDB().then(() => renderizarGrillaHoras()); } else { filtrarPlanes(); }
     }
