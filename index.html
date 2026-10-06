@@ -785,7 +785,40 @@
         <h4 style="margin-top: 20px; margin-bottom: 10px; color: var(--neon-green);">Profesionales (Nutrición / Masajes / Kine)</h4>
         <ul id="listaStaffProfesionales"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></ul>
       </div>
-    </div>
+    
+
+<!-- NUEVO MODULO DE HORAS TRABAJADAS -->
+        <div class="card" style="margin-top: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+            <h3 style="margin: 0;">Registro de Horas Trabajadas</h3>
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+              <div class="month-filter-pill">
+                <span class="icon">📅</span>
+                <input type="month" id="mesHorasFiltro" onchange="cargarHorasMesDesdeDB().then(() => renderizarGrillaHoras())">
+              </div>
+              <button class="btn" style="background: var(--neon-green); color: #000; font-weight: bold; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;" id="btnGuardarHoras" onclick="guardarCambiosHoras()">Guardar Cambios</button>
+            </div>
+          </div>
+          
+          <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; margin-top: 10px;">
+            <table id="tablaHoras" style="width: 100%; border-collapse: collapse; color: #cbd5e1; text-align: center; font-size: 0.85rem;">
+              <thead style="background: var(--bg-card);">
+                <tr id="theadHorasRow">
+                  <!-- Generado dinamicamente -->
+                </tr>
+              </thead>
+              <tbody id="tbodyHoras">
+                <!-- Generado dinamicamente -->
+              </tbody>
+              <tfoot style="background: var(--bg-card); font-weight: bold;">
+                <tr id="tfootHorasRow"></tr>
+                <tr id="tfootSueldoRow"></tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+</div>
 
     <!-- SECCIÓN LIBRO DIARIO -->
     <div id="libroDiarioSection" class="section-page">
@@ -942,36 +975,7 @@
       </div>
     </div>
   
-        <!-- NUEVO MODULO DE HORAS TRABAJADAS -->
-        <div class="card" style="margin-top: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
-            <h3 style="margin: 0;">Registro de Horas Trabajadas</h3>
-            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-              <div class="month-filter-pill">
-                <span class="icon">📅</span>
-                <input type="month" id="mesHorasFiltro" onchange="cargarHorasMesDesdeDB().then(() => renderizarGrillaHoras())">
-              </div>
-              <button class="btn" style="background: var(--neon-green); color: #000; font-weight: bold; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;" id="btnGuardarHoras" onclick="guardarCambiosHoras()">Guardar Cambios</button>
-            </div>
-          </div>
-          
-          <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; margin-top: 10px;">
-            <table id="tablaHoras" style="width: 100%; border-collapse: collapse; color: #cbd5e1; text-align: center; font-size: 0.85rem;">
-              <thead style="background: var(--bg-card);">
-                <tr id="theadHorasRow">
-                  <!-- Generado dinamicamente -->
-                </tr>
-              </thead>
-              <tbody id="tbodyHoras">
-                <!-- Generado dinamicamente -->
-              </tbody>
-              <tfoot style="background: var(--bg-card); font-weight: bold;">
-                <tr id="tfootHorasRow"></tr>
-                <tr id="tfootSueldoRow"></tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
+        
 
 </main>
 
