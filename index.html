@@ -392,7 +392,22 @@
     .fila-domingo { background: rgba(255, 255, 255, 0.02); opacity: 0.6; }
     .fila-domingo .input-horas { color: var(--text-dim); }
 
-</style>
+
+    @media print {
+      body { background: #fff !important; color: #000 !important; }
+      aside { display: none !important; }
+      main { margin: 0 !important; padding: 10px !important; width: 100% !important; overflow: visible !important; }
+      .section-page { display: none !important; }
+      #cierreMensualSection { display: block !important; }
+      .card { background: #fff !important; border: 1px solid #ccc !important; box-shadow: none !important; color: #000 !important; margin-bottom: 20px !important; break-inside: avoid; }
+      .btn, .month-filter-pill { display: none !important; }
+      * { color: #000 !important; text-shadow: none !important; }
+      .metrics-grid .metric-card { background: #fff !important; border: 1px solid #ccc !important; border-left: 5px solid #333 !important; }
+      h1, h2, h3, h4 { color: #000 !important; }
+      input[type="text"], input[type="number"] { border: none !important; background: transparent !important; color: #000 !important; }
+      .chart-container canvas { max-width: 100% !important; }
+    }
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -3650,6 +3665,66 @@
       if (error) alert('Error al borrar plan: ' + error.message);
       else if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
     }
+
+
+      // --- EXPORTAR REPORTES ---
+      function exportarCierrePDF() {
+          window.print();
+      }
+
+      async function exportarCierreExcel() {
+          const mesFiltro = document.getElementById('cierreMesFiltro').value;
+          if (!mesFiltro) return alert('Seleccioná un mes válido.');
+          
+          const btn = document.querySelector('button[onclick="exportarCierreExcel()"]');
+          const txtOrig = btn.innerText;
+          btn.innerText = '⏳ Generando...';
+          btn.disabled = true;
+
+          try {
+              const [y, m] = mesFiltro.split('-');
+              const startDate = `${y}-${m}-01`;
+              const endDate = new Date(y, m, 0).toISOString().split('T')[0];
+
+              const { data, error } = await _supabase
+                  .from('caja_diaria')
+                  .select('*')
+                  .gte('fecha', startDate)
+                  .lte('fecha', endDate)
+                  .order('fecha', { ascending: true });
+
+              if (error) throw error;
+              if (!data || data.length === 0) {
+                  alert('No hay movimientos registrados en este mes.');
+                  return;
+              }
+
+              let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+              csvContent += "Fecha;Tipo;Detalle;Monto;Metodo_Pago;Operador\n";
+
+              data.forEach(row => {
+                  const tipo = row.tipo === 'ingreso' ? 'Ingreso' : 'Egreso';
+                  const detalle = `""${(row.detalle || '').replace(/"/g, '""')}""`;
+                  const monto = row.monto;
+                  const metodo = row.metodo_pago || '';
+                  const op = row.operador || '';
+                  csvContent += `${row.fecha};${tipo};${detalle};${monto};${metodo};${op}\n`;
+              });
+
+              const encodedUri = encodeURI(csvContent);
+              const link = document.createElement("a");
+              link.setAttribute("href", encodedUri);
+              link.setAttribute("download", `Cierre_FTG_${mesFiltro}.csv`);
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+          } catch(e) {
+              alert('Error al exportar: ' + e.message);
+          } finally {
+              btn.innerText = txtOrig;
+              btn.disabled = false;
+          }
+      }
 
     // FUNCIONES DEL CRONOGRAMA DINÁMICO
     async function cargarTurnosSupabase() {
