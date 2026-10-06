@@ -380,6 +380,18 @@
     .month-filter-pill button:active {
       background: rgba(255, 255, 255, 0.2);
     }
+
+    /* ESTILOS HORAS TRABAJADAS */
+    #tablaHoras th { padding: 12px 8px; border-bottom: 1px solid #334155; border-right: 1px solid #334155; white-space: nowrap; }
+    #tablaHoras td { padding: 0; border-bottom: 1px solid #1e293b; border-right: 1px solid #1e293b; height: 35px; }
+    #tablaHoras th:last-child, #tablaHoras td:last-child { border-right: none; }
+    .input-horas { width: 100%; height: 100%; background: transparent; border: none; color: #f8fafc; text-align: center; outline: none; font-size: 0.85rem; font-family: monospace; }
+    .input-horas:focus { background: rgba(255,255,255,0.05); }
+    .horas-num { color: #34d399; font-weight: 600; }
+    .horas-badge { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-radius: 4px; padding: 2px 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .fila-domingo { background: rgba(2, 6, 23, 0.6); opacity: 0.7; }
+    .fila-domingo .input-horas { color: #64748b; }
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -908,7 +920,55 @@
         </div>
       </div>
     </div>
-  </main>
+  
+        <!-- NUEVO MODULO DE HORAS TRABAJADAS -->
+        <div class="card" style="margin-top: 30px; background: #0f172a; border: 1px solid #1e293b;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+            <h3 style="color: #f8fafc; margin: 0; font-size: 1.2rem;">Registro de Horas Trabajadas</h3>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <select id="mesHoras" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; padding: 8px; border-radius: 6px; outline: none;" onchange="cambioPeriodoHoras()">
+                <option value="1">Enero</option>
+                <option value="2">Febrero</option>
+                <option value="3">Marzo</option>
+                <option value="4">Abril</option>
+                <option value="5">Mayo</option>
+                <option value="6">Junio</option>
+                <option value="7">Julio</option>
+                <option value="8">Agosto</option>
+                <option value="9">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+              </select>
+              <select id="anioHoras" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; padding: 8px; border-radius: 6px; outline: none;" onchange="cambioPeriodoHoras()">
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+                <option value="2027">2027</option>
+              </select>
+              <button class="btn" style="background: #10b981; color: #022c22; font-weight: bold; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: 0.2s;" id="btnGuardarHoras" onclick="guardarCambiosHoras()">Guardar Cambios</button>
+            </div>
+          </div>
+          
+          <div style="overflow-x: auto; border: 1px solid #1e293b; border-radius: 8px;">
+            <table id="tablaHoras" style="width: 100%; border-collapse: collapse; color: #cbd5e1; text-align: center; font-size: 0.85rem;">
+              <thead style="background: #1e293b;">
+                <tr id="theadHorasRow">
+                  <!-- Generado dinamicamente -->
+                </tr>
+              </thead>
+              <tbody id="tbodyHoras">
+                <!-- Generado dinamicamente -->
+              </tbody>
+              <tfoot style="background: #1e293b; font-weight: bold;">
+                <tr id="tfootHorasRow">
+                  <!-- Generado dinamicamente -->
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+</main>
 
   <!-- MODAL LISTADO DE PRESENTES DEL DÍA -->
   <div id="modalPresentesDia" class="modal-overlay">
@@ -1624,7 +1684,232 @@
       });
     }
 
-    function cambiarSeccion(idSeccion, btn) {
+    
+      // --- LOGICA MODULO HORAS TRABAJADAS ---
+      const profesHoras = ['Lea', 'Nacho', 'Euge', 'Vicki', 'Valentina', 'Negro'];
+      let datosHoras = {}; // key: YYYY-MM-DD_Prof -> valor string
+
+      function initHorasTrabajadas() {
+        const hoy = new Date();
+        document.getElementById('mesHoras').value = hoy.getMonth() + 1;
+        document.getElementById('anioHoras').value = hoy.getFullYear();
+        renderizarGrillaHoras();
+      }
+
+      function cambioPeriodoHoras() {
+        // Al cambiar de mes, recargamos de base de datos
+        datosHoras = {};
+        cargarHorasMesDesdeDB().then(() => {
+            renderizarGrillaHoras();
+        });
+      }
+
+      function renderizarGrillaHoras() {
+        const mes = parseInt(document.getElementById('mesHoras').value);
+        const anio = parseInt(document.getElementById('anioHoras').value);
+        const diasEnMes = new Date(anio, mes, 0).getDate();
+
+        // Thead
+        let theadHtml = `<th style="min-width: 100px; position: sticky; left: 0; background: #1e293b; z-index: 2;">Día</th><th style="min-width: 80px;">Fecha</th>`;
+        profesHoras.forEach(p => {
+            theadHtml += `<th style="min-width: 80px;">${p}</th>`;
+        });
+        document.getElementById('theadHorasRow').innerHTML = theadHtml;
+
+        // Tbody
+        let tbodyHtml = '';
+        const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        
+        for (let d = 1; d <= diasEnMes; d++) {
+            const fechaObj = new Date(anio, mes - 1, d);
+            const numDia = fechaObj.getDay();
+            const esDomingo = (numDia === 0);
+            const strDiaSemana = diasSemana[numDia];
+            const strFecha = `${d.toString().padStart(2, '0')}/${mes.toString().padStart(2, '0')}/${anio.toString().slice(-2)}`;
+            const strFechaDB = `${anio}-${mes.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+
+            let rowClass = esDomingo ? 'fila-domingo' : '';
+            
+            let rowHtml = `<tr class="${rowClass}">
+                <td style="position: sticky; left: 0; background: ${esDomingo ? '#020617' : '#0f172a'}; z-index: 1; border-right: 1px solid #334155; font-size: 0.8rem; font-weight: 500;">${strDiaSemana}</td>
+                <td style="font-family: monospace; font-size: 0.75rem;">${strFecha}</td>`;
+
+            profesHoras.forEach((p, index) => {
+                const key = `${strFechaDB}_${p}`;
+                const val = datosHoras[key] || '';
+                // Soporte navegacion agil (Tab/Enter). Indexamos tabindex por columna y luego fila
+                const tabIndex = d + (index * 100);
+                rowHtml += `<td>
+                    <input type="text" class="input-horas" id="hora_${key}" data-prof="${p}" data-fecha="${strFechaDB}" value="${val}" 
+                    ${esDomingo ? 'disabled' : ''} tabindex="${tabIndex}"
+                    oninput="actualizarDatoHora(this)" onblur="formatearCeldaHora(this)" onkeydown="navHoras(event, this)">
+                </td>`;
+            });
+            rowHtml += `</tr>`;
+            tbodyHtml += rowHtml;
+        }
+        document.getElementById('tbodyHoras').innerHTML = tbodyHtml;
+
+        // Tfoot
+        calcularTotalesHoras();
+
+        // Aplicar estilos iniciales
+        document.querySelectorAll('.input-horas').forEach(input => formatearCeldaHora(input));
+      }
+
+      function actualizarDatoHora(input) {
+         const key = `${input.dataset.fecha}_${input.dataset.prof}`;
+         datosHoras[key] = input.value;
+         calcularTotalesHoras();
+      }
+
+      function formatearCeldaHora(input) {
+         const val = input.value.trim().toLowerCase();
+         input.classList.remove('horas-num');
+         
+         // Remove old badge wrapper if exists
+         if (input.parentElement.querySelector('.badge-wrapper')) {
+             input.parentElement.innerHTML = input.outerHTML; 
+             // re-fetch input ref after DOM replace
+             input = document.getElementById(input.id);
+         }
+
+         if (!val) {
+             input.style.display = 'block';
+             return;
+         }
+
+         if (!isNaN(parseFloat(val.replace(',','.')))) {
+             input.classList.add('horas-num');
+             input.style.display = 'block';
+         } else if (val.includes('feriado') || val.includes('cerrado') || val.includes('vacaciones')) {
+             const originalVal = input.value.trim();
+             const wrapper = document.createElement('div');
+             wrapper.className = 'badge-wrapper';
+             wrapper.style.display = 'flex';
+             wrapper.style.justifyContent = 'center';
+             wrapper.style.alignItems = 'center';
+             wrapper.style.width = '100%';
+             wrapper.style.height = '100%';
+             wrapper.innerHTML = `<span class="horas-badge">${originalVal}</span>`;
+             
+             input.style.display = 'none';
+             wrapper.onclick = () => {
+                 input.style.display = 'block';
+                 wrapper.remove();
+                 input.focus();
+             };
+             input.parentNode.appendChild(wrapper);
+         } else {
+             input.style.display = 'block';
+         }
+      }
+
+      function calcularTotalesHoras() {
+          let totales = {};
+          profesHoras.forEach(p => totales[p] = 0);
+
+          Object.keys(datosHoras).forEach(k => {
+              const parts = k.split('_');
+              if(parts.length === 2) {
+                  const p = parts[1];
+                  const num = parseFloat(datosHoras[k].replace(',','.'));
+                  if(!isNaN(num)) {
+                      totales[p] += num;
+                  }
+              }
+          });
+
+          let tfootHtml = `<td style="position: sticky; left: 0; background: #1e293b; z-index: 2; border-right: 1px solid #334155; padding: 12px 8px;">TOTALES</td><td></td>`;
+          profesHoras.forEach(p => {
+              tfootHtml += `<td style="color: #10b981; font-family: monospace; font-size: 0.95rem;">${totales[p]} hs</td>`;
+          });
+          document.getElementById('tfootHorasRow').innerHTML = tfootHtml;
+      }
+
+      function navHoras(e, input) {
+          if (e.key === 'Enter') {
+              e.preventDefault();
+              // Mover hacia abajo
+              const currentTabIndex = parseInt(input.getAttribute('tabindex'));
+              const nextEl = document.querySelector(`.input-horas[tabindex="${currentTabIndex + 1}"]`);
+              if (nextEl && !nextEl.disabled) nextEl.focus();
+          }
+      }
+
+      async function cargarHorasMesDesdeDB() {
+        const mes = document.getElementById('mesHoras').value.padStart(2, '0');
+        const anio = document.getElementById('anioHoras').value;
+        const prefix = `${anio}-${mes}-`;
+
+        try {
+            const { data, error } = await _supabase.from('horas_trabajadas').select('*').like('id', `${prefix}%`);
+            if (error) throw error;
+            if (data) {
+                data.forEach(r => {
+                    datosHoras[r.id] = r.valor;
+                });
+            }
+        } catch(e) {
+            console.error('No se pudieron cargar las horas', e);
+        }
+      }
+
+      async function guardarCambiosHoras() {
+        const btn = document.getElementById('btnGuardarHoras');
+        const txtOrig = btn.innerText;
+        btn.innerText = 'Guardando...';
+        btn.disabled = true;
+
+        try {
+            const mes = document.getElementById('mesHoras').value.padStart(2, '0');
+            const anio = document.getElementById('anioHoras').value;
+            const prefix = `${anio}-${mes}-`;
+
+            // Prepare upsert array
+            const inserts = [];
+            Object.keys(datosHoras).forEach(k => {
+                if (k.startsWith(prefix) && datosHoras[k] !== '') {
+                    const prof = k.split('_')[1];
+                    const fecha = k.split('_')[0];
+                    inserts.push({
+                        id: k,
+                        fecha: fecha,
+                        profesor: prof,
+                        valor: datosHoras[k]
+                    });
+                }
+            });
+
+            // Also, we might need to delete empty values that were previously saved, but upserting an empty string is fine too.
+            // Wait, if valor is empty, let's delete it or save as empty.
+            Object.keys(datosHoras).forEach(k => {
+                if (k.startsWith(prefix) && datosHoras[k] === '') {
+                    inserts.push({
+                        id: k,
+                        fecha: k.split('_')[0],
+                        profesor: k.split('_')[1],
+                        valor: ''
+                    });
+                }
+            });
+
+            if(inserts.length > 0) {
+                const { error } = await _supabase.from('horas_trabajadas').upsert(inserts);
+                if (error) throw error;
+            }
+            alert('¡Horas guardadas con éxito!');
+        } catch(e) {
+            alert('Error al guardar horas: ' + e.message);
+        } finally {
+            btn.innerText = txtOrig;
+            btn.disabled = false;
+        }
+      }
+
+      // Add to initialization
+
+      function cambiarSeccion(idSeccion, btn) {
       document.querySelectorAll('.section-page').forEach(s => s.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(idSeccion).classList.add('active');
@@ -1639,7 +1924,9 @@
       } else if (idSeccion === 'planesSection') {
           poblarSelectsProfesorPlanes();
         if (planesData.length === 0) { cargarPlanesRenovacion();
-        cargarReservas(); } else { filtrarPlanes(); }
+        cargarReservas();
+        initHorasTrabajadas();
+        cargarHorasMesDesdeDB().then(() => renderizarGrillaHoras()); } else { filtrarPlanes(); }
       } else if (idSeccion === 'cronogramaSection') {
         renderizarCronogramaDinamico();
       }
@@ -3226,7 +3513,9 @@
         document.getElementById('planAlumno').value = '';
         document.getElementById('planDetalles').value = '';
         if (planesData.length === 0) { cargarPlanesRenovacion();
-        cargarReservas(); } else { filtrarPlanes(); }
+        cargarReservas();
+        initHorasTrabajadas();
+        cargarHorasMesDesdeDB().then(() => renderizarGrillaHoras()); } else { filtrarPlanes(); }
       }
     }
 
@@ -3350,7 +3639,9 @@
       const { error } = await _supabase.from('planes').delete().eq('id', id);
       if (error) alert('Error al borrar plan: ' + error.message);
       else if (planesData.length === 0) { cargarPlanesRenovacion();
-        cargarReservas(); } else { filtrarPlanes(); }
+        cargarReservas();
+        initHorasTrabajadas();
+        cargarHorasMesDesdeDB().then(() => renderizarGrillaHoras()); } else { filtrarPlanes(); }
     }
 
     // FUNCIONES DEL CRONOGRAMA DINÁMICO
