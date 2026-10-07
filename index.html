@@ -1742,7 +1742,7 @@
 
         if (esNutri) {
             document.querySelectorAll('.nav-btn').forEach(b => {
-                if(b.id !== 'btnNavNutricion' && !b.innerText.Contains('Cerrar Ses')) {
+                if(b.id !== 'btnNavNutricion' && !b.innerText.includes('Cerrar Ses')) {
                     b.style.display = 'none';
                 }
             });
@@ -1761,7 +1761,8 @@
         cargarDatosAlumnos(),
         cargarLibroDiario(),
         cargarHistorialLiquidaciones(),
-        cargarTurnosSupabase()
+        cargarTurnosSupabase(),
+        cargarDatosNutricion()
       ]).then(() => {
         activarTiempoReal();
       }).catch(err => console.error("Error al inicializar datos:", err));
@@ -1775,6 +1776,8 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'alumnos' }, () => { cargarDatosAlumnos(); })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'caja_diaria' }, () => { cargarLibroDiario(); })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas_clases' }, () => { cargarTurnosSupabase(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'nutricion_turnos' }, () => { cargarDatosNutricion(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'nutricion_pacientes' }, () => { cargarDatosNutricion(); })
         .subscribe();
     }
 
