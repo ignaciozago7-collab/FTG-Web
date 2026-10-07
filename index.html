@@ -4266,7 +4266,7 @@ function actualizarDatalistPacientes() {
     let opciones = [];
     nutriPacientesData.forEach(p => opciones.push(p.nombre));
     alumnosData.forEach(a => {
-        if(!opciones.includes(a.nombre)) opciones.push(a.nombre);
+        if(a && a.nombre && !opciones.includes(a.nombre)) opciones.push(a.nombre);
     });
     
     datalist.innerHTML = opciones.map(n => `<option value="${n}">`).join('');
@@ -4276,6 +4276,7 @@ function abrirModalNuevoTurnoNutri() {
     document.getElementById('inputPacienteNutri').value = '';
     document.getElementById('pacienteIdNutriSelec').value = '';
     document.getElementById('montoTurnoNutri').value = '';
+    actualizarDatalistPacientes();
     
     const selectNutri = document.getElementById('selectNutricionistaTurno');
     const profesionales = staffData.filter(s => s.rol === 'profesional' && (s.nombre.toLowerCase().includes('lucia') || s.nombre.toLowerCase().includes('santiago')));
