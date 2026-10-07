@@ -4360,51 +4360,74 @@ function renderizarAgendaNutri() {
     const lista = document.getElementById('listaTurnosNutri');
     if(!lista) return;
 
-    if(nutriTurnosData.length === 0) {
-        lista.innerHTML = '<div style="color: var(--text-dim);">No hay turnos agendados.</div>';
-        return;
-    }
+    const profesionales = staffData.filter(s => s.rol === 'profesional' && (s.nombre.toLowerCase().includes('lucia') || s.nombre.toLowerCase().includes('santiago')));
+    
+    let colsHtml = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">';
 
-    let innerHtml = '';
-    nutriTurnosData.forEach(t => {
-        const pac = nutriPacientesData.find(p => p.id === t.paciente_id);
-        const pacNombre = pac?.nombre || 'Desconocido';
-        const fecha = new Date(t.fecha_hora);
-        const strFecha = fecha.toLocaleString('es-AR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'});
+    profesionales.forEach(prof => {
+        const turnosProf = nutriTurnosData.filter(t => t.nutricionista_nombre === prof.nombre);
         
-        let badgeEstado = '';
-        if(t.estado === 'pendiente') badgeEstado = '<span style="color: #f59e0b; border: 1px solid #f59e0b; padding: 4px 8px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">⏳ Pendiente</span>';
-        if(t.estado === 'asistio') badgeEstado = '<span style="color: var(--neon-green); border: 1px solid var(--neon-green); padding: 4px 8px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">✅ Asistió / Pagó</span>';
-        if(t.estado === 'cancelo') badgeEstado = '<span style="color: var(--danger-red); border: 1px solid var(--danger-red); padding: 4px 8px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">❌ Canceló</span>';
-
-        const msgWpp = encodeURIComponent(`Hola ${pacNombre}! Te escribo de FTG para recordarte tu turno de nutrición el ${strFecha}hs. ¡Confirmame asistencia por favor!`);
-        
-        innerHtml += `
-            <div class="card" style="padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; transition: transform 0.2s; border-left: 4px solid var(--neon-green);">
-                <div style="flex: 1; min-width: 250px;">
-                    <div style="font-size: 1.3rem; color: var(--neon-green); font-weight: bold; margin-bottom: 8px; letter-spacing: 0.5px;">📅 ${strFecha}hs</div>
-                    <div style="font-size: 1.2rem; color: #fff; margin-bottom: 6px; font-weight: 500;">👤 ${pacNombre}</div>
-                    <div style="font-size: 0.95rem; color: var(--text-dim);">Nutricionista: <span style="color: #ddd;">${t.nutricionista_nombre}</span></div>
-                    <div style="font-size: 1rem; color: var(--text-dim); margin-top: 8px;">Cobro: <strong style="color: #fff; font-size: 1.1rem;">${t.monto}</strong></div>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 12px; align-items: flex-end; flex: 1; min-width: 250px;">
-                    ${badgeEstado}
-                    <select onchange="actualizarEstadoTurnoNutri(${t.id}, this.value)" style="padding: 8px 12px; border-radius: 8px; background: #1a1a24; color: #fff; border: 1px solid var(--border-color); width: 100%; max-width: 220px; font-size: 0.9rem; cursor: pointer;">
-                        <option value="pendiente" ${t.estado==='pendiente'?'selected':''}>⏳ Pendiente</option>
-                        <option value="asistio" ${t.estado==='asistio'?'selected':''}>✅ Asistió / Pagó</option>
-                        <option value="cancelo" ${t.estado==='cancelo'?'selected':''}>❌ Canceló</option>
-                    </select>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
-                        <a href="https://wa.me/?text=${msgWpp}" target="_blank" class="btn btn-outline" style="padding: 6px 12px; font-size: 0.9rem; color: #25D366; border-color: #25D366; display: flex; align-items: center; gap: 5px;">📲 Wpp</a>
-                        <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.9rem;" onclick="abrirFichaPacienteNutri(${t.paciente_id})">📋 Ficha</button>
-                        <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.9rem;" onclick="editarTurnoNutri(${t.id})">✏️ Editar</button>
-                        <button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.9rem;" onclick="borrarTurnoNutri(${t.id})">🗑️</button>
-                    </div>
-                </div>
-            </div>
+        colsHtml += `
+        <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 15px;">
+            <h4 style="color: var(--neon-green); text-align: center; margin-top: 0; margin-bottom: 15px; font-size: 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">📅 Agenda: ${prof.nombre}</h4>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
         `;
+
+        if(turnosProf.length === 0) {
+            colsHtml += `<div style="text-align: center; color: var(--text-dim); padding: 20px;">Sin turnos agendados</div>`;
+        } else {
+            // Sort by date descending
+            turnosProf.sort((a, b) => new Date(b.fecha_hora) - new Date(a.fecha_hora)).forEach(t => {
+                const pac = nutriPacientesData.find(p => p.id === t.paciente_id);
+                const pacNombre = pac?.nombre || 'Desconocido';
+                const fecha = new Date(t.fecha_hora);
+                const strFecha = fecha.toLocaleString('es-AR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'});
+                
+                let badgeEstado = '';
+                if(t.estado === 'pendiente') badgeEstado = '<span style="color: #f59e0b; font-size: 0.8rem; font-weight: bold; text-transform: uppercase;">⏳ Pendiente</span>';
+                if(t.estado === 'asistio') badgeEstado = '<span style="color: var(--neon-green); font-size: 0.8rem; font-weight: bold; text-transform: uppercase;">✅ Asistió</span>';
+                if(t.estado === 'cancelo') badgeEstado = '<span style="color: var(--danger-red); font-size: 0.8rem; font-weight: bold; text-transform: uppercase;">❌ Canceló</span>';
+
+                const msgWpp = encodeURIComponent(`Hola ${pacNombre}! Te escribo de FTG para recordarte tu turno de nutrición el ${strFecha}hs. ¡Confirmame asistencia por favor!`);
+                
+                colsHtml += `
+                    <div class="card" style="padding: 15px; display: flex; flex-direction: column; gap: 12px; border-left: 4px solid var(--neon-green); margin: 0; transition: transform 0.2s;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <div style="font-size: 1.15rem; color: #fff; font-weight: 500; margin-bottom: 4px;">👤 ${pacNombre}</div>
+                                <div style="font-size: 0.95rem; color: var(--neon-green); font-weight: bold;">${strFecha}hs</div>
+                            </div>
+                            <div style="text-align: right;">
+                                ${badgeEstado}
+                                <div style="font-size: 1.05rem; color: #fff; margin-top: 4px; font-weight: bold;">${t.monto}</div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 5px;">
+                            <select onchange="actualizarEstadoTurnoNutri(${t.id}, this.value)" style="padding: 6px; border-radius: 6px; background: #1a1a24; color: #fff; border: 1px solid var(--border-color); width: 100%; font-size: 0.9rem; cursor: pointer;">
+                                <option value="pendiente" ${t.estado==='pendiente'?'selected':''}>⏳ Pendiente</option>
+                                <option value="asistio" ${t.estado==='asistio'?'selected':''}>✅ Asistió / Pagó</option>
+                                <option value="cancelo" ${t.estado==='cancelo'?'selected':''}>❌ Canceló</option>
+                            </select>
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <a href="https://wa.me/?text=${msgWpp}" target="_blank" class="btn btn-outline" style="flex: 1; padding: 5px 0; font-size: 0.85rem; text-align: center; color: #25D366; border-color: #25D366;">📲 Wpp</a>
+                                <button class="btn btn-outline" style="flex: 1; padding: 5px 0; font-size: 0.85rem;" onclick="abrirFichaPacienteNutri(${t.paciente_id})">📋 Ficha</button>
+                                <button class="btn btn-outline" style="padding: 5px 10px; font-size: 0.85rem;" onclick="editarTurnoNutri(${t.id})">✏️</button>
+                                <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.85rem;" onclick="borrarTurnoNutri(${t.id})">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        colsHtml += `
+            </div>
+        </div>`;
     });
-    lista.innerHTML = innerHtml;
+
+    colsHtml += '</div>';
+    lista.innerHTML = colsHtml;
 }
 
 function renderizarPacientesNutri() {
