@@ -4428,6 +4428,50 @@ function renderizarPacientesNutri() {
     lista.innerHTML = innerHtml;
 }
 
+async function borrarTurnoNutri(id) {
+    if(confirm('¿Seguro que querés eliminar este turno?')) {
+        const { error } = await _supabase.from('nutricion_turnos').delete().eq('id', id);
+        if(error) alert('Error borrando: ' + error.message);
+        else cargarDatosNutricion();
+    }
+}
+
+function editarTurnoNutri(id) {
+    const t = nutriTurnosData.find(x => x.id === id);
+    if(!t) return;
+    const pac = nutriPacientesData.find(p => p.id === t.paciente_id);
+    
+    document.getElementById('inputPacienteNutri').value = pac ? pac.nombre : '';
+    document.getElementById('inputPacienteNutri').disabled = true; 
+    
+    const fechaObj = new Date(t.fecha_hora);
+    const offset = fechaObj.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(fechaObj.getTime() - offset)).toISOString().slice(0, -1);
+    const parts = localISOTime.split('T');
+    
+    document.getElementById('fechaTurnoNutri').value = parts[0];
+    document.getElementById('horaTurnoNutri').value = parts[1].substring(0, 5);
+    document.getElementById('montoTurnoNutri').value = t.monto;
+    
+    const selectNutri = document.getElementById('selectNutricionistaTurno');
+    const profesionales = staffData.filter(s => s.rol === 'profesional' && (s.nombre.toLowerCase().includes('lucia') || s.nombre.toLowerCase().includes('santiago')));
+    selectNutri.innerHTML = profesionales.map(s => '<option value="' + s.nombre + '">' + s.nombre + '</option>').join('');
+    const op = Array.from(selectNutri.options).find(o => o.value === t.nutricionista_nombre);
+    if(op) op.selected = true;
+
+    let hiddenId = document.getElementById('turnoIdNutriEdit');
+    if(!hiddenId) {
+        hiddenId = document.createElement('input');
+        hiddenId.type = 'hidden';
+        hiddenId.id = 'turnoIdNutriEdit';
+        document.getElementById('modalNuevoTurnoNutri').appendChild(hiddenId);
+    }
+    hiddenId.value = id;
+    
+    document.getElementById('btnGuardarTurnoNutri').innerText = 'Guardar Cambios';
+    document.getElementById('modalNuevoTurnoNutri').style.display = 'flex';
+}
+
 function abrirFichaPacienteNutri(pacienteId) {
     const pac = nutriPacientesData.find(p => p.id === pacienteId);
     if(!pac) return;
