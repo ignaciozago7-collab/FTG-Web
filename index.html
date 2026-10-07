@@ -845,7 +845,7 @@
                 <h3 style="margin:0;">Turnos Próximos</h3>
                 <button class="btn" style="background: var(--neon-green); color: #000; font-weight: bold;" onclick="abrirModalNuevoTurnoNutri()">+ Nuevo Turno</button>
              </div>
-             <ul id="listaTurnosNutri"><div style="color: var(--text-dim);">Construyendo agenda...</div></ul>
+             <div id="listaTurnosNutri"><div style="color: var(--text-dim);">Construyendo agenda...</div></div>
            </div>
         </div>
         
@@ -4273,6 +4273,11 @@ function actualizarDatalistPacientes() {
 }
 
 function abrirModalNuevoTurnoNutri() {
+    document.getElementById('btnGuardarTurnoNutri').innerText = 'Agendar Turno';
+    document.getElementById('inputPacienteNutri').disabled = false;
+    let hiddenId = document.getElementById('turnoIdNutriEdit');
+    if(hiddenId) hiddenId.value = '';
+    
     document.getElementById('inputPacienteNutri').value = '';
     document.getElementById('pacienteIdNutriSelec').value = '';
     document.getElementById('montoTurnoNutri').value = '';
@@ -4361,7 +4366,6 @@ function renderizarAgendaNutri() {
     }
 
     let innerHtml = '';
-    
     nutriTurnosData.forEach(t => {
         const pac = nutriPacientesData.find(p => p.id === t.paciente_id);
         const pacNombre = pac?.nombre || 'Desconocido';
@@ -4369,32 +4373,35 @@ function renderizarAgendaNutri() {
         const strFecha = fecha.toLocaleString('es-AR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'});
         
         let badgeEstado = '';
-        if(t.estado === 'pendiente') badgeEstado = '<span style="color: #f59e0b; border: 1px solid #f59e0b; padding: 2px 6px; border-radius: 6px; font-size: 0.75rem;">Pendiente</span>';
-        if(t.estado === 'asistio') badgeEstado = '<span style="color: var(--neon-green); border: 1px solid var(--neon-green); padding: 2px 6px; border-radius: 6px; font-size: 0.75rem;">Asistió</span>';
-        if(t.estado === 'cancelo') badgeEstado = '<span style="color: var(--danger-red); border: 1px solid var(--danger-red); padding: 2px 6px; border-radius: 6px; font-size: 0.75rem;">Canceló</span>';
+        if(t.estado === 'pendiente') badgeEstado = '<span style="color: #f59e0b; border: 1px solid #f59e0b; padding: 4px 8px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">⏳ Pendiente</span>';
+        if(t.estado === 'asistio') badgeEstado = '<span style="color: var(--neon-green); border: 1px solid var(--neon-green); padding: 4px 8px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">✅ Asistió / Pagó</span>';
+        if(t.estado === 'cancelo') badgeEstado = '<span style="color: var(--danger-red); border: 1px solid var(--danger-red); padding: 4px 8px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">❌ Canceló</span>';
 
-        const msgWpp = encodeURIComponent(`¡Hola ${pacNombre}! Te escribo de FTG para recordarte tu turno de nutrición el ${strFecha}hs. ¡Confirmame asistencia por favor!`);
+        const msgWpp = encodeURIComponent(`Hola ${pacNombre}! Te escribo de FTG para recordarte tu turno de nutrición el ${strFecha}hs. ¡Confirmame asistencia por favor!`);
         
         innerHtml += `
-            <li style="padding: 14px 16px; background: rgba(255,255,255,0.01); border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; border: 1px solid var(--border-color);">
-                <div>
-                    <strong style="font-size: 1.1rem;">${strFecha}hs - ${pacNombre}</strong>
-                    <span style="font-size: 0.85rem; color: var(--text-dim); margin-left: 8px;">(Prof: ${t.nutricionista_nombre})</span>
-                    <div style="margin-top: 6px;">
-                        ${badgeEstado}
-                        <span style="font-size: 0.85rem; color: var(--text-dim); margin-left: 8px;">Cobro: $${t.monto}</span>
+            <div class="card" style="padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; transition: transform 0.2s; border-left: 4px solid var(--neon-green);">
+                <div style="flex: 1; min-width: 250px;">
+                    <div style="font-size: 1.3rem; color: var(--neon-green); font-weight: bold; margin-bottom: 8px; letter-spacing: 0.5px;">📅 ${strFecha}hs</div>
+                    <div style="font-size: 1.2rem; color: #fff; margin-bottom: 6px; font-weight: 500;">👤 ${pacNombre}</div>
+                    <div style="font-size: 0.95rem; color: var(--text-dim);">Nutricionista: <span style="color: #ddd;">${t.nutricionista_nombre}</span></div>
+                    <div style="font-size: 1rem; color: var(--text-dim); margin-top: 8px;">Cobro: <strong style="color: #fff; font-size: 1.1rem;">${t.monto}</strong></div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 12px; align-items: flex-end; flex: 1; min-width: 250px;">
+                    ${badgeEstado}
+                    <select onchange="actualizarEstadoTurnoNutri(${t.id}, this.value)" style="padding: 8px 12px; border-radius: 8px; background: #1a1a24; color: #fff; border: 1px solid var(--border-color); width: 100%; max-width: 220px; font-size: 0.9rem; cursor: pointer;">
+                        <option value="pendiente" ${t.estado==='pendiente'?'selected':''}>⏳ Pendiente</option>
+                        <option value="asistio" ${t.estado==='asistio'?'selected':''}>✅ Asistió / Pagó</option>
+                        <option value="cancelo" ${t.estado==='cancelo'?'selected':''}>❌ Canceló</option>
+                    </select>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+                        <a href="https://wa.me/?text=${msgWpp}" target="_blank" class="btn btn-outline" style="padding: 6px 12px; font-size: 0.9rem; color: #25D366; border-color: #25D366; display: flex; align-items: center; gap: 5px;">📲 Wpp</a>
+                        <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.9rem;" onclick="abrirFichaPacienteNutri(${t.paciente_id})">📋 Ficha</button>
+                        <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.9rem;" onclick="editarTurnoNutri(${t.id})">✏️ Editar</button>
+                        <button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.9rem;" onclick="borrarTurnoNutri(${t.id})">🗑️</button>
                     </div>
                 </div>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <a href="https://wa.me/?text=${msgWpp}" target="_blank" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.85rem; color: #25D366; border-color: #25D366;">💬 Recordatorio</a>
-                    <select onchange="actualizarEstadoTurnoNutri(${t.id}, this.value)" style="padding: 6px; border-radius: 8px; background: #14141D; color: #fff; border: 1px solid var(--border-color);">
-                        <option value="pendiente" ${t.estado==='pendiente'?'selected':''}>Pendiente</option>
-                        <option value="asistio" ${t.estado==='asistio'?'selected':''}>Asistió / Pagó</option>
-                        <option value="cancelo" ${t.estado==='cancelo'?'selected':''}>Canceló</option>
-                    </select>
-                    <button class="btn btn-outline" style="padding: 4px 10px;" onclick="abrirFichaPacienteNutri(${t.paciente_id})">Ver Ficha</button>
-                </div>
-            </li>
+            </div>
         `;
     });
     lista.innerHTML = innerHtml;
@@ -4409,13 +4416,13 @@ function renderizarPacientesNutri() {
         const turnosDelPac = nutriTurnosData.filter(t => t.paciente_id === p.id);
         const cantConsultas = turnosDelPac.length;
         innerHtml += `
-            <li style="padding: 10px 14px; background: rgba(255,255,255,0.01); border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color);">
+            <div class="card" style="padding: 16px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #3b82f6;">
                 <div>
-                    <strong>${p.nombre}</strong>
-                    <div style="font-size: 0.8rem; color: var(--text-dim);">Consultas registradas: ${cantConsultas}</div>
+                    <strong style="font-size: 1.1rem; color: #fff;">${p.nombre}</strong>
+                    <div style="font-size: 0.9rem; color: var(--text-dim); margin-top: 4px;">Consultas registradas: <strong style="color: #3b82f6;">${cantConsultas}</strong></div>
                 </div>
-                <button class="btn btn-outline" onclick="abrirFichaPacienteNutri(${p.id})">Abrir Ficha Clínica</button>
-            </li>
+                <button class="btn btn-outline" style="font-size: 0.9rem;" onclick="abrirFichaPacienteNutri(${p.id})">📋 Abrir Ficha Clínica</button>
+            </div>
         `;
     });
     lista.innerHTML = innerHtml;
@@ -4495,20 +4502,19 @@ function renderizarRendicionNutri() {
     const profesionales = staffData.filter(s => s.rol === 'profesional' && (s.nombre.toLowerCase().includes('lucia') || s.nombre.toLowerCase().includes('santiago')));
     
     profesionales.forEach(s => {
-        resumen[s.nombre] = { totalCobrado: 0, retencionGymPct: s.porcentaje || 30 };
+        resumen[s.nombre] = { totalCobrado: 0, retencionGymPct: parseFloat(s.porcentaje) || 30 };
     });
 
     turnosPagados.forEach(t => {
         if(resumen[t.nutricionista_nombre] !== undefined) {
             resumen[t.nutricionista_nombre].totalCobrado += parseFloat(t.monto) || 0;
         } else {
-            // Find in profesionales list to get exact percentage just in case
             const pObj = profesionales.find(px => px.nombre === t.nutricionista_nombre);
             resumen[t.nutricionista_nombre] = { totalCobrado: parseFloat(t.monto) || 0, retencionGymPct: pObj ? parseFloat(pObj.porcentaje) : 30 };
         }
     });
 
-    let innerHtml = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">';
+    let innerHtml = '<div class="metrics-grid">';
     
     Object.keys(resumen).forEach(nombre => {
         const data = resumen[nombre];
@@ -4516,15 +4522,27 @@ function renderizarRendicionNutri() {
         const deudaGym = (data.totalCobrado * pctGym) / 100;
         const gananciaNutri = data.totalCobrado - deudaGym;
         
-        if (window.esSuperAdminGlobal || window.emailActualGlobal.includes(nombre.toLowerCase().split(' ')[0])) {
+        if (window.esSuperAdminGlobal || (window.emailActualGlobal && window.emailActualGlobal.includes(nombre.toLowerCase().split(' ')[0]))) {
             innerHtml += `
-                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
-                    <h4 style="margin: 0 0 10px 0; color: var(--neon-green); font-size: 1.1rem;">Rendición: ${nombre}</h4>
-                    <div style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 4px;">Recaudación Total: <strong>$${data.totalCobrado}</strong></div>
-                    <div style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 4px;">Arreglo Gym: <strong>${pctGym}%</strong></div>
-                    <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 10px 0;">
-                    <div style="font-size: 1rem; color: #fff; margin-bottom: 4px;">Ganancia Nutri: <strong style="color: #3b82f6;">$${gananciaNutri}</strong></div>
-                    <div style="font-size: 1rem; color: #fff;">Debe abonar al Gym: <strong style="color: var(--danger-red);">$${deudaGym}</strong></div>
+                <div class="metric-card">
+                    <h4 style="margin: 0 0 12px 0; color: var(--neon-green); font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">💰 ${nombre}</h4>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.95rem; color: var(--text-dim); margin-bottom: 6px;">
+                        <span>Recaudación Total:</span>
+                        <strong style="color: #fff;">${data.totalCobrado}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.95rem; color: var(--text-dim); margin-bottom: 12px;">
+                        <span>Porcentaje al Gym:</span>
+                        <strong style="color: #fff;">${pctGym}%</strong>
+                    </div>
+                    <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 12px 0;"></div>
+                    <div style="display: flex; justify-content: space-between; font-size: 1.1rem; color: #fff; margin-bottom: 6px;">
+                        <span>Ganancia Neta:</span>
+                        <strong style="color: #3b82f6;">${gananciaNutri}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 1.1rem; color: #fff;">
+                        <span>Abonar al Gym:</span>
+                        <strong style="color: var(--danger-red);">${deudaGym}</strong>
+                    </div>
                 </div>
             `;
         }
@@ -4560,7 +4578,7 @@ function renderizarRendicionNutri() {
 
         <div style="display: flex; gap: 10px; margin-top: 20px;">
             <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('modalNuevoTurnoNutri').style.display='none'">Cancelar</button>
-            <button class="btn" style="flex: 1; background: var(--neon-green); color: #000;" onclick="guardarTurnoNutri()">Agendar Turno</button>
+            <button class="btn" style="flex: 1; background: var(--neon-green); color: #000;" id="btnGuardarTurnoNutri" onclick="guardarTurnoNutri()">Agendar Turno</button>
         </div>
     </div>
 </div>
