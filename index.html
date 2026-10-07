@@ -2038,6 +2038,21 @@
       }
     }
 
+    
+    function cambiarTabNutricion(tab, btn) {
+      const p = btn.parentElement;
+      p.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      document.getElementById('tabNutriAgenda').classList.remove('active');
+      document.getElementById('tabNutriPacientes').classList.remove('active');
+      document.getElementById('tabNutriRendicion').classList.remove('active');
+      
+      if(tab === 'agenda') document.getElementById('tabNutriAgenda').classList.add('active');
+      if(tab === 'pacientes') document.getElementById('tabNutriPacientes').classList.add('active');
+      if(tab === 'rendicion') document.getElementById('tabNutriRendicion').classList.add('active');
+    }
+
     function cambiarTabClientes(tab, btn) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
