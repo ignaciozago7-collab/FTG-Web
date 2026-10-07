@@ -4582,7 +4582,7 @@ function renderizarRendicionNutri() {
         }
     });
 
-    let innerHtml = '<div style="display: flex; flex-direction: column; gap: 20px;">';
+    let innerHtml = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px;">';
     
     Object.keys(resumen).forEach(nombre => {
         const data = resumen[nombre];
