@@ -4276,6 +4276,8 @@ function abrirModalNuevoTurnoNutri() {
     document.getElementById('inputPacienteNutri').value = '';
     document.getElementById('pacienteIdNutriSelec').value = '';
     document.getElementById('montoTurnoNutri').value = '';
+    document.getElementById('fechaTurnoNutri').value = '';
+    document.getElementById('horaTurnoNutri').value = '';
     actualizarDatalistPacientes();
     
     const selectNutri = document.getElementById('selectNutricionistaTurno');
@@ -4296,7 +4298,9 @@ function abrirModalNuevoTurnoNutri() {
 async function guardarTurnoNutri() {
   try {
     const nombreInput = document.getElementById('inputPacienteNutri').value.trim();
-    const fechaHora = document.getElementById('fechaHoraTurnoNutri').value;
+    const fechaVal = document.getElementById('fechaTurnoNutri').value;
+    const horaVal = document.getElementById('horaTurnoNutri').value;
+    const fechaHora = (fechaVal && horaVal) ? fechaVal + 'T' + horaVal : '';
     const monto = parseFloat(document.getElementById('montoTurnoNutri').value) || 0;
     const nutriNombre = document.getElementById('selectNutricionistaTurno').value;
 
@@ -4546,7 +4550,10 @@ function renderizarRendicionNutri() {
         <select id="selectNutricionistaTurno"></select>
 
         <label>Fecha y Hora:</label>
-        <input type="datetime-local" id="fechaHoraTurnoNutri">
+        <div style="display: flex; gap: 10px;">
+            <input type="date" id="fechaTurnoNutri" style="flex: 1;">
+            <input type="time" id="horaTurnoNutri" style="flex: 1;">
+        </div>
 
         <label>Monto a cobrar ($):</label>
         <input type="number" id="montoTurnoNutri" placeholder="Ej: 15000">
