@@ -4304,11 +4304,11 @@ async function guardarTurnoNutri() {
     }
 
     let pacienteId = null;
-    let paciente = nutriPacientesData.find(p => p.nombre.toLowerCase() === nombreInput.toLowerCase());
+    let paciente = nutriPacientesData.find(p => (p?.nombre || '').toLowerCase() === nombreInput.toLowerCase());
     if(paciente) {
         pacienteId = paciente.id;
     } else {
-        const alumnoGym = alumnosData.find(a => a.nombre.toLowerCase() === nombreInput.toLowerCase());
+        const alumnoGym = alumnosData.find(a => (a?.nombre || '').toLowerCase() === nombreInput.toLowerCase());
         const gymId = alumnoGym ? alumnoGym.id : null;
         
         const { data: newPac, error: errPac } = await _supabase.from('nutricion_pacientes').insert([{
@@ -4355,7 +4355,7 @@ function renderizarAgendaNutri() {
     
     nutriTurnosData.forEach(t => {
         const pac = nutriPacientesData.find(p => p.id === t.paciente_id);
-        const pacNombre = pac ? pac.nombre : 'Desconocido';
+        const pacNombre = pac?.nombre || 'Desconocido';
         const fecha = new Date(t.fecha_hora);
         const strFecha = fecha.toLocaleString('es-AR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'});
         
@@ -4486,7 +4486,7 @@ function renderizarRendicionNutri() {
     const profesionales = staffData.filter(s => s.rol === 'profesional' && (s.nombre.toLowerCase().includes('lucia') || s.nombre.toLowerCase().includes('santiago')));
     
     profesionales.forEach(s => {
-        resumen[s.nombre] = { totalCobrado: 0, retencionGymPct: s.porcentajeStaff || 30 };
+        resumen[s.nombre] = { totalCobrado: 0, retencionGymPct: s.porcentaje || 30 };
     });
 
     turnosPagados.forEach(t => {
@@ -4495,7 +4495,7 @@ function renderizarRendicionNutri() {
         } else {
             // Find in profesionales list to get exact percentage just in case
             const pObj = profesionales.find(px => px.nombre === t.nutricionista_nombre);
-            resumen[t.nutricionista_nombre] = { totalCobrado: parseFloat(t.monto) || 0, retencionGymPct: pObj ? parseFloat(pObj.porcentajeStaff) : 30 };
+            resumen[t.nutricionista_nombre] = { totalCobrado: parseFloat(t.monto) || 0, retencionGymPct: pObj ? parseFloat(pObj.porcentaje) : 30 };
         }
     });
 
