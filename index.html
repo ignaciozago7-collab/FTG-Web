@@ -4546,19 +4546,20 @@ function renderizarRendicionNutri() {
     const profesionales = staffData.filter(s => s.rol === 'profesional' && (s.nombre.toLowerCase().includes('lucia') || s.nombre.toLowerCase().includes('santiago')));
     
     profesionales.forEach(s => {
-        resumen[s.nombre] = { totalCobrado: 0, retencionGymPct: parseFloat(s.porcentaje) || 30 };
+        resumen[s.nombre] = { totalCobrado: 0, retencionGymPct: parseFloat(s.porcentaje) || 30, turnos: [] };
     });
 
     turnosPagados.forEach(t => {
         if(resumen[t.nutricionista_nombre] !== undefined) {
             resumen[t.nutricionista_nombre].totalCobrado += parseFloat(t.monto) || 0;
+            resumen[t.nutricionista_nombre].turnos.push(t);
         } else {
             const pObj = profesionales.find(px => px.nombre === t.nutricionista_nombre);
-            resumen[t.nutricionista_nombre] = { totalCobrado: parseFloat(t.monto) || 0, retencionGymPct: pObj ? parseFloat(pObj.porcentaje) : 30 };
+            resumen[t.nutricionista_nombre] = { totalCobrado: parseFloat(t.monto) || 0, retencionGymPct: pObj ? parseFloat(pObj.porcentaje) : 30, turnos: [t] };
         }
     });
 
-    let innerHtml = '<div class="metrics-grid">';
+    let innerHtml = '<div style="display: flex; flex-direction: column; gap: 20px;">';
     
     Object.keys(resumen).forEach(nombre => {
         const data = resumen[nombre];
@@ -4567,26 +4568,74 @@ function renderizarRendicionNutri() {
         const gananciaNutri = data.totalCobrado - deudaGym;
         
         if (window.esSuperAdminGlobal || (window.emailActualGlobal && window.emailActualGlobal.includes(nombre.toLowerCase().split(' ')[0]))) {
+            
+            let tablaTurnos = `
+            <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                <h5 style="color: #fff; margin-bottom: 12px; font-size: 1.1rem;">Detalle de Consultas Cobradas:</h5>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem; text-align: left;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.2); color: var(--text-dim);">
+                                <th style="padding: 10px 8px;">Fecha</th>
+                                <th style="padding: 10px 8px;">Paciente</th>
+                                <th style="padding: 10px 8px;">Cobro Total</th>
+                                <th style="padding: 10px 8px; color: #3b82f6;">Nutricionista (${100 - pctGym}%)</th>
+                                <th style="padding: 10px 8px; color: var(--danger-red);">Gym (${pctGym}%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            if (data.turnos.length === 0) {
+                tablaTurnos += `<tr><td colspan="5" style="padding: 15px 8px; text-align: center; color: var(--text-dim);">No hay consultas cobradas aún.</td></tr>`;
+            } else {
+                data.turnos.sort((a, b) => new Date(b.fecha_hora) - new Date(a.fecha_hora)).forEach(t => {
+                    const pac = nutriPacientesData.find(p => p.id === t.paciente_id);
+                    const pacNombre = pac?.nombre || 'Desconocido';
+                    const fechaObj = new Date(t.fecha_hora);
+                    const strFecha = fechaObj.toLocaleString('es-AR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'});
+                    
+                    const m = parseFloat(t.monto) || 0;
+                    const tGym = (m * pctGym) / 100;
+                    const tNutri = m - tGym;
+                    
+                    tablaTurnos += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 12px 8px; color: #ddd;">${strFecha}hs</td>
+                        <td style="padding: 12px 8px; font-weight: bold; color: #fff;">${pacNombre}</td>
+                        <td style="padding: 12px 8px; color: var(--neon-green);">${m}</td>
+                        <td style="padding: 12px 8px; color: #3b82f6; font-weight: bold;">${tNutri}</td>
+                        <td style="padding: 12px 8px; color: var(--danger-red); font-weight: bold;">${tGym}</td>
+                    </tr>`;
+                });
+            }
+            
+            tablaTurnos += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
+
             innerHtml += `
-                <div class="metric-card">
-                    <h4 style="margin: 0 0 12px 0; color: var(--neon-green); font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">💰 ${nombre}</h4>
-                    <div style="display: flex; justify-content: space-between; font-size: 0.95rem; color: var(--text-dim); margin-bottom: 6px;">
-                        <span>Recaudación Total:</span>
-                        <strong style="color: #fff;">${data.totalCobrado}</strong>
+                <div class="card" style="padding: 25px; border-top: 4px solid var(--neon-green);">
+                    <h4 style="margin: 0 0 20px 0; color: var(--neon-green); font-size: 1.5rem; display: flex; align-items: center; gap: 8px;">💰 Resumen de ${nombre}</h4>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px;">
+                        <div>
+                            <div style="font-size: 0.95rem; color: var(--text-dim); margin-bottom: 5px;">Recaudación Total</div>
+                            <div style="font-size: 1.6rem; color: #fff; font-weight: bold;">${data.totalCobrado}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.95rem; color: var(--text-dim); margin-bottom: 5px;">Ganancia Neta</div>
+                            <div style="font-size: 1.6rem; color: #3b82f6; font-weight: bold;">${gananciaNutri}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.95rem; color: var(--text-dim); margin-bottom: 5px;">Abonar al Gym (${pctGym}%)</div>
+                            <div style="font-size: 1.6rem; color: var(--danger-red); font-weight: bold;">${deudaGym}</div>
+                        </div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 0.95rem; color: var(--text-dim); margin-bottom: 12px;">
-                        <span>Porcentaje al Gym:</span>
-                        <strong style="color: #fff;">${pctGym}%</strong>
-                    </div>
-                    <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 12px 0;"></div>
-                    <div style="display: flex; justify-content: space-between; font-size: 1.1rem; color: #fff; margin-bottom: 6px;">
-                        <span>Ganancia Neta:</span>
-                        <strong style="color: #3b82f6;">${gananciaNutri}</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 1.1rem; color: #fff;">
-                        <span>Abonar al Gym:</span>
-                        <strong style="color: var(--danger-red);">${deudaGym}</strong>
-                    </div>
+
+                    ${tablaTurnos}
                 </div>
             `;
         }
