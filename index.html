@@ -508,6 +508,7 @@
           <button class="tab-btn active" onclick="cambiarTabClientes('todos', this)">Todos</button>
           <button class="tab-btn" onclick="cambiarTabClientes('pendientes', this)">Pendientes</button>
           <button class="tab-btn" onclick="cambiarTabClientes('pagados', this)">Pagados</button>
+            <button class="tab-btn" style="color: #ff4c4c; font-weight: bold;" onclick="cambiarTabClientes('riesgo', this)">En Riesgo 🚨</button>
         </div>
 
         <div id="tabTodos" class="tab-content active">
@@ -520,6 +521,9 @@
 
         <div id="tabPagados" class="tab-content">
           <ul id="listaAlumnosPagados"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></ul>
+        </div>
+        <div id="tabRiesgo" class="tab-content">
+          <ul id="listaAlumnosRiesgo"><div class="skeleton skeleton-row"></div></ul>
         </div>
       </div>
     </div>
@@ -1983,6 +1987,9 @@
         document.getElementById('tabPendientes').classList.add('active');
       } else if (tab === 'pagados') {
         document.getElementById('tabPagados').classList.add('active');
+      } else if (tab === 'riesgo') {
+        document.getElementById('tabRiesgo').classList.add('active');
+        cargarAlumnosEnRiesgo();
       }
     }
 
@@ -1991,7 +1998,89 @@
       return texto.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     }
 
-    async function cargarDatosAlumnos() {
+    
+      async function cargarAlumnosEnRiesgo() {
+        const listaRiesgo = document.getElementById('listaAlumnosRiesgo');
+        listaRiesgo.innerHTML = '<div style="text-align: center; color: var(--text-dim);">Analizando asistencias...</div>';
+
+        const limite = new Date();
+        limite.setDate(limite.getDate() - 45);
+        const strLimite = limite.toISOString().split('T')[0];
+
+        const { data, error } = await _supabase
+          .from('asistencias')
+          .select('alumno_id, fecha')
+          .gte('fecha', strLimite);
+
+        if (error) {
+            listaRiesgo.innerHTML = `<div style="color: var(--danger-red);">Error: ${error.message}</div>`;
+            return;
+        }
+
+        const ultimasAsistencias = {};
+        if (data) {
+            data.forEach(a => {
+                if (!ultimasAsistencias[a.alumno_id] || a.fecha > ultimasAsistencias[a.alumno_id]) {
+                    ultimasAsistencias[a.alumno_id] = a.fecha;
+                }
+            });
+        }
+
+        const hoy = new Date();
+        hoy.setHours(0,0,0,0);
+
+        let htmlRiesgo = '';
+
+        const alumnosRiesgo = alumnosData.map(a => {
+            const ultimaFechaStr = ultimasAsistencias[a.id];
+            let diasAusente = 999;
+            if (ultimaFechaStr) {
+                const ultimaFecha = new Date(ultimaFechaStr + 'T12:00:00');
+                ultimaFecha.setHours(0,0,0,0);
+                const diffTime = Math.abs(hoy - ultimaFecha);
+                diasAusente = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            }
+            return { ...a, diasAusente, ultimaFechaStr };
+        }).filter(a => a.diasAusente >= 7).sort((a, b) => b.diasAusente - a.diasAusente);
+
+        if (alumnosRiesgo.length === 0) {
+            listaRiesgo.innerHTML = '<div style="text-align: center; color: var(--text-dim); padding: 15px;">¡Excelente! No hay alumnos en riesgo (inactivos +7 días).</div>';
+            return;
+        }
+
+        alumnosRiesgo.forEach(a => {
+            const isPeligro = a.diasAusente >= 14;
+            const badgeColor = isPeligro ? 'var(--danger-red)' : '#f59e0b';
+            const badgeBg = isPeligro ? 'rgba(255, 83, 83, 0.1)' : 'rgba(245, 158, 11, 0.1)';
+            const textRiesgo = isPeligro ? 'Peligro' : 'Alerta';
+            
+            const txtDias = a.ultimaFechaStr ? `Última clase: hace ${a.diasAusente} días` : `Sin asistir en 45+ días`;
+            
+            const msg = encodeURIComponent(`¡Hola ${a.nombre}! Acá los profes de FTG. Vimos que hace unas semanitas que no te pasás por el gym. ¿Todo bien? ¡Te guardamos el lugar para cuando quieras retomar!`);
+            const wppLink = `https://wa.me/?text=${msg}`;
+
+            htmlRiesgo += `
+              <li style="padding: 14px 16px; background: rgba(255,255,255,0.01); border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; border: 1px solid var(--border-color); border-left: 4px solid ${badgeColor};">
+                <div style="flex: 1; min-width: 200px;">
+                  <strong style="font-size: 1.1rem;">${a.nombre}</strong>
+                  <span style="color: ${badgeColor}; border: 1px solid ${badgeColor}; background-color: ${badgeBg}; font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 6px; margin-left: 8px;">${textRiesgo}</span>
+                  <div style="margin-top: 6px; font-size: 0.85rem; color: var(--text-dim);">
+                    ⏳ ${txtDias}
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <a href="${wppLink}" target="_blank" class="btn" style="background: #25D366; color: #000; font-weight: bold; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                    💬 Enviar WhatsApp
+                  </a>
+                </div>
+              </li>
+            `;
+        });
+
+        listaRiesgo.innerHTML = htmlRiesgo;
+      }
+      
+      async function cargarDatosAlumnos() {
       const { data: alumnos, error } = await _supabase.from('alumnos').select('*').eq('activo', true).order('nombre', { ascending: true });
       if (error) return;
       alumnosData = alumnos.map(a => {
