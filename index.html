@@ -4278,7 +4278,7 @@ function abrirModalNuevoTurnoNutri() {
     document.getElementById('montoTurnoNutri').value = '';
     
     const selectNutri = document.getElementById('selectNutricionistaTurno');
-    const profesionales = staffData.filter(s => s.rol === 'profesional');
+    const profesionales = staffData.filter(s => s.rol === 'profesional' && (s.nombre.toLowerCase().includes('lucia') || s.nombre.toLowerCase().includes('santiago')));
     selectNutri.innerHTML = profesionales.map(s => `<option value="${s.nombre}">${s.nombre}</option>`).join('');
     
     if(window.emailActualGlobal === 'luciaperruzzaaa@gmail.com') {
@@ -4483,7 +4483,7 @@ function renderizarRendicionNutri() {
     const turnosPagados = nutriTurnosData.filter(t => t.estado === 'asistio');
     
     let resumen = {};
-    const profesionales = staffData.filter(s => s.rol === 'profesional');
+    const profesionales = staffData.filter(s => s.rol === 'profesional' && (s.nombre.toLowerCase().includes('lucia') || s.nombre.toLowerCase().includes('santiago')));
     
     profesionales.forEach(s => {
         resumen[s.nombre] = { totalCobrado: 0, retencionGymPct: s.porcentajeStaff || 30 };
@@ -4493,7 +4493,9 @@ function renderizarRendicionNutri() {
         if(resumen[t.nutricionista_nombre] !== undefined) {
             resumen[t.nutricionista_nombre].totalCobrado += parseFloat(t.monto) || 0;
         } else {
-            resumen[t.nutricionista_nombre] = { totalCobrado: parseFloat(t.monto) || 0, retencionGymPct: 30 };
+            // Find in profesionales list to get exact percentage just in case
+            const pObj = profesionales.find(px => px.nombre === t.nutricionista_nombre);
+            resumen[t.nutricionista_nombre] = { totalCobrado: parseFloat(t.monto) || 0, retencionGymPct: pObj ? parseFloat(pObj.porcentajeStaff) : 30 };
         }
     });
 
@@ -4525,5 +4527,41 @@ function renderizarRendicionNutri() {
 // ==========================================
 
 </script>
+
+<!-- MODAL NUEVO TURNO NUTRICIÓN -->
+<div id="modalNuevoTurnoNutri" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px;">
+        <h3>Nuevo Turno - Nutrición</h3>
+        <label>Paciente (Buscar o crear nuevo):</label>
+        <input type="text" id="inputPacienteNutri" list="listaAlumnosNutriAutocomplete" placeholder="Nombre completo..." autocomplete="off">
+        <datalist id="listaAlumnosNutriAutocomplete"></datalist>
+        <input type="hidden" id="pacienteIdNutriSelec">
+        
+        <label>Nutricionista:</label>
+        <select id="selectNutricionistaTurno"></select>
+
+        <label>Fecha y Hora:</label>
+        <input type="datetime-local" id="fechaHoraTurnoNutri">
+
+        <label>Monto a cobrar ($):</label>
+        <input type="number" id="montoTurnoNutri" placeholder="Ej: 15000">
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('modalNuevoTurnoNutri').style.display='none'">Cancelar</button>
+            <button class="btn" style="flex: 1; background: var(--neon-green); color: #000;" onclick="guardarTurnoNutri()">Agendar Turno</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL FICHA CLÍNICA -->
+<div id="modalFichaPacienteNutri" class="modal-overlay">
+    <div class="modal-content" style="max-width: 700px; width: 95%; max-height: 90vh; overflow-y: auto;">
+        <h3 id="tituloFichaPaciente">Ficha Médica</h3>
+        <div id="historialConsultasPaciente" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
+        </div>
+        <button class="btn btn-outline" style="margin-top: 20px; width: 100%;" onclick="document.getElementById('modalFichaPacienteNutri').style.display='none'">Cerrar Ficha</button>
+    </div>
+</div>
+
 </body>
 </html>
