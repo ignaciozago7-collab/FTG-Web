@@ -828,9 +828,15 @@
     
       <!-- SECCIÓN NUTRICIÓN -->
       <div id="nutricionSection" class="section-page">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
           <h1 style="margin: 0;">Consultorio Nutricional</h1>
-          <div id="nutriContextInfo" style="color: var(--neon-green); font-weight: bold;"></div>
+          <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+              <div id="nutriContextInfo" style="color: var(--neon-green); font-weight: bold;"></div>
+              <div style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                 <label for="mesFiltroNutricion" style="color: var(--text-dim); font-size: 0.9rem;">Ciclo:</label>
+                 <input type="month" id="mesFiltroNutricion" onchange="renderVistasNutricion()" style="background: transparent; border: none; color: #fff; font-size: 1rem; outline: none; cursor: pointer; font-family: 'Montserrat', sans-serif;">
+              </div>
+          </div>
         </div>
         
         <div class="tabs-clientes" style="margin-bottom: 20px;">
@@ -4244,6 +4250,12 @@ let nutriPacientesData = [];
 let nutriTurnosData = [];
 
 async function cargarDatosNutricion() {
+    const inputMes = document.getElementById('mesFiltroNutricion');
+    if(inputMes && !inputMes.value) {
+        const d = new Date();
+        inputMes.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    }
+
     try {
         const [resPacientes, resTurnos] = await Promise.all([
             _supabase.from('nutricion_pacientes').select('*').order('nombre', {ascending: true}),
@@ -4356,6 +4368,12 @@ async function actualizarEstadoTurnoNutri(turnoId, estadoNuevo) {
     else cargarDatosNutricion();
 }
 
+
+function renderVistasNutricion() {
+    renderizarAgendaNutri();
+    renderizarRendicionNutri();
+}
+
 function renderizarAgendaNutri() {
     const lista = document.getElementById('listaTurnosNutri');
     if(!lista) return;
@@ -4365,7 +4383,8 @@ function renderizarAgendaNutri() {
     let colsHtml = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">';
 
     profesionales.forEach(prof => {
-        const turnosProf = nutriTurnosData.filter(t => t.nutricionista_nombre === prof.nombre);
+        const mesFiltro = document.getElementById('mesFiltroNutricion')?.value || new Date().toISOString().substring(0, 7);
+        const turnosProf = nutriTurnosData.filter(t => t.nutricionista_nombre === prof.nombre && t.fecha_hora.startsWith(mesFiltro));
         
         colsHtml += `
         <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 15px;">
@@ -4563,7 +4582,8 @@ function renderizarRendicionNutri() {
     const cont = document.getElementById('resumenNutriMensual');
     if(!cont) return;
 
-    const turnosPagados = nutriTurnosData.filter(t => t.estado === 'asistio');
+    const mesFiltro = document.getElementById('mesFiltroNutricion')?.value || new Date().toISOString().substring(0, 7);
+    const turnosPagados = nutriTurnosData.filter(t => t.estado === 'asistio' && t.fecha_hora.startsWith(mesFiltro));
     
     let resumen = {};
     const profesionales = staffData.filter(s => s.rol === 'profesional' && (s.nombre.toLowerCase().includes('lucia') || s.nombre.toLowerCase().includes('santiago')));
