@@ -4294,6 +4294,7 @@ function abrirModalNuevoTurnoNutri() {
 }
 
 async function guardarTurnoNutri() {
+  try {
     const nombreInput = document.getElementById('inputPacienteNutri').value.trim();
     const fechaHora = document.getElementById('fechaHoraTurnoNutri').value;
     const monto = parseFloat(document.getElementById('montoTurnoNutri').value) || 0;
@@ -4335,6 +4336,9 @@ async function guardarTurnoNutri() {
         document.getElementById('modalNuevoTurnoNutri').style.display = 'none';
         cargarDatosNutricion();
     }
+  } catch(e) {
+      alert('ERROR CRÍTICO JS: ' + e.message);
+  }
 }
 
 async function actualizarEstadoTurnoNutri(turnoId, estadoNuevo) {
