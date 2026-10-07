@@ -435,6 +435,7 @@
     <nav>
       <button class="nav-btn active" onclick="cambiarSeccion('alumnosSection', this)">👥 Clientes</button>
       <button class="nav-btn" onclick="cambiarSeccion('asistenciasSection', this)">📌 Asistencias</button>
+      <button class="nav-btn" id="btnNavNutricion" onclick="cambiarSeccion('nutricionSection', this)" style="display: none;">🥗 Nutrición</button>
       <button class="nav-btn" onclick="cambiarSeccion('cierreMensualSection', this)">📊 Cierre Mensual</button>
       <button class="nav-btn" onclick="cambiarSeccion('staffSection', this)">🥊 Staff & Liquidación</button>
       <button class="nav-btn" onclick="cambiarSeccion('libroDiarioSection', this)">📖 Libro Diario</button>
@@ -824,7 +825,48 @@
 
 </div>
 
-    <!-- SECCIÓN LIBRO DIARIO -->
+    
+      <!-- SECCIÓN NUTRICIÓN -->
+      <div id="nutricionSection" class="section-page">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h1 style="margin: 0;">Consultorio Nutricional</h1>
+          <div id="nutriContextInfo" style="color: var(--neon-green); font-weight: bold;"></div>
+        </div>
+        
+        <div class="tabs-clientes" style="margin-bottom: 20px;">
+          <button class="tab-btn active" onclick="cambiarTabNutricion('agenda', this)">📅 Agenda de Turnos</button>
+          <button class="tab-btn" onclick="cambiarTabNutricion('pacientes', this)">🗂️ Pacientes e Historial</button>
+          <button class="tab-btn" onclick="cambiarTabNutricion('rendicion', this)">💰 Mi Resumen</button>
+        </div>
+        
+        <div id="tabNutriAgenda" class="tab-content active">
+           <div class="card">
+             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin:0;">Turnos Próximos</h3>
+                <button class="btn" style="background: var(--neon-green); color: #000; font-weight: bold;" onclick="abrirModalNuevoTurnoNutri()">+ Nuevo Turno</button>
+             </div>
+             <ul id="listaTurnosNutri"><div style="color: var(--text-dim);">Construyendo agenda...</div></ul>
+           </div>
+        </div>
+        
+        <div id="tabNutriPacientes" class="tab-content">
+           <div class="card">
+             <h3 style="margin:0; margin-bottom: 15px;">Directorio de Pacientes</h3>
+             <input type="text" id="buscadorPacientesNutri" placeholder="Buscar paciente..." style="width: 100%; margin-bottom: 15px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+             <ul id="listaPacientesNutri"><div style="color: var(--text-dim);">Construyendo historial...</div></ul>
+           </div>
+        </div>
+        
+        <div id="tabNutriRendicion" class="tab-content">
+           <div class="card">
+             <h3 style="margin:0; margin-bottom: 15px;">Rendición Mensual</h3>
+             <p style="color: var(--text-dim);">Aquí se calculará automáticamente el porcentaje a abonar al gimnasio usando los valores cargados en Staff.</p>
+             <div id="resumenNutriMensual"></div>
+           </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN LIBRO DIARIO -->
     <div id="libroDiarioSection" class="section-page">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h1 style="margin: 0;">Libro Diario y Balance de Caja</h1>
@@ -1684,18 +1726,35 @@
 
       // Control de accesos por email
       const emailActual = document.getElementById('loggedUserEmail').innerText.trim();
-      const esSuperAdmin = (emailActual === 'ignaciozago7@gmail.com' || emailActual === 'leandrovilliani7@gmail.com');
-      
-      const btnCierre = document.querySelector('button[onclick*="cierreMensualSection"]');
-      const btnStaff = document.querySelector('button[onclick*="staffSection"]');
-      
-      if (btnCierre) btnCierre.style.display = esSuperAdmin ? 'block' : 'none';
-      if (btnStaff) btnStaff.style.display = esSuperAdmin ? 'block' : 'none';
+        const esSuperAdmin = (emailActual === 'ignaciozago7@gmail.com' || emailActual === 'leandrovilliani7@gmail.com');
+        const esNutri = (emailActual === 'luciaperruzzaaa@gmail.com' || emailActual === 'santiagoruizzavala@gmail.com');
+        window.esSuperAdminGlobal = esSuperAdmin;
+        window.esNutriGlobal = esNutri;
+        window.emailActualGlobal = emailActual;
+
+        const btnCierre = document.querySelector('button[onclick*="cierreMensualSection"]');
+        const btnStaff = document.querySelector('button[onclick*="staffSection"]');
+        const btnNutri = document.getElementById('btnNavNutricion');
+        
+        if (btnCierre) btnCierre.style.display = esSuperAdmin ? 'block' : 'none';
+        if (btnStaff) btnStaff.style.display = esSuperAdmin ? 'block' : 'none';
+        if (btnNutri) btnNutri.style.display = (esSuperAdmin || esNutri) ? 'block' : 'none';
+
+        if (esNutri) {
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                if(b.id !== 'btnNavNutricion' && !b.innerText.Contains('Cerrar Ses')) {
+                    b.style.display = 'none';
+                }
+            });
+        }
 
       const seccionActiva = document.querySelector('.section-page.active');
-      if (!esSuperAdmin && seccionActiva && (seccionActiva.id === 'cierreMensualSection' || seccionActiva.id === 'staffSection')) {
-          cambiarSeccion('alumnosSection', document.querySelector('button[onclick*="alumnosSection"]'));
-      }
+      if (window.esNutriGlobal) {
+            cambiarSeccion('nutricionSection', document.getElementById('btnNavNutricion'));
+            document.getElementById('nutriContextInfo').innerText = '👤 Hola, ' + window.emailActualGlobal;
+        } else if (!window.esSuperAdminGlobal && seccionActiva && (seccionActiva.id === 'cierreMensualSection' || seccionActiva.id === 'staffSection' || seccionActiva.id === 'nutricionSection')) {
+            cambiarSeccion('alumnosSection', document.querySelector('button[onclick*="alumnosSection"]'));
+        }
 
       Promise.allSettled([
         cargarStaff(),
@@ -4158,6 +4217,295 @@
             }
         }
     }
-  </script>
+  
+
+// ==========================================
+// MÓDULO DE NUTRICIÓN
+// ==========================================
+let nutriPacientesData = [];
+let nutriTurnosData = [];
+
+async function cargarDatosNutricion() {
+    try {
+        const [resPacientes, resTurnos] = await Promise.all([
+            _supabase.from('nutricion_pacientes').select('*').order('nombre', {ascending: true}),
+            _supabase.from('nutricion_turnos').select('*').order('fecha_hora', {ascending: true})
+        ]);
+        if(resPacientes.data) nutriPacientesData = resPacientes.data;
+        if(resTurnos.data) nutriTurnosData = resTurnos.data;
+        
+        renderizarAgendaNutri();
+        renderizarPacientesNutri();
+        renderizarRendicionNutri();
+        actualizarDatalistPacientes();
+    } catch(e) { console.error('Error cargando nutricion', e); }
+}
+
+function actualizarDatalistPacientes() {
+    const datalist = document.getElementById('listaAlumnosNutriAutocomplete');
+    if(!datalist) return;
+    
+    let opciones = [];
+    nutriPacientesData.forEach(p => opciones.push(p.nombre));
+    alumnosData.forEach(a => {
+        if(!opciones.includes(a.nombre)) opciones.push(a.nombre);
+    });
+    
+    datalist.innerHTML = opciones.map(n => `<option value="${n}">`).join('');
+}
+
+function abrirModalNuevoTurnoNutri() {
+    document.getElementById('inputPacienteNutri').value = '';
+    document.getElementById('pacienteIdNutriSelec').value = '';
+    document.getElementById('montoTurnoNutri').value = '';
+    
+    const selectNutri = document.getElementById('selectNutricionistaTurno');
+    const profesionales = staffData.filter(s => s.rol === 'profesional');
+    selectNutri.innerHTML = profesionales.map(s => `<option value="${s.nombre}">${s.nombre}</option>`).join('');
+    
+    if(window.emailActualGlobal === 'luciaperruzzaaa@gmail.com') {
+        const op = Array.from(selectNutri.options).find(o => o.value.toLowerCase().includes('lucia'));
+        if(op) op.selected = true;
+    } else if (window.emailActualGlobal === 'santiagoruizzavala@gmail.com') {
+        const op = Array.from(selectNutri.options).find(o => o.value.toLowerCase().includes('santiago'));
+        if(op) op.selected = true;
+    }
+
+    document.getElementById('modalNuevoTurnoNutri').style.display = 'flex';
+}
+
+async function guardarTurnoNutri() {
+    const nombreInput = document.getElementById('inputPacienteNutri').value.trim();
+    const fechaHora = document.getElementById('fechaHoraTurnoNutri').value;
+    const monto = parseFloat(document.getElementById('montoTurnoNutri').value) || 0;
+    const nutriNombre = document.getElementById('selectNutricionistaTurno').value;
+
+    if(!nombreInput || !fechaHora || !nutriNombre) {
+        alert('Completá nombre, fecha/hora y nutricionista.');
+        return;
+    }
+
+    let pacienteId = null;
+    let paciente = nutriPacientesData.find(p => p.nombre.toLowerCase() === nombreInput.toLowerCase());
+    if(paciente) {
+        pacienteId = paciente.id;
+    } else {
+        const alumnoGym = alumnosData.find(a => a.nombre.toLowerCase() === nombreInput.toLowerCase());
+        const gymId = alumnoGym ? alumnoGym.id : null;
+        
+        const { data: newPac, error: errPac } = await _supabase.from('nutricion_pacientes').insert([{
+            nombre: nombreInput,
+            alumno_id: gymId
+        }]).select();
+        
+        if(errPac) { alert('Error creando paciente: ' + errPac.message); return; }
+        pacienteId = newPac[0].id;
+    }
+
+    const { error: errTurno } = await _supabase.from('nutricion_turnos').insert([{
+        paciente_id: pacienteId,
+        nutricionista_nombre: nutriNombre,
+        fecha_hora: fechaHora,
+        monto: monto,
+        estado: 'pendiente'
+    }]);
+
+    if(errTurno) {
+        alert('Error agendando turno: ' + errTurno.message);
+    } else {
+        document.getElementById('modalNuevoTurnoNutri').style.display = 'none';
+        cargarDatosNutricion();
+    }
+}
+
+async function actualizarEstadoTurnoNutri(turnoId, estadoNuevo) {
+    const { error } = await _supabase.from('nutricion_turnos').update({ estado: estadoNuevo }).eq('id', turnoId);
+    if(error) alert('Error: ' + error.message);
+    else cargarDatosNutricion();
+}
+
+function renderizarAgendaNutri() {
+    const lista = document.getElementById('listaTurnosNutri');
+    if(!lista) return;
+
+    if(nutriTurnosData.length === 0) {
+        lista.innerHTML = '<div style="color: var(--text-dim);">No hay turnos agendados.</div>';
+        return;
+    }
+
+    let innerHtml = '';
+    
+    nutriTurnosData.forEach(t => {
+        const pac = nutriPacientesData.find(p => p.id === t.paciente_id);
+        const pacNombre = pac ? pac.nombre : 'Desconocido';
+        const fecha = new Date(t.fecha_hora);
+        const strFecha = fecha.toLocaleString('es-AR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'});
+        
+        let badgeEstado = '';
+        if(t.estado === 'pendiente') badgeEstado = '<span style="color: #f59e0b; border: 1px solid #f59e0b; padding: 2px 6px; border-radius: 6px; font-size: 0.75rem;">Pendiente</span>';
+        if(t.estado === 'asistio') badgeEstado = '<span style="color: var(--neon-green); border: 1px solid var(--neon-green); padding: 2px 6px; border-radius: 6px; font-size: 0.75rem;">Asistió</span>';
+        if(t.estado === 'cancelo') badgeEstado = '<span style="color: var(--danger-red); border: 1px solid var(--danger-red); padding: 2px 6px; border-radius: 6px; font-size: 0.75rem;">Canceló</span>';
+
+        const msgWpp = encodeURIComponent(`¡Hola ${pacNombre}! Te escribo de FTG para recordarte tu turno de nutrición el ${strFecha}hs. ¡Confirmame asistencia por favor!`);
+        
+        innerHtml += `
+            <li style="padding: 14px 16px; background: rgba(255,255,255,0.01); border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; border: 1px solid var(--border-color);">
+                <div>
+                    <strong style="font-size: 1.1rem;">${strFecha}hs - ${pacNombre}</strong>
+                    <span style="font-size: 0.85rem; color: var(--text-dim); margin-left: 8px;">(Prof: ${t.nutricionista_nombre})</span>
+                    <div style="margin-top: 6px;">
+                        ${badgeEstado}
+                        <span style="font-size: 0.85rem; color: var(--text-dim); margin-left: 8px;">Cobro: $${t.monto}</span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <a href="https://wa.me/?text=${msgWpp}" target="_blank" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.85rem; color: #25D366; border-color: #25D366;">💬 Recordatorio</a>
+                    <select onchange="actualizarEstadoTurnoNutri(${t.id}, this.value)" style="padding: 6px; border-radius: 8px; background: #14141D; color: #fff; border: 1px solid var(--border-color);">
+                        <option value="pendiente" ${t.estado==='pendiente'?'selected':''}>Pendiente</option>
+                        <option value="asistio" ${t.estado==='asistio'?'selected':''}>Asistió / Pagó</option>
+                        <option value="cancelo" ${t.estado==='cancelo'?'selected':''}>Canceló</option>
+                    </select>
+                    <button class="btn btn-outline" style="padding: 4px 10px;" onclick="abrirFichaPacienteNutri(${t.paciente_id})">Ver Ficha</button>
+                </div>
+            </li>
+        `;
+    });
+    lista.innerHTML = innerHtml;
+}
+
+function renderizarPacientesNutri() {
+    const lista = document.getElementById('listaPacientesNutri');
+    if(!lista) return;
+    
+    let innerHtml = '';
+    nutriPacientesData.forEach(p => {
+        const turnosDelPac = nutriTurnosData.filter(t => t.paciente_id === p.id);
+        const cantConsultas = turnosDelPac.length;
+        innerHtml += `
+            <li style="padding: 10px 14px; background: rgba(255,255,255,0.01); border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color);">
+                <div>
+                    <strong>${p.nombre}</strong>
+                    <div style="font-size: 0.8rem; color: var(--text-dim);">Consultas registradas: ${cantConsultas}</div>
+                </div>
+                <button class="btn btn-outline" onclick="abrirFichaPacienteNutri(${p.id})">Abrir Ficha Clínica</button>
+            </li>
+        `;
+    });
+    lista.innerHTML = innerHtml;
+}
+
+function abrirFichaPacienteNutri(pacienteId) {
+    const pac = nutriPacientesData.find(p => p.id === pacienteId);
+    if(!pac) return;
+    
+    document.getElementById('tituloFichaPaciente').innerText = 'Ficha Médica: ' + pac.nombre;
+    const historialCont = document.getElementById('historialConsultasPaciente');
+    
+    const turnosDelPac = nutriTurnosData.filter(t => t.paciente_id === pacienteId).sort((a,b) => new Date(b.fecha_hora) - new Date(a.fecha_hora));
+    
+    if(turnosDelPac.length === 0) {
+        historialCont.innerHTML = '<div style="color: var(--text-dim);">No hay consultas previas.</div>';
+    } else {
+        historialCont.innerHTML = turnosDelPac.map(t => {
+            const f = new Date(t.fecha_hora).toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year:'numeric'});
+            return `
+                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <strong style="color: var(--neon-green);">Consulta: ${f} (${t.estado})</strong>
+                        <button class="btn" style="padding: 2px 8px; font-size: 0.75rem;" onclick="guardarFichaConsultaNutri(${t.id})">Guardar Cambios</button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--text-dim);">Peso (kg):</label>
+                            <input type="number" step="0.1" id="peso-${t.id}" value="${t.peso || ''}" style="width: 100%; padding: 4px; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--text-dim);">% Grasa:</label>
+                            <input type="number" step="0.1" id="grasa-${t.id}" value="${t.porcentaje_grasa || ''}" style="width: 100%; padding: 4px; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75rem; color: var(--text-dim);">Masa Musc (kg):</label>
+                            <input type="number" step="0.1" id="musculo-${t.id}" value="${t.masa_muscular || ''}" style="width: 100%; padding: 4px; border-radius: 4px;">
+                        </div>
+                    </div>
+                    <label style="font-size: 0.75rem; color: var(--text-dim);">Notas / Plan de alimentación:</label>
+                    <textarea id="notas-${t.id}" style="width: 100%; padding: 8px; border-radius: 6px; background: #14141D; color: #fff; border: 1px solid var(--border-color); min-height: 60px;">${t.notas || ''}</textarea>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    document.getElementById('modalFichaPacienteNutri').style.display = 'flex';
+}
+
+async function guardarFichaConsultaNutri(turnoId) {
+    const peso = parseFloat(document.getElementById(`peso-${turnoId}`).value) || null;
+    const grasa = parseFloat(document.getElementById(`grasa-${turnoId}`).value) || null;
+    const musculo = parseFloat(document.getElementById(`musculo-${turnoId}`).value) || null;
+    const notas = document.getElementById(`notas-${turnoId}`).value;
+    
+    const { error } = await _supabase.from('nutricion_turnos').update({
+        peso: peso,
+        porcentaje_grasa: grasa,
+        masa_muscular: musculo,
+        notas: notas
+    }).eq('id', turnoId);
+    
+    if(error) alert('Error guardando: ' + error.message);
+    else {
+        alert('Ficha médica actualizada');
+        cargarDatosNutricion();
+    }
+}
+
+function renderizarRendicionNutri() {
+    const cont = document.getElementById('resumenNutriMensual');
+    if(!cont) return;
+
+    const turnosPagados = nutriTurnosData.filter(t => t.estado === 'asistio');
+    
+    let resumen = {};
+    const profesionales = staffData.filter(s => s.rol === 'profesional');
+    
+    profesionales.forEach(s => {
+        resumen[s.nombre] = { totalCobrado: 0, retencionGymPct: s.porcentajeStaff || 30 };
+    });
+
+    turnosPagados.forEach(t => {
+        if(resumen[t.nutricionista_nombre] !== undefined) {
+            resumen[t.nutricionista_nombre].totalCobrado += parseFloat(t.monto) || 0;
+        } else {
+            resumen[t.nutricionista_nombre] = { totalCobrado: parseFloat(t.monto) || 0, retencionGymPct: 30 };
+        }
+    });
+
+    let innerHtml = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">';
+    
+    Object.keys(resumen).forEach(nombre => {
+        const data = resumen[nombre];
+        const pctGym = parseFloat(data.retencionGymPct);
+        const deudaGym = (data.totalCobrado * pctGym) / 100;
+        const gananciaNutri = data.totalCobrado - deudaGym;
+        
+        if (window.esSuperAdminGlobal || window.emailActualGlobal.includes(nombre.toLowerCase().split(' ')[0])) {
+            innerHtml += `
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
+                    <h4 style="margin: 0 0 10px 0; color: var(--neon-green); font-size: 1.1rem;">Rendición: ${nombre}</h4>
+                    <div style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 4px;">Recaudación Total: <strong>$${data.totalCobrado}</strong></div>
+                    <div style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 4px;">Arreglo Gym: <strong>${pctGym}%</strong></div>
+                    <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 10px 0;">
+                    <div style="font-size: 1rem; color: #fff; margin-bottom: 4px;">Ganancia Nutri: <strong style="color: #3b82f6;">$${gananciaNutri}</strong></div>
+                    <div style="font-size: 1rem; color: #fff;">Debe abonar al Gym: <strong style="color: var(--danger-red);">$${deudaGym}</strong></div>
+                </div>
+            `;
+        }
+    });
+    
+    innerHtml += '</div>';
+    cont.innerHTML = innerHtml;
+}
+// ==========================================
+
+</script>
 </body>
 </html>
