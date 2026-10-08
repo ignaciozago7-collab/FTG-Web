@@ -4700,23 +4700,7 @@ function renderizarPacientesNutri() {
 }
 
 
-async function abrirModalEvolucion(pacienteId) {
-    const paciente = nutriPacientesData.find(p => p.id === pacienteId);
-    if (!paciente) return;
-    
-    evoPacienteActualId = pacienteId;
-    document.getElementById('evoPacienteNombre').innerText = paciente.nombre;
-    
-    const d = new Date();
-    document.getElementById('evoFecha').value = d.toISOString().split('T')[0];
-    document.getElementById('evoPeso').value = '';
-    document.getElementById('evoGrasa').value = '';
-    document.getElementById('evoMusculo').value = '';
-    document.getElementById('evoObservaciones').value = '';
 
-    document.getElementById('modalEvolucionNutri').style.display = 'flex';
-    renderizarGraficoEvolucion();
-}
 
 function renderizarGraficoEvolucion() {
     const ctx = document.getElementById('graficoEvolucion');
@@ -4743,7 +4727,7 @@ function renderizarGraficoEvolucion() {
         peso: t.peso,
         porcentaje_grasa: t.porcentaje_grasa,
         masa_muscular: t.masa_muscular,
-        observaciones: t.observaciones_consulta || '',
+        observaciones: t.notas || '',
         esManual: false
     }));
 
@@ -4779,7 +4763,7 @@ function renderizarGraficoEvolucion() {
                     borderColor: '#ef4444',
                     backgroundColor: 'rgba(239, 68, 68, 0.1)',
                     tension: 0.3,
-                    yAxisID: 'y' /* Usa el mismo eje que el peso porque ahora está en Kilos */
+                    
                 },
                 {
                     label: 'Masa Muscular (kg)',
@@ -4787,7 +4771,7 @@ function renderizarGraficoEvolucion() {
                     borderColor: '#10b981',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
                     tension: 0.3,
-                    yAxisID: 'y'
+                    
                 }
             ]
         },
@@ -4805,8 +4789,7 @@ function renderizarGraficoEvolucion() {
                     position: 'left',
                     title: { display: true, text: 'Kilos' },
                     ticks: { color: '#333' }
-                },
-                
+                }
             },
             plugins: {
                 legend: { labels: { color: '#333' } }
@@ -5241,25 +5224,7 @@ function renderizarRendicionNutri() {
 </div>
 
 
-<!-- Modal Evolucion Nutricion -->
-<div id="modalEvolucionNutri" class="modal-overlay" style="display: none; z-index: 9999;">
-  <div class="modal-content" style="max-width: 700px; width: 90%; max-height: 90vh; overflow-y: auto;">
-    <h2 style="margin-top:0; color:var(--neon-green);">Evolución del Paciente</h2>
-    <h3 id="evoPacienteNombre" style="margin-bottom: 20px; color: #fff;"></h3>
-    
-    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1);">
-      <h4 style="margin-top:0;">+ Registrar nueva medición</h4>
-      <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
-        <input type="date" id="evoFecha" style="flex:1; min-width:130px;">
-        <input type="number" id="evoPeso" placeholder="Peso (kg)" step="0.1" style="flex:1; min-width:100px;">
-        <input type="number" id="evoGrasa" placeholder="Masa Adiposa (kg)" step="0.1" style="flex:1; min-width:100px;">
-        <input type="number" id="evoMusculo" placeholder="Masa Muscular (kg)" step="0.1" style="flex:1; min-width:100px;">
-      </div>
-      <div style="display: flex; gap: 10px; margin-top: 10px;">
-        <input type="text" id="evoObservaciones" placeholder="Detalles / Notas de esta consulta..." style="flex:3;">
-        <button class="btn" onclick="guardarMedicionNutri()" style="flex:1;">Guardar Historial</button>
-      </div>
-    </div>
+
 
     <div style="height: 350px; width: 100%; position: relative; background: #fff; border-radius: 8px; padding: 10px;">
       <canvas id="graficoEvolucion"></canvas>
