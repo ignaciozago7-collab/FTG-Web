@@ -458,6 +458,39 @@
         font-size: 16px !important; 
       }
       
+
+      /* === CRONOGRAMA MEJORADO === */
+      .grid-cronograma {
+        grid-template-columns: 60px repeat(6, minmax(140px, 1fr)) !important; 
+      }
+      .crono-cell {
+        padding: 8px !important;
+        font-size: 0.9rem !important;
+      }
+      
+      /* === TABLA DE ASISTENCIAS === */
+      /* Como tiene 31 columnas de dias, forzamos un ancho enorme en movil para que se pueda scrollear perfecto */
+      #asistenciasSection table {
+        min-width: 1200px !important;
+      }
+      
+      /* Botones Generales en celulares */
+      .btn {
+        padding: 10px 14px !important; /* Más fáciles de tocar con el dedo */
+      }
+      
+      /* Flex containers en modales que tienen form inputs en fila -> pasarlos a columna */
+      .modal-content > div[style*="display: flex"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+      .modal-content > div[style*="display: flex"] > input, 
+      .modal-content > div[style*="display: flex"] > button,
+      .modal-content > div[style*="display: flex"] > select {
+        width: 100% !important;
+        margin-bottom: 5px !important;
+      }
+
       /* Filtros adaptables */
       .month-filter-pill {
         width: 100% !important;
