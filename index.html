@@ -3523,10 +3523,9 @@ function descargarExcelLibroDiario() {
     const filtrados = cajaData.filter(c => {
          let ok = true;
          if (filtro && !(
-           (c.concepto||'').toLowerCase().includes(filtro) ||
-           (c.metodo_pago||'').toLowerCase().includes(filtro) ||
-           (c.cobrador||'').toLowerCase().includes(filtro) ||
-           (c.observaciones||'').toLowerCase().includes(filtro)
+           (c.detalle||'').toLowerCase().includes(filtro) ||
+           (c.categoria||'').toLowerCase().includes(filtro) ||
+           (c.cobrador||'').toLowerCase().includes(filtro)
          )) {
              ok = false;
          }
@@ -3542,7 +3541,7 @@ function descargarExcelLibroDiario() {
         return;
     }
 
-    let csvContent = "Fecha,Hora,Tipo,Concepto,Metodo de Pago,Cobrador,Monto,Observaciones\n";
+    let csvContent = "Fecha,Hora,Tipo,Detalle/Concepto,Categoria,Cobrador,Monto\n";
 
     filtrados.sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).forEach(c => {
         let horaStr = '';
@@ -3563,11 +3562,10 @@ function descargarExcelLibroDiario() {
             escapeCSV(c.fecha),
             escapeCSV(horaStr),
             escapeCSV(c.tipo),
-            escapeCSV(c.concepto),
-            escapeCSV(c.metodo_pago),
+            escapeCSV(c.detalle),
+            escapeCSV(c.categoria),
             escapeCSV(c.cobrador),
-            escapeCSV(monto),
-            escapeCSV(c.observaciones)
+            escapeCSV(monto)
         ];
         
         csvContent += row.join(",") + "\n";
