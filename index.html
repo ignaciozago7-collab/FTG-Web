@@ -4992,7 +4992,7 @@ function abrirFichaPacienteNutri(pacienteId) {
             return `
                 <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <strong style="color: ${isMan ? '#fff' : 'var(--neon-green)'};">${isMan ? 'Historial Manual' : 'Turno (' + t.estado + ')'}: ${f}</strong>
+                        <strong style="color: ${isMan ? '#fff' : 'var(--neon-green)'};">${isMan ? 'Turno' : 'Turno (' + t.estado + ')'}: ${f}</strong>
                         <div style="display:flex; gap:5px;">${btnSave}${btnDel}</div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
@@ -5197,7 +5197,7 @@ function renderizarRendicionNutri() {
         
 
         <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.1);">
-            <h4 style="margin-top:0;">+ Cargar Historial Manual (Fechas anteriores)</h4>
+            <h4 style="margin-top:0;">+ Cargar Historial (Fechas anteriores)</h4>
             <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
                 <input type="date" id="evoFecha" style="flex:1; min-width:130px;">
                 <input type="number" id="evoPeso" placeholder="Peso (kg)" step="0.1" style="flex:1; min-width:100px;">
@@ -5214,7 +5214,7 @@ function renderizarRendicionNutri() {
             <canvas id="graficoEvolucion"></canvas>
         </div>
 
-        <h4 style="margin-bottom: 0; margin-top: 20px;">Historial Detallado (Turnos y Manuales)</h4>
+        <h4 style="margin-bottom: 0; margin-top: 20px;">Historial Detallado</h4>
         <div id="historialConsultasPaciente" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
         </div>
         <div style="margin-top: 20px;">
