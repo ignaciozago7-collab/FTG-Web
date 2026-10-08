@@ -132,6 +132,16 @@
       border: 1px solid var(--warning-yellow);
     }
 
+
+    /* Arreglo global para iconos de calendario en tema oscuro */
+    input[type="date"], input[type="month"] {
+      color-scheme: dark;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator, 
+    input[type="month"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      cursor: pointer;
+    }
     input, select {
       background: #14141D;
       border: 1px solid var(--border-color);
