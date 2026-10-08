@@ -4962,59 +4962,6 @@ function abrirModalEvolucionFicha() {
 let fichaActualPacienteId = null;
 
 
-async function guardarPerfilPacienteNutri() {
-    const est = parseFloat(document.getElementById('fichaEstatura').value) || null;
-    const { error } = await _supabase.from('nutricion_pacientes').update({
-        estatura: est
-    }).eq('id', fichaActualPacienteId);
-    
-    if (error) {
-        alert('Error: ' + error.message);
-    } else {
-        const p = nutriPacientesData.find(x => x.id === fichaActualPacienteId);
-        if (p) {
-            p.estatura = est;
-        }
-        alert('Perfil guardado');
-        actualizarIMCDisplay(p);
-    }
-}
-
-function actualizarIMCDisplay(pac) {
-    const imcBox = document.getElementById('imcBox');
-    if (!pac.estatura) {
-        imcBox.innerHTML = '';
-        return;
-    }
-    
-    // Buscar ultimo peso registrado (en turnos o mediciones)
-    let ultimoPeso = null;
-    
-    const turnosDelPac = nutriTurnosData.filter(t => t.paciente_id === pac.id && t.peso).sort((a,b) => new Date(b.fecha_hora) - new Date(a.fecha_hora));
-    const medsDelPac = nutricionMedicionesData.filter(m => m.paciente_id === pac.id && m.peso).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-    
-    let uT = turnosDelPac.length > 0 ? { p: turnosDelPac[0].peso, f: new Date(turnosDelPac[0].fecha_hora) } : null;
-    let uM = medsDelPac.length > 0 ? { p: medsDelPac[0].peso, f: new Date(medsDelPac[0].fecha) } : null;
-    
-    if (uT && uM) {
-        ultimoPeso = uT.f > uM.f ? uT.p : uM.p;
-    } else if (uT) ultimoPeso = uT.p;
-    else if (uM) ultimoPeso = uM.p;
-    
-    if (ultimoPeso) {
-        const estMetros = pac.estatura / 100;
-        const imc = (ultimoPeso / (estMetros * estMetros)).toFixed(1);
-        let estado = 'Normal';
-        if (imc < 18.5) estado = 'Bajo peso';
-        else if (imc >= 25 && imc < 30) estado = 'Sobrepeso';
-        else if (imc >= 30) estado = 'Obesidad';
-        
-        imcBox.innerHTML = `Último Peso: ${ultimoPeso}kg | IMC Actual: ${imc} (${estado})`;
-    } else {
-        imcBox.innerHTML = 'Falta registrar peso para calcular IMC.';
-    }
-}
-
 async function borrarPacienteNutriTotal() {
     if(!confirm('¿Seguro que querés borrar toda la ficha de este paciente? Se borrará todo su historial.')) return;
     const { error } = await _supabase.from('nutricion_pacientes').delete().eq('id', fichaActualPacienteId);
@@ -5032,10 +4979,6 @@ function abrirFichaPacienteNutri(pacienteId) {
     if(!pac) return;
     
     document.getElementById('tituloFichaPaciente').innerText = 'Ficha Médica: ' + pac.nombre;
-    
-    document.getElementById('fichaEstatura').value = pac.estatura || '';
-    actualizarIMCDisplay(pac);
-
     const historialCont = document.getElementById('historialConsultasPaciente');
     
     // Combinar Turnos y Mediciones
@@ -5268,20 +5211,7 @@ function renderizarRendicionNutri() {
             <button class="btn" style="background: var(--danger-red); padding: 4px 10px; font-size: 0.8rem; border:none;" onclick="borrarPacienteNutriTotal()">🗑️ Borrar Ficha</button>
         </div>
         
-        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.1);">
-            <h4 style="margin-top:0; color: var(--accent-blue);">Perfil General (Estático)</h4>
-            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 150px;">
-                    <label style="font-size: 0.8rem; color: var(--text-dim);">Estatura (cm):</label>
-                    <input type="number" id="fichaEstatura" placeholder="Ej: 175" style="width: 100%;">
-                </div>
-                
-                <div style="display: flex; align-items: flex-end;">
-                    <button class="btn" onclick="guardarPerfilPacienteNutri()">Guardar Perfil</button>
-                </div>
-            </div>
-            <div id="imcBox" style="margin-top: 10px; font-size: 0.9rem; font-weight: bold; color: var(--neon-green);"></div>
-        </div>
+        
 
         <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.1);">
             <h4 style="margin-top:0;">+ Cargar Historial Manual (Fechas anteriores)</h4>
