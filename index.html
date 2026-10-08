@@ -874,9 +874,12 @@
 
       <!-- SECCIÓN LIBRO DIARIO -->
     <div id="libroDiarioSection" class="section-page">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
           <h1 style="margin: 0;">Libro Diario y Balance de Caja</h1>
-          <button class="btn" style="padding: 10px 16px; font-weight: bold;" onclick="document.getElementById('modalAltaCaja').style.display='flex'">+ Registrar Movimiento</button>
+          <div style="display: flex; gap: 10px;">
+              <button class="btn btn-outline" style="padding: 10px 16px; font-weight: bold; border-color: #10b981; color: #10b981;" onclick="descargarExcelLibroDiario()">📊 Descargar Excel</button>
+              <button class="btn" style="padding: 10px 16px; font-weight: bold;" onclick="document.getElementById('modalAltaCaja').style.display='flex'">+ Registrar Movimiento</button>
+          </div>
         </div>
 
       <div class="metrics-grid">
@@ -3509,7 +3512,78 @@
       renderizarLibroDiario();
     }
 
-    function renderizarLibroDiario(esCargarMas) {
+    
+function descargarExcelLibroDiario() {
+    const filtro = document.getElementById('buscadorCaja')?.value.toLowerCase() || '';
+    const filtroMesCaja = document.getElementById('filtroMesCaja')?.value || '';
+    const filtroFecha = document.getElementById('filtroFechaCaja')?.value || '';
+    const filtroCobrador = document.getElementById('filtroCobradorCaja')?.value || '';
+    const filtroMonto = parseFloat(document.getElementById('filtroMontoCaja')?.value) || 0;
+
+    const filtrados = cajaData.filter(c => {
+         let ok = true;
+         if (filtro && !(
+           (c.concepto||'').toLowerCase().includes(filtro) ||
+           (c.metodo_pago||'').toLowerCase().includes(filtro) ||
+           (c.cobrador||'').toLowerCase().includes(filtro) ||
+           (c.observaciones||'').toLowerCase().includes(filtro)
+         )) {
+             ok = false;
+         }
+         if(filtroMesCaja && c.fecha && !c.fecha.startsWith(filtroMesCaja)) ok = false;
+         if(filtroFecha && c.fecha && !c.fecha.startsWith(filtroFecha)) ok = false;
+         if(filtroCobrador && (c.cobrador||'').toLowerCase() !== filtroCobrador.toLowerCase()) ok = false;
+         if(filtroMonto > 0 && Math.abs(parseFloat(c.monto)||0) !== filtroMonto) ok = false;
+         return ok;
+    });
+
+    if (filtrados.length === 0) {
+        alert('No hay datos para exportar con los filtros actuales.');
+        return;
+    }
+
+    let csvContent = "Fecha,Hora,Tipo,Concepto,Metodo de Pago,Cobrador,Monto,Observaciones\n";
+
+    filtrados.sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).forEach(c => {
+        let horaStr = '';
+        if (c.created_at) {
+            const fechaObj = new Date(c.created_at);
+            horaStr = fechaObj.toTimeString().split(' ')[0];
+        }
+        
+        const monto = parseFloat(c.monto) || 0;
+        
+        const escapeCSV = (val) => {
+            if (val === null || val === undefined) return '""';
+            let str = String(val).replace(/"/g, '""');
+            return `"${str}"`;
+        };
+
+        const row = [
+            escapeCSV(c.fecha),
+            escapeCSV(horaStr),
+            escapeCSV(c.tipo),
+            escapeCSV(c.concepto),
+            escapeCSV(c.metodo_pago),
+            escapeCSV(c.cobrador),
+            escapeCSV(monto),
+            escapeCSV(c.observaciones)
+        ];
+        
+        csvContent += row.join(",") + "\n";
+    });
+
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Libro_Diario_${filtroMesCaja || 'Completo'}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function renderizarLibroDiario(esCargarMas) {
       if (esCargarMas !== true) {
         limiteLibroDiario = 50;
       }
