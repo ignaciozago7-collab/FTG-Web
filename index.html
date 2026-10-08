@@ -5022,7 +5022,9 @@ function abrirFichaPacienteNutri(pacienteId) {
     const d = new Date();
     document.getElementById('evoFecha').value = d.toISOString().split('T')[0];
     
-    renderizarGraficoEvolucion(); // Draw the graph when Ficha opens
+    setTimeout(() => {
+        renderizarGraficoEvolucion(); // Draw the graph when Ficha opens
+    }, 100);
 }
 
 async function guardarFichaConsultaNutri(turnoId) {
