@@ -4702,6 +4702,7 @@ function renderizarPacientesNutri() {
 
 
 
+let chartEvoObj = null;
 function renderizarGraficoEvolucion() {
     const ctx = document.getElementById('graficoEvolucion');
     if (!ctx) return;
@@ -5198,7 +5199,15 @@ function renderizarRendicionNutri() {
         
         
 
-        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.1);">
+        <h4 style="margin-bottom: 0; margin-top: 20px;">Historial Detallado</h4>
+        <div id="historialConsultasPaciente" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
+        </div>
+
+<div style="height: 300px; width: 100%; position: relative; background: #fff; border-radius: 8px; padding: 10px; margin-top: 15px;">
+            <canvas id="graficoEvolucion"></canvas>
+        </div>
+
+<div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.1);">
             <h4 style="margin-top:0;">+ Cargar Historial (Fechas anteriores)</h4>
             <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
                 <input type="date" id="evoFecha" style="flex:1; min-width:130px;">
@@ -5210,14 +5219,6 @@ function renderizarRendicionNutri() {
                 <input type="text" id="evoObservaciones" placeholder="Detalles / Notas de esta consulta..." style="flex:3;">
                 <button class="btn" onclick="guardarMedicionNutri()" style="flex:1;">Guardar Historial</button>
             </div>
-        </div>
-
-        <div style="height: 300px; width: 100%; position: relative; background: #fff; border-radius: 8px; padding: 10px; margin-top: 15px;">
-            <canvas id="graficoEvolucion"></canvas>
-        </div>
-
-        <h4 style="margin-bottom: 0; margin-top: 20px;">Historial Detallado</h4>
-        <div id="historialConsultasPaciente" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
         </div>
         <div style="margin-top: 20px;">
             <button class="btn btn-outline" style="width: 100%;" onclick="document.getElementById('modalFichaPacienteNutri').style.display='none'">Cerrar Ficha</button>
