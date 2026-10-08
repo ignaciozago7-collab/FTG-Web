@@ -4782,12 +4782,12 @@ function renderizarGraficoEvolucion() {
                     yAxisID: 'y' /* Usa el mismo eje que el peso porque ahora está en Kilos */
                 },
                 {
-                    label: '% Músculo',
+                    label: 'Masa Muscular (kg)',
                     data: musculos,
                     borderColor: '#10b981',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
                     tension: 0.3,
-                    yAxisID: 'y1'
+                    yAxisID: 'y'
                 }
             ]
         },
@@ -4806,14 +4806,7 @@ function renderizarGraficoEvolucion() {
                     title: { display: true, text: 'Kilos' },
                     ticks: { color: '#333' }
                 },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    title: { display: true, text: 'Porcentaje (%)' },
-                    grid: { drawOnChartArea: false },
-                    ticks: { color: '#333' }
-                }
+                
             },
             plugins: {
                 legend: { labels: { color: '#333' } }
@@ -5296,7 +5289,7 @@ function renderizarRendicionNutri() {
                 <input type="date" id="evoFecha" style="flex:1; min-width:130px;">
                 <input type="number" id="evoPeso" placeholder="Peso (kg)" step="0.1" style="flex:1; min-width:100px;">
                 <input type="number" id="evoGrasa" placeholder="Masa Adiposa (kg)" step="0.1" style="flex:1; min-width:100px;">
-                <input type="number" id="evoMusculo" placeholder="% Músculo" step="0.1" style="flex:1; min-width:100px;">
+                <input type="number" id="evoMusculo" placeholder="Masa Muscular (kg)" step="0.1" style="flex:1; min-width:100px;">
             </div>
             <div style="display: flex; gap: 10px; margin-top: 10px;">
                 <input type="text" id="evoObservaciones" placeholder="Detalles / Notas de esta consulta..." style="flex:3;">
@@ -5330,7 +5323,7 @@ function renderizarRendicionNutri() {
         <input type="date" id="evoFecha" style="flex:1; min-width:130px;">
         <input type="number" id="evoPeso" placeholder="Peso (kg)" step="0.1" style="flex:1; min-width:100px;">
         <input type="number" id="evoGrasa" placeholder="Masa Adiposa (kg)" step="0.1" style="flex:1; min-width:100px;">
-        <input type="number" id="evoMusculo" placeholder="% Músculo" step="0.1" style="flex:1; min-width:100px;">
+        <input type="number" id="evoMusculo" placeholder="Masa Muscular (kg)" step="0.1" style="flex:1; min-width:100px;">
       </div>
       <div style="display: flex; gap: 10px; margin-top: 10px;">
         <input type="text" id="evoObservaciones" placeholder="Detalles / Notas de esta consulta..." style="flex:3;">
@@ -5351,7 +5344,7 @@ function renderizarRendicionNutri() {
               <th>Fecha</th>
               <th>Peso (kg)</th>
               <th>Masa Adiposa (kg)</th>
-              <th>Músculo (%)</th>
+              <th>Masa Muscular (kg)</th>
               <th>Detalles</th>
               <th style="text-align: right;">Acción</th>
             </tr>
