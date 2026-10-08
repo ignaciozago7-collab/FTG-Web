@@ -4770,6 +4770,40 @@ function renderizarGraficoEvolucion() {
             }
         }
     });
+
+    // Actualizar la tablita
+    const tbody = document.getElementById('tablaHistorialMediciones');
+    if (tbody) {
+        tbody.innerHTML = '';
+        medicionesPaciente.forEach(m => {
+            const parts = m.fecha.split('-');
+            const fFormat = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            tbody.innerHTML += `
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <td style="padding: 5px 0;">${fFormat}</td>
+                <td>${m.peso || '-'}</td>
+                <td>${m.porcentaje_grasa || '-'}</td>
+                <td>${m.masa_muscular || '-'}</td>
+                <td style="text-align: right;">
+                  <button class="btn" style="background: var(--danger-red); border:none; padding: 2px 6px; font-size:0.75rem;" onclick="borrarMedicionNutri('${m.id}')">🗑️</button>
+                </td>
+              </tr>
+            `;
+        });
+    }
+}
+
+async function borrarMedicionNutri(id) {
+    if (!confirm('¿Seguro que deseas eliminar esta medición del historial?')) return;
+    
+    const { error } = await _supabase.from('nutricion_mediciones').delete().eq('id', id);
+    if (error) {
+        alert('Error al borrar: ' + error.message);
+        return;
+    }
+    
+    nutricionMedicionesData = nutricionMedicionesData.filter(m => m.id !== id);
+    renderizarGraficoEvolucion();
 }
 
 async function guardarMedicionNutri() {
@@ -5109,6 +5143,25 @@ function renderizarRendicionNutri() {
 
     <div style="height: 350px; width: 100%; position: relative; background: #fff; border-radius: 8px; padding: 10px;">
       <canvas id="graficoEvolucion"></canvas>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <h4>Historial de Mediciones</h4>
+      <div style="max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px;">
+        <table style="width: 100%; font-size: 0.85rem; text-align: left;">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Peso (kg)</th>
+              <th>Grasa (%)</th>
+              <th>Músculo (%)</th>
+              <th style="text-align: right;">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tablaHistorialMediciones">
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <div style="margin-top: 20px; text-align: right;">
