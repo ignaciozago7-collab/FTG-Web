@@ -4718,7 +4718,30 @@ function renderizarGraficoEvolucion() {
         chartEvoObj.destroy();
     }
 
-    const medicionesPaciente = nutricionMedicionesData.filter(m => m.paciente_id === evoPacienteActualId).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+    // Combinar Mediciones Manuales + Turnos para el grafico
+    const medicionesManuales = nutricionMedicionesData.filter(m => m.paciente_id === evoPacienteActualId).map(m => ({
+        id: m.id,
+        fecha: m.fecha,
+        peso: m.peso,
+        porcentaje_grasa: m.porcentaje_grasa,
+        masa_muscular: m.masa_muscular,
+        observaciones: m.observaciones || '',
+        esManual: true
+    }));
+    
+    const medicionesTurnos = nutriTurnosData.filter(t => t.paciente_id === evoPacienteActualId && t.estado !== 'cancelado').map(t => ({
+        id: t.id,
+        fecha: t.fecha_hora.split('T')[0],
+        peso: t.peso,
+        porcentaje_grasa: t.porcentaje_grasa,
+        masa_muscular: t.masa_muscular,
+        observaciones: t.observaciones_consulta || '',
+        esManual: false
+    }));
+
+    const medicionesPaciente = [...medicionesManuales, ...medicionesTurnos]
+        .filter(m => m.peso || m.porcentaje_grasa || m.masa_muscular) // solo mostrar si hay datos
+        .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
     
     const labels = medicionesPaciente.map(m => {
         const parts = m.fecha.split('-');
@@ -4805,7 +4828,7 @@ function renderizarGraficoEvolucion() {
                 <td>${m.masa_muscular || '-'}</td>
                 <td><small>${m.observaciones || '-'}</small></td>
                 <td style="text-align: right;">
-                  <button class="btn" style="background: var(--danger-red); border:none; padding: 2px 6px; font-size:0.75rem;" onclick="borrarMedicionNutri('${m.id}')">🗑️</button>
+                  ${m.esManual ? `<button class="btn" style="background: var(--danger-red); border:none; padding: 2px 6px; font-size:0.75rem;" onclick="borrarMedicionNutri('${m.id}')">🗑️</button>` : '<span style="font-size: 0.75rem; color: var(--text-dim);">Turno</span>'}
                 </td>
               </tr>
             `;
@@ -4930,7 +4953,15 @@ function editarTurnoNutri(id) {
     document.getElementById('modalNuevoTurnoNutri').style.display = 'flex';
 }
 
+
+function abrirModalEvolucionFicha() {
+    document.getElementById('modalFichaPacienteNutri').style.display='none';
+    abrirModalEvolucion(fichaActualPacienteId);
+}
+let fichaActualPacienteId = null;
+
 function abrirFichaPacienteNutri(pacienteId) {
+    fichaActualPacienteId = pacienteId;
     const pac = nutriPacientesData.find(p => p.id === pacienteId);
     if(!pac) return;
     
@@ -5141,7 +5172,10 @@ function renderizarRendicionNutri() {
         <h3 id="tituloFichaPaciente">Ficha Médica</h3>
         <div id="historialConsultasPaciente" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
         </div>
-        <button class="btn btn-outline" style="margin-top: 20px; width: 100%;" onclick="document.getElementById('modalFichaPacienteNutri').style.display='none'">Cerrar Ficha</button>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn" style="flex: 1; background: var(--neon-green); color: #000;" onclick="abrirModalEvolucionFicha()">+ Cargar Historial Anterior</button>
+            <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('modalFichaPacienteNutri').style.display='none'">Cerrar Ficha</button>
+        </div>
     </div>
 </div>
 
