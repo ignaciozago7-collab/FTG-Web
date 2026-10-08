@@ -5038,6 +5038,7 @@ async function borrarPacienteNutriTotal() {
 
 function abrirFichaPacienteNutri(pacienteId) {
     fichaActualPacienteId = pacienteId;
+    evoPacienteActualId = pacienteId; // para reusar las funciones de evolucion
     const pac = nutriPacientesData.find(p => p.id === pacienteId);
     if(!pac) return;
     
@@ -5049,18 +5050,36 @@ function abrirFichaPacienteNutri(pacienteId) {
 
     const historialCont = document.getElementById('historialConsultasPaciente');
     
-    const turnosDelPac = nutriTurnosData.filter(t => t.paciente_id === pacienteId).sort((a,b) => new Date(b.fecha_hora) - new Date(a.fecha_hora));
+    // Combinar Turnos y Mediciones
+    const medsDelPac = nutricionMedicionesData.filter(m => m.paciente_id === pacienteId).map(m => ({
+        id: m.id,
+        fecha_hora: m.fecha + 'T00:00:00',
+        peso: m.peso,
+        porcentaje_grasa: m.porcentaje_grasa,
+        masa_muscular: m.masa_muscular,
+        notas: m.observaciones || '',
+        estado: 'manual',
+        esManual: true
+    }));
+    const turnosP = nutriTurnosData.filter(t => t.paciente_id === pacienteId).map(t => ({
+        ...t, esManual: false
+    }));
     
-    if(turnosDelPac.length === 0) {
-        historialCont.innerHTML = '<div style="color: var(--text-dim);">No hay consultas previas.</div>';
+    const historialTotal = [...turnosP, ...medsDelPac].sort((a,b) => new Date(b.fecha_hora) - new Date(a.fecha_hora));
+
+    if(historialTotal.length === 0) {
+        historialCont.innerHTML = '<div style="color: var(--text-dim);">No hay historial registrado.</div>';
     } else {
-        historialCont.innerHTML = turnosDelPac.map(t => {
+        historialCont.innerHTML = historialTotal.map(t => {
             const f = new Date(t.fecha_hora).toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year:'numeric'});
+            const isMan = t.esManual;
+            const btnSave = isMan ? '' : `<button class="btn" style="padding: 2px 8px; font-size: 0.75rem;" onclick="guardarFichaConsultaNutri(${t.id})">Guardar Cambios Turno</button>`;
+            const btnDel = isMan ? `<button class="btn" style="background: var(--danger-red); padding: 2px 8px; font-size: 0.75rem; border:none;" onclick="borrarMedicionNutri(${t.id}); abrirFichaPacienteNutri(${pacienteId});">🗑️ Borrar</button>` : '';
             return `
                 <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <strong style="color: var(--neon-green);">Consulta: ${f} (${t.estado})</strong>
-                        <button class="btn" style="padding: 2px 8px; font-size: 0.75rem;" onclick="guardarFichaConsultaNutri(${t.id})">Guardar Cambios</button>
+                        <strong style="color: ${isMan ? '#fff' : 'var(--neon-green)'};">${isMan ? 'Historial Manual' : 'Turno (' + t.estado + ')'}: ${f}</strong>
+                        <div style="display:flex; gap:5px;">${btnSave}${btnDel}</div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                         <div>
@@ -5084,6 +5103,12 @@ function abrirFichaPacienteNutri(pacienteId) {
     }
     
     document.getElementById('modalFichaPacienteNutri').style.display = 'flex';
+    
+    // Set default date for manual entry
+    const d = new Date();
+    document.getElementById('evoFecha').value = d.toISOString().split('T')[0];
+    
+    renderizarGraficoEvolucion(); // Draw the graph when Ficha opens
 }
 
 async function guardarFichaConsultaNutri(turnoId) {
@@ -5273,12 +5298,29 @@ function renderizarRendicionNutri() {
             <div id="imcBox" style="margin-top: 10px; font-size: 0.9rem; font-weight: bold; color: var(--neon-green);"></div>
         </div>
 
-        <h4 style="margin-bottom: 0;">Historial de Consultas</h4>
+        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.1);">
+            <h4 style="margin-top:0;">+ Cargar Historial Manual (Fechas anteriores)</h4>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                <input type="date" id="evoFecha" style="flex:1; min-width:130px;">
+                <input type="number" id="evoPeso" placeholder="Peso (kg)" step="0.1" style="flex:1; min-width:100px;">
+                <input type="number" id="evoGrasa" placeholder="Masa Adiposa (kg)" step="0.1" style="flex:1; min-width:100px;">
+                <input type="number" id="evoMusculo" placeholder="% Músculo" step="0.1" style="flex:1; min-width:100px;">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <input type="text" id="evoObservaciones" placeholder="Detalles / Notas de esta consulta..." style="flex:3;">
+                <button class="btn" onclick="guardarMedicionNutri()" style="flex:1;">Guardar Historial</button>
+            </div>
+        </div>
+
+        <div style="height: 300px; width: 100%; position: relative; background: #fff; border-radius: 8px; padding: 10px; margin-top: 15px;">
+            <canvas id="graficoEvolucion"></canvas>
+        </div>
+
+        <h4 style="margin-bottom: 0; margin-top: 20px;">Historial Detallado (Turnos y Manuales)</h4>
         <div id="historialConsultasPaciente" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
         </div>
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button class="btn" style="flex: 1; background: var(--neon-green); color: #000;" onclick="abrirModalEvolucionFicha()">+ Cargar Historial Anterior</button>
-            <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('modalFichaPacienteNutri').style.display='none'">Cerrar Ficha</button>
+        <div style="margin-top: 20px;">
+            <button class="btn btn-outline" style="width: 100%;" onclick="document.getElementById('modalFichaPacienteNutri').style.display='none'">Cerrar Ficha</button>
         </div>
     </div>
 </div>
