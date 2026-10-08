@@ -4634,7 +4634,7 @@ function renderizarAgendaNutri() {
                             </div>
                             <div style="text-align: right;">
                                 ${badgeEstado}
-                                <div style="font-size: 1.05rem; color: #fff; margin-top: 4px; font-weight: bold;">${t.monto}</div>
+                                <div style="font-size: 1.05rem; color: #fff; margin-top: 4px; font-weight: bold;">$${parseFloat(t.monto || 0).toLocaleString('es-AR')}</div>
                             </div>
                         </div>
 
