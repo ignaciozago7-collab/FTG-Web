@@ -4696,6 +4696,7 @@ async function abrirModalEvolucion(pacienteId) {
     document.getElementById('evoPeso').value = '';
     document.getElementById('evoGrasa').value = '';
     document.getElementById('evoMusculo').value = '';
+    document.getElementById('evoObservaciones').value = '';
 
     document.getElementById('modalEvolucionNutri').style.display = 'flex';
     renderizarGraficoEvolucion();
@@ -4794,6 +4795,7 @@ function renderizarGraficoEvolucion() {
                 <td>${m.peso || '-'}</td>
                 <td>${m.porcentaje_grasa || '-'}</td>
                 <td>${m.masa_muscular || '-'}</td>
+                <td><small>${m.observaciones || '-'}</small></td>
                 <td style="text-align: right;">
                   <button class="btn" style="background: var(--danger-red); border:none; padding: 2px 6px; font-size:0.75rem;" onclick="borrarMedicionNutri('${m.id}')">🗑️</button>
                 </td>
@@ -4834,7 +4836,8 @@ async function guardarMedicionNutri() {
         fecha: fecha,
         peso: peso,
         porcentaje_grasa: grasa,
-        masa_muscular: musculo
+        masa_muscular: musculo,
+        observaciones: document.getElementById('evoObservaciones').value
     };
 
     const { data, error } = await _supabase.from('nutricion_mediciones').insert([nuevaMedicion]).select();
@@ -4870,6 +4873,7 @@ async function guardarMedicionNutri() {
     document.getElementById('evoPeso').value = '';
     document.getElementById('evoGrasa').value = '';
     document.getElementById('evoMusculo').value = '';
+    document.getElementById('evoObservaciones').value = '';
     
     renderizarGraficoEvolucion();
 }
@@ -5147,7 +5151,10 @@ function renderizarRendicionNutri() {
         <input type="number" id="evoPeso" placeholder="Peso (kg)" step="0.1" style="flex:1; min-width:100px;">
         <input type="number" id="evoGrasa" placeholder="% Grasa" step="0.1" style="flex:1; min-width:100px;">
         <input type="number" id="evoMusculo" placeholder="% Músculo" step="0.1" style="flex:1; min-width:100px;">
-        <button class="btn" onclick="guardarMedicionNutri()" style="flex:1; min-width:100px;">Guardar</button>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <input type="text" id="evoObservaciones" placeholder="Detalles / Notas de esta consulta..." style="flex:3;">
+        <button class="btn" onclick="guardarMedicionNutri()" style="flex:1;">Guardar Historial</button>
       </div>
     </div>
 
@@ -5165,6 +5172,7 @@ function renderizarRendicionNutri() {
               <th>Peso (kg)</th>
               <th>Grasa (%)</th>
               <th>Músculo (%)</th>
+              <th>Detalles</th>
               <th style="text-align: right;">Acción</th>
             </tr>
           </thead>
