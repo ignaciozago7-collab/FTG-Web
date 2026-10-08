@@ -3498,7 +3498,7 @@
          alert('Error al borrar: ' + error.message);
       } else {
          cargarHistorialLiquidaciones();
-         renderizarLibroDiario();
+         cargarLibroDiario();
       }
     }
 
@@ -3704,7 +3704,7 @@ function renderizarLibroDiario(esCargarMas) {
         
         document.getElementById('cajaDetalle').value = '';
         document.getElementById('cajaMonto').value = '';
-        renderizarLibroDiario();
+        cargarLibroDiario();
         cargarAuditoriaCierreMensual();
       }
     }
@@ -3752,7 +3752,7 @@ function renderizarLibroDiario(esCargarMas) {
         alert('Error al guardar cambios: ' + error.message);
       } else {
         cerrarModalAsiento();
-        renderizarLibroDiario();
+        cargarLibroDiario();
         cargarAuditoriaCierreMensual();
       }
     }
@@ -3763,7 +3763,7 @@ function renderizarLibroDiario(esCargarMas) {
       if (error) {
         alert('Error al borrar el asiento: ' + error.message);
       } else {
-        renderizarLibroDiario();
+        cargarLibroDiario();
         cargarAuditoriaCierreMensual();
       }
     }
