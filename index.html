@@ -2382,7 +2382,7 @@
       document.getElementById('metricaTotal').innerText = total;
       document.getElementById('metricaPagados').innerText = pagados;
       document.getElementById('metricaPendientes').innerText = pendientes;
-      document.getElementById('metricaRecaudacion').innerText = `$${recaudacion.toLocaleString()}`;
+      document.getElementById('metricaRecaudacion').innerText = `$${recaudacion.toLocaleString('es-AR')}`;
     }
 
     function renderizarListaAlumnosHTML(items) {
@@ -3004,14 +3004,14 @@
         const cuotaParteGanancia = resultadoNetoGlobal / listadoSocios.length;
 
         const elIngresos = document.getElementById('cierreTotalIngresos');
-        if (elIngresos) elIngresos.innerText = `$${totalIngresos.toLocaleString()}`;
+        if (elIngresos) elIngresos.innerText = `$${totalIngresos.toLocaleString('es-AR')}`;
 
         const elEgresos = document.getElementById('cierreTotalEgresos');
-        if (elEgresos) elEgresos.innerText = `$${totalEgresosGeneral.toLocaleString()}`;
+        if (elEgresos) elEgresos.innerText = `$${totalEgresosGeneral.toLocaleString('es-AR')}`;
         
         const elResultado = document.getElementById('cierreResultadoNeto');
         if (elResultado) {
-          elResultado.innerText = `$${resultadoNetoGlobal.toLocaleString()}`;
+          elResultado.innerText = `$${resultadoNetoGlobal.toLocaleString('es-AR')}`;
           elResultado.style.color = resultadoNetoGlobal >= 0 ? 'var(--neon-green)' : 'var(--danger-red)';
         }
 
@@ -3031,13 +3031,13 @@
             tbodyIntegrantes.innerHTML += `
               <tr>
                 <td><strong>${nombre}</strong></td>
-                <td style="color: var(--neon-green);">$${item.cobrado.toLocaleString()}</td>
-                <td style="color: var(--danger-red);">$${item.gastado.toLocaleString()}</td>
-                <td style="color: var(--neon-green); font-weight: 600;">$${item.sueldo.toLocaleString()}</td>
-                <td>$${efectivoEnMano.toLocaleString()}</td>
-                <td style="color: var(--accent-blue); font-weight: 600;">$${Math.round(gananciaSocio).toLocaleString()}</td>
+                <td style="color: var(--neon-green);">$${item.cobrado.toLocaleString('es-AR')}</td>
+                <td style="color: var(--danger-red);">$${item.gastado.toLocaleString('es-AR')}</td>
+                <td style="color: var(--neon-green); font-weight: 600;">$${item.sueldo.toLocaleString('es-AR')}</td>
+                <td>$${efectivoEnMano.toLocaleString('es-AR')}</td>
+                <td style="color: var(--accent-blue); font-weight: 600;">$${Math.round(gananciaSocio).toLocaleString('es-AR')}</td>
                 <td style="font-weight: bold; color: ${saldoFinal <= 0 ? 'var(--neon-green)' : 'var(--danger-red)'};">
-                  ${saldoFinal <= 0 ? 'Debe recibir (+): ' : 'Debe enviar (-): '}$${Math.round(Math.abs(saldoFinal)).toLocaleString()}
+                  ${saldoFinal <= 0 ? 'Debe recibir (+): ' : 'Debe enviar (-): '}$${Math.round(Math.abs(saldoFinal)).toLocaleString('es-AR')}
                 </td>
               </tr>
             `;
@@ -3051,7 +3051,7 @@
           if (keysIng.length === 0) {
             tbodyIngresos.innerHTML = '<tr><td colspan="2">No hay ingresos.</td></tr>';
           } else {
-            tbodyIngresos.innerHTML = keysIng.map(cat => `<tr><td><strong>${cat}</strong></td><td style="color: var(--neon-green); font-weight:700;">+${resumenIngresos[cat].toLocaleString()}</td></tr>`).join('');
+            tbodyIngresos.innerHTML = keysIng.map(cat => `<tr><td><strong>${cat}</strong></td><td style="color: var(--neon-green); font-weight:700;">+${resumenIngresos[cat].toLocaleString('es-AR')}</td></tr>`).join('');
           }
         }
         const tbodyEgresos = document.getElementById('tbodyCierreCatEgresos');
@@ -3061,7 +3061,7 @@
           if (keysEgr.length === 0) {
             tbodyEgresos.innerHTML = '<tr><td colspan="2">No hay egresos.</td></tr>';
           } else {
-            tbodyEgresos.innerHTML = keysEgr.map(cat => `<tr><td><strong>${cat}</strong></td><td style="color: var(--danger-red); font-weight:700;">-${resumenEgresos[cat].toLocaleString()}</td></tr>`).join('');
+            tbodyEgresos.innerHTML = keysEgr.map(cat => `<tr><td><strong>${cat}</strong></td><td style="color: var(--danger-red); font-weight:700;">-${resumenEgresos[cat].toLocaleString('es-AR')}</td></tr>`).join('');
           }
         }
 
@@ -3477,7 +3477,7 @@
       if (errLiq) {
         alert('Error al registrar historial de liquidaciones: ' + errLiq.message);
       } else {
-        document.getElementById('resultadoLiquidacion').innerText = `¡Pago registrado con éxito por $${montoTotal.toLocaleString()}!`;
+        document.getElementById('resultadoLiquidacion').innerText = `¡Pago registrado con éxito por $${montoTotal.toLocaleString('es-AR')}!`;
         cargarHistorialLiquidaciones();
         renderizarLibroDiario();
         cargarAuditoriaCierreMensual();
@@ -3535,8 +3535,8 @@
       const divTotales = document.getElementById('totalesLiquidaciones');
       if (divTotales) {
           divTotales.innerHTML = `
-              <div style="color: var(--danger-red);">Total Sueldos (Profesores): $${totalSueldos.toLocaleString()}</div>
-              <div style="color: var(--neon-green);">Total Ingresos (Profesionales): $${totalIngresosProf.toLocaleString()}</div>
+              <div style="color: var(--danger-red);">Total Sueldos (Profesores): $${totalSueldos.toLocaleString('es-AR')}</div>
+              <div style="color: var(--neon-green);">Total Ingresos (Profesionales): $${totalIngresosProf.toLocaleString('es-AR')}</div>
           `;
       }
       
@@ -3553,7 +3553,7 @@
         return `
           <li>
             <div>
-              <strong>${l.staff_nombre || 'Desconocido'}</strong> - <span style="color: ${colorMonto};">${signoMonto}$${valorMonto.toLocaleString()}</span>
+              <strong>${l.staff_nombre || 'Desconocido'}</strong> - <span style="color: ${colorMonto};">${signoMonto}$${valorMonto.toLocaleString('es-AR')}</span>
               <div style="font-size: 0.8rem; color: var(--text-dim);">📅 ${fStr} | Pagó: <strong>${l.operador}</strong> | ${l.detalle || 'Sin detalle (Registro Antiguo)'}</div>
             </div>
                           <div style="display: flex; gap: 6px;">
@@ -3781,7 +3781,7 @@ function renderizarLibroDiario(esCargarMas) {
               <td>${c.cobrador || '-'}</td>
               <td><span style="font-size:0.8rem; padding:4px 8px; border-radius:4px; background:rgba(255,255,255,0.05);">${c.categoria || 'Otros'}</span></td>
               <td style="color: ${esIngreso ? 'var(--neon-green)' : 'var(--danger-red)'}; font-weight:700;">
-                ${esIngreso ? '+' : '-'}$${monto.toLocaleString()}
+                ${esIngreso ? '+' : '-'}$${monto.toLocaleString('es-AR')}
               </td>
               <td>
                 <div style="display: flex; gap: 6px;">
@@ -3804,10 +3804,10 @@ function renderizarLibroDiario(esCargarMas) {
       const elEgresos = document.getElementById('metricaTotalEgresos');
       const elBalance = document.getElementById('metricaBalanceNeto');
 
-      if (elIngresos) elIngresos.innerText = `$${totalIngresos.toLocaleString()}`;
-      if (elEgresos) elEgresos.innerText = `$${totalEgresos.toLocaleString()}`;
+      if (elIngresos) elIngresos.innerText = `$${totalIngresos.toLocaleString('es-AR')}`;
+      if (elEgresos) elEgresos.innerText = `$${totalEgresos.toLocaleString('es-AR')}`;
       if (elBalance) {
-        elBalance.innerText = `$${balanceNeto.toLocaleString()}`;
+        elBalance.innerText = `$${balanceNeto.toLocaleString('es-AR')}`;
         elBalance.style.color = balanceNeto >= 0 ? 'var(--neon-green)' : 'var(--danger-red)';
       }
     }
@@ -4613,7 +4613,7 @@ function renderizarAgendaNutri() {
                 const pac = nutriPacientesData.find(p => p.id === t.paciente_id);
                 const pacNombre = pac?.nombre || 'Desconocido';
                 const fecha = new Date(t.fecha_hora);
-                const strFecha = fecha.toLocaleString('es-AR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'});
+                const strFecha = fecha.toLocaleString('es-AR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit', hour12: false});
                 
                 let badgeEstado = '';
                 if(t.estado === 'pendiente') badgeEstado = '<span style="color: #f59e0b; font-size: 0.8rem; font-weight: bold; text-transform: uppercase;">⏳ Pendiente</span>';
@@ -5083,7 +5083,7 @@ function renderizarRendicionNutri() {
                     const pac = nutriPacientesData.find(p => p.id === t.paciente_id);
                     const pacNombre = pac?.nombre || 'Desconocido';
                     const fechaObj = new Date(t.fecha_hora);
-                    const strFecha = fechaObj.toLocaleString('es-AR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'});
+                    const strFecha = fechaObj.toLocaleString('es-AR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit', hour12: false});
                     
                     const m = parseFloat(t.monto) || 0;
                     const tGym = (m * pctGym) / 100;
@@ -5093,7 +5093,7 @@ function renderizarRendicionNutri() {
                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                         <td style="padding: 12px 8px; color: #ddd;">${strFecha}hs</td>
                         <td style="padding: 12px 8px; font-weight: bold; color: #fff;">${pacNombre}</td>
-                        <td style="padding: 12px 8px; color: var(--neon-green);">${m}</td>
+                        <td style="padding: 12px 8px; color: var(--neon-green);">$${m.toLocaleString('es-AR')}</td>
                         <td style="padding: 12px 8px; color: #3b82f6; font-weight: bold;">${tNutri}</td>
                         <td style="padding: 12px 8px; color: var(--danger-red); font-weight: bold;">${tGym}</td>
                     </tr>`;
@@ -5113,15 +5113,15 @@ function renderizarRendicionNutri() {
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px;">
                         <div>
                             <div style="font-size: 0.95rem; color: var(--text-dim); margin-bottom: 5px;">Recaudación Total</div>
-                            <div style="font-size: 1.6rem; color: #fff; font-weight: bold;">${data.totalCobrado}</div>
+                            <div style="font-size: 1.6rem; color: #fff; font-weight: bold;">$${data.totalCobrado.toLocaleString('es-AR')}</div>
                         </div>
                         <div>
                             <div style="font-size: 0.95rem; color: var(--text-dim); margin-bottom: 5px;">Ganancia Neta</div>
-                            <div style="font-size: 1.6rem; color: #3b82f6; font-weight: bold;">${gananciaNutri}</div>
+                            <div style="font-size: 1.6rem; color: #3b82f6; font-weight: bold;">$${gananciaNutri.toLocaleString('es-AR')}</div>
                         </div>
                         <div>
                             <div style="font-size: 0.95rem; color: var(--text-dim); margin-bottom: 5px;">Abonar al Gym (${pctGym}%)</div>
-                            <div style="font-size: 1.6rem; color: var(--danger-red); font-weight: bold;">${deudaGym}</div>
+                            <div style="font-size: 1.6rem; color: var(--danger-red); font-weight: bold;">$${deudaGym.toLocaleString('es-AR')}</div>
                         </div>
                     </div>
 
