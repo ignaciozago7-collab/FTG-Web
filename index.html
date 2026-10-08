@@ -393,6 +393,104 @@
     .fila-domingo .input-horas { color: var(--text-dim); }
 
 
+
+    /* === RESPONSIVE DESIGN (Celulares y Tablets) === */
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column !important;
+      }
+      
+      /* Menú Lateral se vuelve horizontal arriba */
+      aside {
+        width: 100% !important;
+        height: auto !important;
+        flex-direction: row !important;
+        padding: 10px !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 1000 !important;
+        border-right: none !important;
+        border-bottom: 2px solid var(--neon-green) !important;
+        gap: 10px !important;
+        align-items: center !important;
+      }
+      
+      aside div:first-child { 
+        display: none !important; /* Ocultar el logo en el menu horizontal para ahorrar espacio */
+      }
+      
+      aside nav {
+        flex-direction: row !important;
+        gap: 8px !important;
+      }
+      
+      aside .nav-btn {
+        font-size: 0.85rem !important;
+        padding: 8px 12px !important;
+        white-space: nowrap !important;
+      }
+      
+      #userProfile { 
+        display: none !important; 
+      }
+
+      /* Contenedor principal */
+      main {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 15px 10px !important;
+      }
+
+      /* Cuadrículas apilables */
+      .metrics-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+      
+      .dashboard-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      /* Evita el zoom automático en celulares al tocar un input */
+      input, select, textarea {
+        font-size: 16px !important; 
+      }
+      
+      /* Filtros adaptables */
+      .month-filter-pill {
+        width: 100% !important;
+        justify-content: center !important;
+        margin-top: 10px !important;
+      }
+
+      /* Tablas desplazables (Scroll horizontal) */
+      .card {
+        padding: 15px !important;
+        overflow-x: auto !important;
+      }
+      
+      table {
+        min-width: 650px !important; /* Evita que las columnas se aplasten */
+      }
+      
+      /* Modales ajustados a pantalla chica */
+      .modal-content {
+        width: 95% !important;
+        margin: 10px auto !important;
+        padding: 15px !important;
+      }
+    }
+    
+    /* === MONITORES GRANDES (Desktop) === */
+    @media (min-width: 1200px) {
+      .section-page {
+        max-width: 1400px !important;
+        margin: 0 auto !important; /* Centra el contenido en pantallas ultra anchas */
+      }
+    }
+
     @media print {
       body { background: #fff !important; color: #000 !important; }
       aside { display: none !important; }
