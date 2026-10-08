@@ -4666,8 +4666,16 @@ function renderizarPacientesNutri() {
     const lista = document.getElementById('listaPacientesNutri');
     if(!lista) return;
     
+    let pacientesAMostrar = nutriPacientesData;
+    if (window.esNutriGlobal && !window.esSuperAdminGlobal) {
+        let miNombre = window.emailActualGlobal.toLowerCase().includes('lucia') ? 'Lucía' : 'Santiago';
+        pacientesAMostrar = nutriPacientesData.filter(p => {
+            return nutriTurnosData.some(t => t.paciente_id === p.id && t.nutricionista_nombre === miNombre);
+        });
+    }
+    
     let innerHtml = '';
-    nutriPacientesData.forEach(p => {
+    pacientesAMostrar.forEach(p => {
         const turnosDelPac = nutriTurnosData.filter(t => t.paciente_id === p.id);
         const cantConsultas = turnosDelPac.length;
         innerHtml += `
@@ -4735,12 +4743,12 @@ function renderizarGraficoEvolucion() {
                     fill: true
                 },
                 {
-                    label: '% Grasa',
+                    label: 'Masa Adiposa (kg)',
                     data: grasas,
                     borderColor: '#ef4444',
                     backgroundColor: 'rgba(239, 68, 68, 0.1)',
                     tension: 0.3,
-                    yAxisID: 'y1'
+                    yAxisID: 'y' /* Usa el mismo eje que el peso porque ahora está en Kilos */
                 },
                 {
                     label: '% Músculo',
@@ -5149,7 +5157,7 @@ function renderizarRendicionNutri() {
       <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
         <input type="date" id="evoFecha" style="flex:1; min-width:130px;">
         <input type="number" id="evoPeso" placeholder="Peso (kg)" step="0.1" style="flex:1; min-width:100px;">
-        <input type="number" id="evoGrasa" placeholder="% Grasa" step="0.1" style="flex:1; min-width:100px;">
+        <input type="number" id="evoGrasa" placeholder="Masa Adiposa (kg)" step="0.1" style="flex:1; min-width:100px;">
         <input type="number" id="evoMusculo" placeholder="% Músculo" step="0.1" style="flex:1; min-width:100px;">
       </div>
       <div style="display: flex; gap: 10px; margin-top: 10px;">
@@ -5170,7 +5178,7 @@ function renderizarRendicionNutri() {
             <tr>
               <th>Fecha</th>
               <th>Peso (kg)</th>
-              <th>Grasa (%)</th>
+              <th>Masa Adiposa (kg)</th>
               <th>Músculo (%)</th>
               <th>Detalles</th>
               <th style="text-align: right;">Acción</th>
