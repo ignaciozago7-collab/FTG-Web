@@ -3571,7 +3571,7 @@
         let currentEditLiqId = null;
     
     function modificarLiquidacion(id) {
-      const liq = liquidacionesData.find(x => x.id === id);
+      const liq = liquidacionesData.find(x => String(x.id) === String(id));
       if (!liq) return;
       const integrante = staffData.find(s => s.nombre === liq.staff_nombre);
       if (!integrante) return alert('No se encontró el staff en la BD.');
@@ -3592,7 +3592,7 @@
       const val = parseFloat(document.getElementById('inputEditLiqValor').value);
       if (isNaN(val)) return alert('Ingresá un valor numérico válido.');
 
-      const liq = liquidacionesData.find(x => x.id === currentEditLiqId);
+      const liq = liquidacionesData.find(x => String(x.id) === String(currentEditLiqId));
       const integrante = staffData.find(s => s.nombre === liq.staff_nombre);
       
       let monto, detalle;
@@ -3632,7 +3632,7 @@
 
     async function borrarLiquidacion(id) {
       if (!(await confirmAsync('Seguro que deseas eliminar esta liquidacion?'))) return;
-      const liq = liquidacionesData.find(x => x.id === id);
+      const liq = liquidacionesData.find(x => String(x.id) === String(id));
       if (liq) {
          // Borrar tambiÃ©n de caja_diaria
          await _supabase.from('caja_diaria').delete().match({ fecha: liq.fecha, monto: liq.monto, detalle: liq.detalle });
@@ -3852,7 +3852,7 @@ function renderizarLibroDiario(esCargarMas) {
     }
 
     function abrirModalAsiento(id) {
-      const asiento = cajaData.find(c => c.id === id);
+      const asiento = cajaData.find(c => String(c.id) === String(id));
       if (!asiento) return;
 
       document.getElementById('editAsientoId').value = asiento.id;
@@ -3963,7 +3963,7 @@ function renderizarLibroDiario(esCargarMas) {
       if (error) {
         alert('Error al actualizar estado: ' + error.message);
       } else {
-        const plan = planesData.find(p => p.id === id);
+        const plan = planesData.find(p => String(p.id) === String(id));
         if (plan) plan.estado = estado;
         filtrarPlanes();
       }
@@ -4615,7 +4615,7 @@ function renderizarAgendaNutri() {
             colsHtml += `<div style="text-align: center; color: var(--text-dim); padding: 20px;">Sin turnos agendados</div>`;
         } else {
             const renderCard = (t) => {
-                const pac = nutriPacientesData.find(p => p.id === t.paciente_id);
+                const pac = nutriPacientesData.find(p => String(p.id) === String(t.paciente_id));
                 const pacNombre = pac?.nombre || 'Desconocido';
                 const fecha = new Date(t.fecha_hora);
                 const strFecha = fecha.toLocaleString('es-AR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit', hour12: false});
@@ -4698,13 +4698,13 @@ function renderizarPacientesNutri() {
         }).map(s => s.nombre);
         
         pacientesAMostrar = nutriPacientesData.filter(p => {
-            return nutriTurnosData.some(t => t.paciente_id === p.id && misNombresStaff.includes(t.nutricionista_nombre));
+            return nutriTurnosData.some(t => String(t.paciente_id) === String(p.id) && misNombresStaff.includes(t.nutricionista_nombre));
         });
     }
     
     let innerHtml = '';
     pacientesAMostrar.forEach(p => {
-        const turnosDelPac = nutriTurnosData.filter(t => t.paciente_id === p.id);
+        const turnosDelPac = nutriTurnosData.filter(t => String(t.paciente_id) === String(p.id));
         const manuales = nutricionMedicionesData.filter(m => m.paciente_id === p.id).length;
         const cantConsultas = turnosDelPac.length + manuales;
         innerHtml += `
@@ -4733,7 +4733,7 @@ function renderizarGraficoEvolucion() {
     }
 
     // Combinar Mediciones Manuales + Turnos para el grafico
-    const medicionesManuales = nutricionMedicionesData.filter(m => m.paciente_id === evoPacienteActualId).map(m => ({
+    const medicionesManuales = nutricionMedicionesData.filter(m => String(m.paciente_id) === String(evoPacienteActualId)).map(m => ({
         id: m.id,
         fecha: m.fecha,
         peso: m.peso,
@@ -4743,7 +4743,7 @@ function renderizarGraficoEvolucion() {
         esManual: true
     }));
     
-    const medicionesTurnos = nutriTurnosData.filter(t => t.paciente_id === evoPacienteActualId && t.estado !== 'cancelado').map(t => ({
+    const medicionesTurnos = nutriTurnosData.filter(t => String(t.paciente_id) === String(evoPacienteActualId) && t.estado !== 'cancelado').map(t => ({
         id: t.id,
         fecha: t.fecha_hora.split('T')[0],
         peso: t.peso,
@@ -4861,7 +4861,7 @@ async function borrarMedicionNutri(id) {
         return;
     }
     
-    nutricionMedicionesData = nutricionMedicionesData.filter(m => m.id !== id);
+    nutricionMedicionesData = nutricionMedicionesData.filter(m => String(m.id) !== String(id));
     renderizarGraficoEvolucion();
 }
 
@@ -4908,7 +4908,7 @@ async function guardarMedicionNutri() {
         
         await _supabase.from('nutricion_pacientes').update(updatePayload).eq('id', evoPacienteActualId);
         
-        const index = nutriPacientesData.findIndex(p => p.id === evoPacienteActualId);
+        const index = nutriPacientesData.findIndex(p => String(p.id) === String(evoPacienteActualId));
         if (index !== -1) {
             if (peso) nutriPacientesData[index].peso_actual = peso;
             if (grasa) nutriPacientesData[index].porcentaje_grasa = grasa;
@@ -4934,9 +4934,9 @@ async function borrarTurnoNutri(id) {
 }
 
 function editarTurnoNutri(id) {
-    const t = nutriTurnosData.find(x => x.id === id);
+    const t = nutriTurnosData.find(x => String(x.id) === String(id));
     if(!t) return;
-    const pac = nutriPacientesData.find(p => p.id === t.paciente_id);
+    const pac = nutriPacientesData.find(p => String(p.id) === String(t.paciente_id));
     
     document.getElementById('inputPacienteNutri').value = pac ? pac.nombre : '';
     document.getElementById('inputPacienteNutri').disabled = true; 
@@ -5021,14 +5021,14 @@ async function agregarPacienteNutriManual() {
 function abrirFichaPacienteNutri(pacienteId) {
     fichaActualPacienteId = pacienteId;
     evoPacienteActualId = pacienteId; // para reusar las funciones de evolucion
-    const pac = nutriPacientesData.find(p => p.id === pacienteId);
+    const pac = nutriPacientesData.find(p => String(p.id) === String(pacienteId));
     if(!pac) return;
     
     document.getElementById('tituloFichaPaciente').innerText = 'Ficha Médica: ' + pac.nombre;
     const historialCont = document.getElementById('historialConsultasPaciente');
     
     // Combinar Turnos y Mediciones
-    const medsDelPac = nutricionMedicionesData.filter(m => m.paciente_id === pacienteId).map(m => ({
+    const medsDelPac = nutricionMedicionesData.filter(m => String(m.paciente_id) === String(pacienteId)).map(m => ({
         id: m.id,
         fecha_hora: m.fecha + 'T00:00:00',
         peso: m.peso,
@@ -5165,7 +5165,7 @@ function renderizarRendicionNutri() {
                 tablaTurnos += `<tr><td colspan="5" style="padding: 15px 8px; text-align: center; color: var(--text-dim);">No hay consultas cobradas aún.</td></tr>`;
             } else {
                 data.turnos.sort((a, b) => new Date(b.fecha_hora) - new Date(a.fecha_hora)).forEach(t => {
-                    const pac = nutriPacientesData.find(p => p.id === t.paciente_id);
+                    const pac = nutriPacientesData.find(p => String(p.id) === String(t.paciente_id));
                     const pacNombre = pac?.nombre || 'Desconocido';
                     const fechaObj = new Date(t.fecha_hora);
                     const strFecha = fechaObj.toLocaleString('es-AR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit', hour12: false});
