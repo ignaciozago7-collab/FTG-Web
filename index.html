@@ -999,7 +999,10 @@
         <div id="tabNutriPacientes" class="tab-content">
            <div class="card">
              <h3 style="margin:0; margin-bottom: 15px;">Directorio de Pacientes</h3>
-             <input type="text" id="buscadorPacientesNutri" placeholder="Buscar paciente..." style="width: 100%; margin-bottom: 15px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                 <input type="text" id="buscadorPacientesNutri" placeholder="Buscar paciente..." style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+                 <button class="btn" style="background: var(--neon-green); color: #000; font-weight: bold; white-space: nowrap;" onclick="agregarPacienteNutriManual()">+ Nuevo Paciente</button>
+               </div>
              <ul id="listaPacientesNutri"><div style="color: var(--text-dim);">Construyendo historial...</div></ul>
            </div>
         </div>
@@ -4982,6 +4985,37 @@ async function borrarPacienteNutriTotal() {
         document.getElementById('modalFichaPacienteNutri').style.display = 'none';
         cargarDatosNutricion();
     }
+}
+
+
+async function agregarPacienteNutriManual() {
+    const nombreInput = prompt("Ingresá el nombre completo del nuevo paciente:");
+    if (!nombreInput || !nombreInput.trim()) return;
+    
+    const nombreClean = nombreInput.trim();
+    
+    const existente = nutriPacientesData.find(p => (p?.nombre || '').toLowerCase() === nombreClean.toLowerCase());
+    if (existente) {
+        alert('Este paciente ya existe en el directorio.');
+        abrirFichaPacienteNutri(existente.id);
+        return;
+    }
+    
+    const alumnoGym = alumnosData.find(a => (a?.nombre || '').toLowerCase() === nombreClean.toLowerCase());
+    const gymId = alumnoGym ? alumnoGym.id : null;
+    
+    const { data: newPac, error: errPac } = await _supabase.from('nutricion_pacientes').insert([{
+        nombre: nombreClean,
+        alumno_id: gymId
+    }]).select();
+    
+    if (errPac) {
+        alert('Error creando paciente: ' + errPac.message);
+        return;
+    }
+    
+    await cargarDatosNutricion();
+    abrirFichaPacienteNutri(newPac[0].id);
 }
 
 function abrirFichaPacienteNutri(pacienteId) {
