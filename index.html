@@ -2451,8 +2451,8 @@
                      <button class="btn" style="padding: 6px 14px; border-radius: 8px; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(149, 255, 83, 0.2);" onclick="actualizarPago(${a.id}, true)">Cobrar Cuota</button>
                   `}
                 
-                <button class="btn btn-outline" style="padding: 6px 10px; font-size: 1rem; border-radius: 8px;" onclick="abrirModalEditCliente(${a.id})" title="Editar">✏️</button>
-                <button class="btn btn-danger" style="padding: 6px 10px; font-size: 1rem; border-radius: 8px;" onclick="borrarCliente(${a.id})" title="Borrar">🗑️</button>
+                <button class="btn btn-outline" style="padding: 6px 10px; font-size: 1rem; border-radius: 8px;" onclick="abrirModalEditCliente('${a.id}')" title="Editar">✏️</button>
+                <button class="btn btn-danger" style="padding: 6px 10px; font-size: 1rem; border-radius: 8px;" onclick="borrarCliente('${a.id}')" title="Borrar">🗑️</button>
               </div>
             </li>
           `;
@@ -2689,8 +2689,8 @@
               <div style="display: flex; gap: 8px; align-items: center;">
                 
                 ${yaVinoHoy 
-                  ? `<button class="btn btn-danger" style="padding: 4px 8px; font-size:0.8rem;" onclick="quitarAsistenciaFecha(${a.id})">Quitar Presente</button>`
-                  : `<button class="btn" style="padding: 6px 10px;" onclick="marcarAsistenciaFecha(${a.id})">Marcar Presente</button>`
+                  ? `<button class="btn btn-danger" style="padding: 4px 8px; font-size:0.8rem;" onclick="quitarAsistenciaFecha('${a.id}')">Quitar Presente</button>`
+                  : `<button class="btn" style="padding: 6px 10px;" onclick="marcarAsistenciaFecha('${a.id}')">Marcar Presente</button>`
                 }
               </div>
             </td>
@@ -3288,7 +3288,7 @@
               : `<input type="number" id="pct-${s.id}" value="${s.porcentaje || 0}" style="width: 80px;" placeholder="%">`
             }
             <button class="btn btn-outline" onclick="actualizarConfigStaff(${s.id}, '${s.rol}')">Guardar</button>
-            <button class="btn btn-danger" style="padding: 6px 10px; font-size: 1.1rem;" onclick="borrarStaff(${s.id})">🗑️</button>
+            <button class="btn btn-danger" style="padding: 6px 10px; font-size: 1.1rem;" onclick="borrarStaff('${s.id}')">🗑️</button>
           </div>
         </li>
       `;
@@ -3557,8 +3557,8 @@
               <div style="font-size: 0.8rem; color: var(--text-dim);">📅 ${fStr} | Pagó: <strong>${l.operador}</strong> | ${l.detalle || 'Sin detalle (Registro Antiguo)'}</div>
             </div>
                           <div style="display: flex; gap: 6px;">
-                <button class="btn btn-outline" style="padding: 4px 8px; font-size: 1.1rem;" onclick="modificarLiquidacion(${l.id})">✏️</button>
-                  <button class="btn btn-danger" style="padding: 4px 8px; font-size: 1.1rem;" onclick="borrarLiquidacion(${l.id})">🗑️</button>
+                <button class="btn btn-outline" style="padding: 4px 8px; font-size: 1.1rem;" onclick="modificarLiquidacion('${l.id}')">✏️</button>
+                  <button class="btn btn-danger" style="padding: 4px 8px; font-size: 1.1rem;" onclick="borrarLiquidacion('${l.id}')">🗑️</button>
               </div>
             </li>
         `;
@@ -3785,8 +3785,8 @@ function renderizarLibroDiario(esCargarMas) {
               </td>
               <td>
                 <div style="display: flex; gap: 6px;">
-                  <button class="btn btn-outline" style="padding: 4px 8px;" onclick="abrirModalAsiento(${c.id})">✏️</button>
-                  <button class="btn btn-danger" style="padding: 4px 8px;" onclick="borrarAsiento(${c.id})">🗑️</button>
+                  <button class="btn btn-outline" style="padding: 4px 8px;" onclick="abrirModalAsiento('${c.id}')">✏️</button>
+                  <button class="btn btn-danger" style="padding: 4px 8px;" onclick="borrarAsiento('${c.id}')">🗑️</button>
                 </div>
               </td>
             </tr>
@@ -4351,7 +4351,7 @@ function renderizarLibroDiario(esCargarMas) {
             <strong style="color: ${a.tipo.includes('Persona') ? 'var(--neon-green)' : '#ffea00'};">${a.tipo}</strong>: ${a.nombre}
             <span style="font-size: 0.85rem; color: var(--text-dim); margin-left: 8px;">-> ${a.dia} ${a.hora} (${a.fecha ? a.fecha.split('-').reverse().join('/') : ''})</span>
           </div>
-          <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.8rem;" onclick="borrarAviso(${a.id})">🗑️</button>
+          <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.8rem;" onclick="borrarAviso('${a.id}')">🗑️</button>
         </li>
       `).join('');
     }
@@ -4693,7 +4693,7 @@ function renderizarPacientesNutri() {
                     <strong style="font-size: 1.1rem; color: #fff;">${p.nombre}</strong>
                     <div style="font-size: 0.9rem; color: var(--text-dim); margin-top: 4px;">Consultas registradas: <strong style="color: #3b82f6;">${cantConsultas}</strong></div>
                 </div>
-                <button class="btn btn-outline" style="font-size: 0.9rem;" onclick="abrirFichaPacienteNutri(${p.id})">📋 Abrir Ficha Clínica</button>
+                <button class="btn btn-outline" style="font-size: 0.9rem;" onclick="abrirFichaPacienteNutri('${p.id}')">📋 Abrir Ficha Clínica</button>
             </div>
         `;
     });
