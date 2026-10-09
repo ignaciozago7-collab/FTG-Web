@@ -4646,9 +4646,9 @@ function renderizarAgendaNutri() {
                             </select>
                             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                                 <a href="https://wa.me/?text=${msgWpp}" target="_blank" class="btn btn-outline" style="flex: 1; padding: 5px 0; font-size: 0.85rem; text-align: center; color: #25D366; border-color: #25D366;">📲 Wpp</a>
-                                <button class="btn btn-outline" style="flex: 1; padding: 5px 0; font-size: 0.85rem;" onclick="abrirFichaPacienteNutri(${t.paciente_id})">📋 Ficha</button>
-                                <button class="btn btn-outline" style="padding: 5px 10px; font-size: 0.85rem;" onclick="editarTurnoNutri(${t.id})">✏️</button>
-                                <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.85rem;" onclick="borrarTurnoNutri(${t.id})">🗑️</button>
+                                <button class="btn btn-outline" style="flex: 1; padding: 5px 0; font-size: 0.85rem;" onclick="abrirFichaPacienteNutri('${t.paciente_id}')">📋 Ficha</button>
+                                <button class="btn btn-outline" style="padding: 5px 10px; font-size: 0.85rem;" onclick="editarTurnoNutri('${t.id}')">✏️</button>
+                                <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.85rem;" onclick="borrarTurnoNutri('${t.id}')">🗑️</button>
                             </div>
                         </div>
                     </div>
@@ -4756,7 +4756,7 @@ function renderizarGraficoEvolucion() {
                     borderColor: '#3b82f6',
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     tension: 0.3,
-                    fill: true
+                    fill: false
                 },
                 {
                     label: 'Masa Adiposa (kg)',
@@ -4764,6 +4764,7 @@ function renderizarGraficoEvolucion() {
                     borderColor: '#ef4444',
                     backgroundColor: 'rgba(239, 68, 68, 0.1)',
                     tension: 0.3,
+                    yAxisID: 'y1',
                     
                 },
                 {
@@ -4772,6 +4773,7 @@ function renderizarGraficoEvolucion() {
                     borderColor: '#10b981',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
                     tension: 0.3,
+                    yAxisID: 'y1',
                     
                 }
             ]
@@ -4788,7 +4790,15 @@ function renderizarGraficoEvolucion() {
                     type: 'linear',
                     display: true,
                     position: 'left',
-                    title: { display: true, text: 'Kilos' },
+                    title: { display: true, text: 'Peso Total (kg)' },
+                    ticks: { color: '#333' }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { display: true, text: 'Masa Musc/Adip. (kg)' },
+                    grid: { drawOnChartArea: false },
                     ticks: { color: '#333' }
                 }
             },
@@ -4988,8 +4998,8 @@ function abrirFichaPacienteNutri(pacienteId) {
         historialCont.innerHTML = historialTotal.map(t => {
             const f = new Date(t.fecha_hora).toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year:'numeric'});
             const isMan = t.esManual;
-            const btnSave = isMan ? '' : `<button class="btn" style="padding: 2px 8px; font-size: 0.75rem;" onclick="guardarFichaConsultaNutri(${t.id})">Guardar Cambios Turno</button>`;
-            const btnDel = isMan ? `<button class="btn" style="background: var(--danger-red); padding: 2px 8px; font-size: 0.75rem; border:none;" onclick="borrarMedicionNutri(${t.id}); abrirFichaPacienteNutri(${pacienteId});">🗑️ Borrar</button>` : '';
+            const btnSave = isMan ? '' : `<button class="btn" style="padding: 2px 8px; font-size: 0.75rem;" onclick="guardarFichaConsultaNutri('${t.id}')">Guardar Cambios Turno</button>`;
+            const btnDel = isMan ? `<button class="btn" style="background: var(--danger-red); padding: 2px 8px; font-size: 0.75rem; border:none;" onclick="borrarMedicionNutri('${t.id}'); abrirFichaPacienteNutri('${pacienteId}');">🗑️ Borrar</button>` : '';
             return `
                 <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
