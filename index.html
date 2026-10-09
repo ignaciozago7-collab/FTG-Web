@@ -4685,7 +4685,8 @@ function renderizarPacientesNutri() {
     let innerHtml = '';
     pacientesAMostrar.forEach(p => {
         const turnosDelPac = nutriTurnosData.filter(t => t.paciente_id === p.id);
-        const cantConsultas = turnosDelPac.length;
+        const manuales = nutricionMedicionesData.filter(m => m.paciente_id === p.id).length;
+        const cantConsultas = turnosDelPac.length + manuales;
         innerHtml += `
             <div class="card" style="padding: 16px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #3b82f6;">
                 <div>
