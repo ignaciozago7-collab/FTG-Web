@@ -4531,6 +4531,14 @@ function abrirModalNuevoTurnoNutri() {
     document.getElementById('modalNuevoTurnoNutri').style.display = 'flex';
 }
 
+function cerrarModalNuevoTurnoNutri() {
+    document.getElementById('modalNuevoTurnoNutri').style.display = 'none';
+    const hiddenId = document.getElementById('turnoIdNutriEdit');
+    if (hiddenId) hiddenId.value = '';
+    const inpPac = document.getElementById('inputPacienteNutri');
+    if (inpPac) inpPac.disabled = false;
+}
+
 async function guardarTurnoNutri() {
   try {
     const editTurnoId = document.getElementById('turnoIdNutriEdit')?.value;
@@ -4563,29 +4571,26 @@ async function guardarTurnoNutri() {
         pacienteId = newPac[0].id;
     }
 
-    // 1. VALIDACIÓN DE SUPERPOSICIÓN: Mismo horario para la nutricionista
-    const conflictoNutri = nutriTurnosData.find(t => 
-        t.nutricionista_nombre === nutriNombre && 
-        t.fecha_hora === fechaHora && 
-        t.estado !== 'cancelo' &&
-        (!editTurnoId || String(t.id) !== String(editTurnoId))
-    );
-    if (conflictoNutri) {
-        const pacConflicto = nutriPacientesData.find(p => String(p.id) === String(conflictoNutri.paciente_id));
-        const nombreConflicto = pacConflicto ? pacConflicto.nombre : 'otro paciente';
-        alert(`⚠️ Horario no disponible: ${nutriNombre} ya tiene un turno agendado a las ${horaVal}hs con ${nombreConflicto}.`);
-        return;
-    }
+    // Helper para comparar fechas y horas normalizadas (ignora segundos y diferencias de formato T / espacio)
+    const sonMismoHorario = (fhA, fhB) => {
+        if (!fhA || !fhB) return false;
+        const normA = String(fhA).replace(' ', 'T').substring(0, 16);
+        const normB = String(fhB).replace(' ', 'T').substring(0, 16);
+        return normA === normB;
+    };
 
-    // Validación de superposición: Mismo horario para el paciente
-    const conflictoPac = nutriTurnosData.find(t => 
-        String(t.paciente_id) === String(pacienteId) && 
-        t.fecha_hora === fechaHora && 
+    // 1. VALIDACIÓN DE SUPERPOSICIÓN:
+    // El horario ya dado tiene que estar bloqueado (no importa quién agende ni con qué profesional)
+    const conflictoExistente = nutriTurnosData.find(t => 
+        sonMismoHorario(t.fecha_hora, fechaHora) && 
         t.estado !== 'cancelo' &&
         (!editTurnoId || String(t.id) !== String(editTurnoId))
     );
-    if (conflictoPac) {
-        alert(`⚠️ El paciente ${nombreInput} ya tiene un turno asignado en ese mismo día y horario.`);
+
+    if (conflictoExistente) {
+        const pacConflicto = nutriPacientesData.find(p => String(p.id) === String(conflictoExistente.paciente_id));
+        const nombreConflicto = pacConflicto ? pacConflicto.nombre : 'un paciente';
+        alert(`⚠️ Horario no disponible: Ya existe un turno agendado para el día ${fechaVal} a las ${horaVal}hs con ${conflictoExistente.nutricionista_nombre} (Paciente: ${nombreConflicto}).`);
         return;
     }
 
@@ -5492,7 +5497,7 @@ function renderizarRendicionNutri() {
         <input type="number" id="montoTurnoNutri" placeholder="Ej: 15000">
 
         <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('modalNuevoTurnoNutri').style.display='none'">Cancelar</button>
+            <button class="btn btn-outline" style="flex: 1;" onclick="cerrarModalNuevoTurnoNutri()">Cancelar</button>
             <button class="btn" style="flex: 1; background: var(--neon-green); color: #000;" id="btnGuardarTurnoNutri" onclick="guardarTurnoNutri()">Agendar Turno</button>
         </div>
     </div>
