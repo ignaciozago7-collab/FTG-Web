@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -5063,12 +5063,21 @@ function abrirFichaPacienteNutri(pacienteId) {
     const pac = nutriPacientesData.find(p => String(p.id) === String(pacienteId));
     if(!pac) return;
     
-    document.getElementById('tituloFichaPaciente').innerText = 'Ficha Médica: ' + pac.nombre;
+    // Mostrar modal inmediatamente para que no se quede trabado
+    const modalEl = document.getElementById('modalFichaPacienteNutri');
+    if (modalEl) modalEl.style.display = 'flex';
+
+    const tituloEl = document.getElementById('tituloFichaPaciente');
+    if (tituloEl) tituloEl.innerText = 'Ficha Médica: ' + pac.nombre;
     
-    // Cargar datos de la Ficha Base del paciente
-    document.getElementById('perfilNutriObjetivo').value = pac.objetivo || '';
-    document.getElementById('perfilNutriActividad').value = pac.actividad_fisica || '';
-    document.getElementById('perfilNutriObservaciones').value = pac.observaciones || '';
+    // Cargar datos de la Ficha Base del paciente con guards seguros
+    const inpObj = document.getElementById('perfilNutriObjetivo');
+    if (inpObj) inpObj.value = pac.objetivo || '';
+    const inpAct = document.getElementById('perfilNutriActividad');
+    if (inpAct) inpAct.value = pac.actividad_fisica || '';
+    const inpObs = document.getElementById('perfilNutriObservaciones');
+    if (inpObs) inpObs.value = pac.observaciones || '';
+    
     const historialCont = document.getElementById('historialConsultasPaciente');
     
     // Combinar Turnos y Mediciones
