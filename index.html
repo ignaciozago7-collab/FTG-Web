@@ -5079,6 +5079,98 @@ function abrirFichaPacienteNutri(pacienteId) {
         }).join('');
     }
     
+    // --- RENDERIZAR BARRITA DE PROGRESO (ÚLTIMA MEDICIÓN VS INICIAL) ---
+    const resumenCont = document.getElementById('resumenProgresoNutri');
+    if (resumenCont) {
+        // Filtrar consultas o mediciones que tengan cargados peso, masa adiposa y muscular
+        const medicionesCompletas = historialTotal
+            .filter(t => t.peso != null && t.peso !== '' && 
+                         t.porcentaje_grasa != null && t.porcentaje_grasa !== '' && 
+                         t.masa_muscular != null && t.masa_muscular !== '')
+            .map(t => ({
+                fecha: t.fecha_hora,
+                peso: parseFloat(t.peso),
+                grasa: parseFloat(t.porcentaje_grasa),
+                musculo: parseFloat(t.masa_muscular)
+            }))
+            .sort((a, b) => new Date(a.fecha) - new Date(b.fecha)); // De más antigua a más reciente
+
+        if (medicionesCompletas.length === 0) {
+            resumenCont.innerHTML = `
+                <div style="background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.12); border-radius: 8px; padding: 12px; margin-top: 15px; text-align: center; color: var(--text-dim); font-size: 0.85rem;">
+                    ℹ️ Aún no hay registros con los 3 componentes cargados (Peso, Masa Adiposa y Masa Muscular) para calcular evolución.
+                </div>
+            `;
+        } else {
+            const primera = medicionesCompletas[0];
+            const ultima = medicionesCompletas[medicionesCompletas.length - 1];
+            const esUnica = medicionesCompletas.length === 1;
+
+            const diffPeso = esUnica ? null : (ultima.peso - primera.peso);
+            const diffGrasa = esUnica ? null : (ultima.grasa - primera.grasa);
+            const diffMusculo = esUnica ? null : (ultima.musculo - primera.musculo);
+
+            const formatDelta = (val, tipo) => {
+                if (val === null) {
+                    return '<span style="color: var(--neon-green); font-size: 0.75rem; background: rgba(0,255,102,0.1); padding: 2px 7px; border-radius: 4px; font-weight: bold;">Punto de partida</span>';
+                }
+                const rounded = Math.round(val * 10) / 10;
+                if (rounded === 0) {
+                    return '<span style="color: var(--text-dim); font-size: 0.75rem;">Sin cambios (0.0 kg)</span>';
+                }
+                const sign = rounded > 0 ? '+' : '';
+                
+                // Colores funcionales:
+                // Músculo: subir es verde (+), bajar es rojo (-)
+                // Grasa: bajar es verde (-), subir es naranja (+)
+                // Peso: neutro/informativo
+                let color = '#fff';
+                if (tipo === 'musculo') {
+                    color = rounded > 0 ? 'var(--neon-green)' : 'var(--danger-red)';
+                } else if (tipo === 'grasa') {
+                    color = rounded < 0 ? 'var(--neon-green)' : '#f59e0b';
+                } else {
+                    color = rounded < 0 ? '#60a5fa' : '#f59e0b';
+                }
+                return `<strong style="color: ${color}; font-size: 0.85rem;">${sign}${rounded.toFixed(1)} kg</strong> <span style="color: var(--text-dim); font-size: 0.75rem;">vs inicio</span>`;
+            };
+
+            const fUltima = new Date(ultima.fecha).toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year: 'numeric'});
+
+            resumenCont.innerHTML = `
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                        <span style="color: #fff;">📊 <strong>Última Medición Completa:</strong> <span style="color: var(--neon-green);">${fUltima}</span></span>
+                        <span style="color: var(--text-dim); font-size: 0.75rem; background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 12px;">${medicionesCompletas.length} ${medicionesCompletas.length === 1 ? 'medición cargada' : 'mediciones históricas'}</span>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+                        <!-- PESO TOTAL -->
+                        <div style="background: rgba(0,0,0,0.35); border-radius: 8px; padding: 10px 14px; border-left: 3px solid #3b82f6;">
+                            <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Peso Total</div>
+                            <div style="font-size: 1.5rem; color: #fff; font-weight: bold; margin: 2px 0;">${ultima.peso} <span style="font-size: 0.85rem; font-weight: normal; color: var(--text-dim);">kg</span></div>
+                            <div>${formatDelta(diffPeso, 'peso')}</div>
+                        </div>
+
+                        <!-- MASA MUSCULAR -->
+                        <div style="background: rgba(0,0,0,0.35); border-radius: 8px; padding: 10px 14px; border-left: 3px solid var(--neon-green);">
+                            <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Masa Muscular</div>
+                            <div style="font-size: 1.5rem; color: var(--neon-green); font-weight: bold; margin: 2px 0;">${ultima.musculo} <span style="font-size: 0.85rem; font-weight: normal; color: var(--text-dim);">kg</span></div>
+                            <div>${formatDelta(diffMusculo, 'musculo')}</div>
+                        </div>
+
+                        <!-- MASA ADIPOSA -->
+                        <div style="background: rgba(0,0,0,0.35); border-radius: 8px; padding: 10px 14px; border-left: 3px solid #f59e0b;">
+                            <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Masa Adiposa</div>
+                            <div style="font-size: 1.5rem; color: #f59e0b; font-weight: bold; margin: 2px 0;">${ultima.grasa} <span style="font-size: 0.85rem; font-weight: normal; color: var(--text-dim);">kg</span></div>
+                            <div>${formatDelta(diffGrasa, 'grasa')}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
     document.getElementById('modalFichaPacienteNutri').style.display = 'flex';
     
     // Set default date for manual entry
@@ -5261,11 +5353,15 @@ function renderizarRendicionNutri() {
         
         
 
+        <!-- RESUMEN PROGRESO / COMPARATIVA INICIAL VS ACTUAL -->
+        <div id="resumenProgresoNutri"></div>
+
         <h4 style="margin-bottom: 0; margin-top: 20px;">Historial Detallado</h4>
         <div id="historialConsultasPaciente" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
         </div>
 
-<div style="height: 300px; width: 100%; position: relative; background: #fff; border-radius: 8px; padding: 10px; margin-top: 15px;">
+        <!-- Gráfico temporalmente oculto a pedido -->
+        <div id="wrapperGraficoEvolucion" style="display: none; height: 300px; width: 100%; position: relative; background: #fff; border-radius: 8px; padding: 10px; margin-top: 15px;">
             <canvas id="graficoEvolucion"></canvas>
         </div>
 
