@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -5038,7 +5038,7 @@ function abrirFichaPacienteNutri(pacienteId) {
         estado: 'manual',
         esManual: true
     }));
-    const turnosP = nutriTurnosData.filter(t => t.paciente_id === pacienteId).map(t => ({
+    const turnosP = nutriTurnosData.filter(t => String(t.paciente_id) === String(pacienteId)).map(t => ({
         ...t, esManual: false
     }));
     
