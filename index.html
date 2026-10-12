@@ -650,6 +650,7 @@
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <input type="text" id="buscador" placeholder="Buscar cliente..." oninput="filtrarAlumnos()" style="width: 200px;">
             <input type="date" id="filtroFechaAlumnos" oninput="filtrarAlumnos()">
+            <select id="filtroProfesorAlumnos" onchange="filtrarAlumnos()"><option value="">Todos los Profesores</option></select>
             <select id="filtroCobradorAlumnos" onchange="filtrarAlumnos()"></select>
             <input type="number" id="filtroMontoAlumnos" placeholder="Valor $" oninput="filtrarAlumnos()" style="width: 100px;">
           </div>
@@ -2443,26 +2444,25 @@
 
                 ${estaPagado ? `
                   <div class="meta-pago" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-dim);">
-                    📅 Fecha de pago: <strong style="color: var(--neon-green);">${fechaFormateada}</strong> | 👤 Cobró: <strong style="color: var(--neon-green);">${a.ultimo_cobrador || 'No especificado'}</strong>
+                    📅 Fecha de pago: <strong style="color: var(--neon-green);">${fechaFormateada}</strong> | 👤 Cobró: <strong style="color: var(--neon-green);">${a.ultimo_cobrador || 'No especificado'}</strong> | 💵 Cuota: <strong style="color: var(--neon-green);">$${(parseFloat(a.monto)||0).toLocaleString('es-AR')}</strong>
                   </div>
                 ` : ''}
               </div>
               
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
-                <input type="date" value="${fechaInput}" id="fecha-${a.id}" style="padding: 6px 10px; border-radius: 8px;">
-                <input type="number" value="${a.monto || 0}" style="width: 90px; padding: 6px 10px; border-radius: 8px;" id="monto-${a.id}" placeholder="Cuota $">
-                <select id="cobrador-${a.id}" style="padding: 6px 10px; border-radius: 8px;">
-                    <option value="" disabled selected>Seleccione...</option>
-                    ${staffData.filter(s => ['nacho','ignacio','zago','lea','leandro','villiani','ernesto','gomez','mariano','elias'].some(kw => String(s.nombre).toLowerCase().includes(kw))).map(s => `<option value="${s.nombre}">Recibe: ${s.nombre.split(' ')[0]}</option>`).join('')}
-                </select>
-                
-                                  ${estaPagado ? `
-                     <button class="btn btn-outline" style="padding: 6px 12px; border-radius: 8px; font-size: 0.85rem;" onclick="actualizarPago(${a.id}, false)">Marcar Pendiente</button>
-                  ` : `
-                     <a href="https://wa.me/?text=${encodeURIComponent(`Hola ${a.nombre}, buenos dias 😊\nTe escribimos para consultarte ¿por casualidad realizaste el pago del mes? Puede que se nos haya pasado anotarlo o simplemente no tengamos el registro aún.\nNo hay ningún apuro, es solo para confirmar y organizar los controles. 🙌\n\n¡Muchas gracias y saludos! ✨`)}" target="_blank" class="btn" style="background: #25D366; color: #000; font-weight: bold; text-decoration: none; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem;" title="Reclamar Pago">💬 WSP de pago</a>
-                     <button class="btn" style="padding: 6px 14px; border-radius: 8px; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(149, 255, 83, 0.2);" onclick="actualizarPago(${a.id}, true)">Cobrar Cuota</button>
-                  `}
-                
+                ${estaPagado ? `
+                  <button class="btn btn-outline" style="padding: 6px 12px; border-radius: 8px; font-size: 0.85rem;" onclick="actualizarPago(${a.id}, false)">Marcar Pendiente</button>
+                ` : `
+                  <input type="date" value="${fechaInput}" id="fecha-${a.id}" style="padding: 6px 10px; border-radius: 8px;">
+                  <input type="number" value="${a.monto || 0}" style="width: 90px; padding: 6px 10px; border-radius: 8px;" id="monto-${a.id}" placeholder="Cuota $">
+                  <select id="cobrador-${a.id}" style="padding: 6px 10px; border-radius: 8px;">
+                      <option value="" disabled selected>Seleccione cobrador...</option>
+                      ${staffData.filter(s => ['nacho','ignacio','zago','lea','leandro','villiani','ernesto','gomez','mariano','elias'].some(kw => String(s.nombre).toLowerCase().includes(kw))).map(s => `<option value="${s.nombre}">Recibe: ${s.nombre.split(' ')[0]}</option>`).join('')}
+                  </select>
+                  <a href="https://wa.me/?text=${encodeURIComponent(`Hola ${a.nombre}, buenos dias 😊\nTe escribimos para consultarte ¿por casualidad realizaste el pago del mes? Puede que se nos haya pasado anotarlo o simplemente no tengamos el registro aún.\nNo hay ningún apuro, es solo para confirmar y organizar los controles. 🙌\n\n¡Muchas gracias y saludos! ✨`)}" target="_blank" class="btn" style="background: #25D366; color: #000; font-weight: bold; text-decoration: none; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem;" title="Reclamar Pago">💬 WSP de pago</a>
+                  <button class="btn" style="padding: 6px 14px; border-radius: 8px; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(149, 255, 83, 0.2);" onclick="actualizarPago(${a.id}, true)">Cobrar Cuota</button>
+                `}
+                <button class="btn btn-outline" style="padding: 6px 10px; font-size: 0.85rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;" onclick="abrirHistorialPagosAlumno('${a.id}', '${encodeURIComponent(a.nombre)}')" title="Historial de Cuotas">📜 Historial</button>
                 <button class="btn btn-outline" style="padding: 6px 10px; font-size: 1rem; border-radius: 8px;" onclick="abrirModalEditCliente('${a.id}')" title="Editar">✏️</button>
                 <button class="btn btn-danger" style="padding: 6px 10px; font-size: 1rem; border-radius: 8px;" onclick="borrarCliente('${a.id}')" title="Borrar">🗑️</button>
               </div>
@@ -2554,6 +2554,7 @@
       limiteAlumnos = 50;
       const texto = document.getElementById('buscador')?.value.toLowerCase() || '';
       const fechaFiltro = document.getElementById('filtroFechaAlumnos')?.value || '';
+      const profFiltro = document.getElementById('filtroProfesorAlumnos')?.value || '';
       const cobradorFiltro = document.getElementById('filtroCobradorAlumnos')?.value || '';
       const montoFiltro = parseFloat(document.getElementById('filtroMontoAlumnos')?.value) || 0;
 
@@ -2561,6 +2562,7 @@
         let ok = true;
         if (texto && !a.nombre.toLowerCase().includes(texto)) ok = false;
         if (fechaFiltro && a.fecha_pago !== fechaFiltro) ok = false;
+        if (profFiltro && a.profesor_cargo !== profFiltro) ok = false;
         if (cobradorFiltro && a.ultimo_cobrador !== cobradorFiltro) ok = false;
         if (montoFiltro > 0 && parseFloat(a.monto) !== montoFiltro) ok = false;
         return ok;
@@ -3273,6 +3275,17 @@
 
           const fAlumnos = document.getElementById('filtroCobradorAlumnos');
           if (fAlumnos) fAlumnos.innerHTML = opcionesFiltro;
+
+          const fProfesor = document.getElementById('filtroProfesorAlumnos');
+          if (fProfesor && staffData) {
+              const valorActual = fProfesor.value;
+              let optsProf = '<option value="">Todos los Profesores</option>';
+              staffData.filter(s => s.rol === 'profesor').forEach(s => {
+                  optsProf += `<option value="${s.nombre}">${s.nombre}</option>`;
+              });
+              fProfesor.innerHTML = optsProf;
+              if (valorActual) fProfesor.value = valorActual;
+          }
 
           const fCaja = document.getElementById('filtroCobradorCaja');
           if (fCaja) fCaja.innerHTML = opcionesFiltro;
@@ -5495,6 +5508,91 @@ function renderizarRendicionNutri() {
     cont.innerHTML = innerHtml;
 }
 // ==========================================
+// HISTORIAL DE CUOTAS / PAGOS POR ALUMNO
+// ==========================================
+async function abrirHistorialPagosAlumno(alumnoId, alumnoNombreEncoded) {
+    const alumnoNombre = decodeURIComponent(alumnoNombreEncoded || '');
+    const modal = document.getElementById('modalHistorialPagosAlumno');
+    const titulo = document.getElementById('historialAlumnoTitulo');
+    const subtitulo = document.getElementById('historialAlumnoSubtitulo');
+    const contenido = document.getElementById('historialAlumnoContenido');
+
+    if (!modal) return;
+    modal.style.display = 'flex';
+    if (titulo) titulo.innerText = `📜 Historial de Cuotas`;
+    if (subtitulo) subtitulo.innerText = `Cliente: ${alumnoNombre}`;
+    if (contenido) contenido.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--text-dim);"><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row"></div></div>';
+
+    try {
+        const { data, error } = await _supabase
+            .from('caja_diaria')
+            .select('*')
+            .ilike('detalle', `%${alumnoNombre}%`)
+            .order('fecha', { ascending: false });
+
+        if (error) {
+            console.error("Error al obtener historial de pagos:", error);
+            contenido.innerHTML = `<div style="color: var(--danger-red); padding: 15px; text-align: center;">Error al cargar historial: ${error.message}</div>`;
+            return;
+        }
+
+        if (!data || data.length === 0) {
+            contenido.innerHTML = `
+                <div style="text-align: center; padding: 32px 16px; color: var(--text-dim); background: rgba(255,255,255,0.02); border-radius: 10px; border: 1px dashed var(--border-color);">
+                    <div style="font-size: 2.2rem; margin-bottom: 8px;">📭</div>
+                    <div style="font-weight: 500; font-size: 1rem; color: #fff;">Sin movimientos registrados</div>
+                    <div style="font-size: 0.85rem; margin-top: 4px;">Aún no hay cobros de cuotas registrados en el libro diario para <strong>${alumnoNombre}</strong>.</div>
+                </div>
+            `;
+            return;
+        }
+
+        const totalPagado = data.reduce((acc, row) => acc + (parseFloat(row.monto) || 0), 0);
+
+        let html = `
+            <div style="background: rgba(149, 255, 83, 0.06); border: 1px solid rgba(149, 255, 83, 0.25); border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.85rem; color: #ccc;">Total histórico cobrado:</span>
+                <strong style="color: var(--neon-green); font-size: 1.15rem;">$${totalPagado.toLocaleString('es-AR')} <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-dim);">(${data.length} pago${data.length > 1 ? 's' : ''})</span></strong>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 4px;">
+        `;
+
+        data.forEach(pago => {
+            const fechaStr = pago.fecha ? new Date(pago.fecha + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Sin fecha';
+            const montoVal = parseFloat(pago.monto) || 0;
+            const cobradorStr = pago.cobrador || 'No especificado';
+
+            html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #14141D; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="color: var(--neon-green); font-size: 0.95rem;">✔</span>
+                            <strong style="font-size: 0.95rem; color: #fff;">${pago.detalle || 'Cobro Cuota Mensual'}</strong>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">
+                            📅 Fecha: <strong style="color: #ddd;">${fechaStr}</strong> &nbsp;|&nbsp; 👤 Cobró: <strong style="color: var(--neon-green);">${cobradorStr}</strong>
+                        </div>
+                    </div>
+                    <div style="font-size: 1.1rem; font-weight: bold; color: var(--neon-green);">
+                        +$${montoVal.toLocaleString('es-AR')}
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        contenido.innerHTML = html;
+    } catch (e) {
+        console.error("Excepción al cargar historial de pagos:", e);
+        contenido.innerHTML = `<div style="color: var(--danger-red); padding: 15px; text-align: center;">Error al cargar el historial.</div>`;
+    }
+}
+
+function cerrarHistorialPagosAlumno() {
+    const modal = document.getElementById('modalHistorialPagosAlumno');
+    if (modal) modal.style.display = 'none';
+}
+// ==========================================
 
 </script>
 
@@ -5598,5 +5696,29 @@ function renderizarRendicionNutri() {
 
 
     
+<!-- MODAL HISTORIAL DE CUOTAS ALUMNO -->
+<div id="modalHistorialPagosAlumno" class="modal-overlay">
+    <div class="modal-content" style="max-width: 580px; width: 95%; max-height: 85vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+            <div>
+                <h3 id="historialAlumnoTitulo" style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    📜 Historial de Cuotas
+                </h3>
+                <span id="historialAlumnoSubtitulo" style="font-size: 0.85rem; color: var(--text-dim);"></span>
+            </div>
+            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.9rem;" onclick="cerrarHistorialPagosAlumno()">✕</button>
+        </div>
+
+        <div id="historialAlumnoContenido">
+            <div class="skeleton skeleton-row"></div>
+            <div class="skeleton skeleton-row"></div>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+            <button class="btn btn-outline" style="padding: 8px 18px;" onclick="cerrarHistorialPagosAlumno()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
