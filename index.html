@@ -4533,6 +4533,7 @@ function abrirModalNuevoTurnoNutri() {
 
 async function guardarTurnoNutri() {
   try {
+    const editTurnoId = document.getElementById('turnoIdNutriEdit')?.value;
     const nombreInput = document.getElementById('inputPacienteNutri').value.trim();
     const fechaVal = document.getElementById('fechaTurnoNutri').value;
     const horaVal = document.getElementById('horaTurnoNutri').value;
@@ -4562,20 +4563,66 @@ async function guardarTurnoNutri() {
         pacienteId = newPac[0].id;
     }
 
-    const { error: errTurno } = await _supabase.from('nutricion_turnos').insert([{
-        paciente_id: pacienteId,
-        nutricionista_nombre: nutriNombre,
-        fecha_hora: fechaHora,
-        monto: monto,
-        estado: 'pendiente'
-    }]);
-
-    if(errTurno) {
-        alert('Error agendando turno: ' + errTurno.message);
-    } else {
-        document.getElementById('modalNuevoTurnoNutri').style.display = 'none';
-        cargarDatosNutricion();
+    // 1. VALIDACIÓN DE SUPERPOSICIÓN: Mismo horario para la nutricionista
+    const conflictoNutri = nutriTurnosData.find(t => 
+        t.nutricionista_nombre === nutriNombre && 
+        t.fecha_hora === fechaHora && 
+        t.estado !== 'cancelo' &&
+        (!editTurnoId || String(t.id) !== String(editTurnoId))
+    );
+    if (conflictoNutri) {
+        const pacConflicto = nutriPacientesData.find(p => String(p.id) === String(conflictoNutri.paciente_id));
+        const nombreConflicto = pacConflicto ? pacConflicto.nombre : 'otro paciente';
+        alert(`⚠️ Horario no disponible: ${nutriNombre} ya tiene un turno agendado a las ${horaVal}hs con ${nombreConflicto}.`);
+        return;
     }
+
+    // Validación de superposición: Mismo horario para el paciente
+    const conflictoPac = nutriTurnosData.find(t => 
+        String(t.paciente_id) === String(pacienteId) && 
+        t.fecha_hora === fechaHora && 
+        t.estado !== 'cancelo' &&
+        (!editTurnoId || String(t.id) !== String(editTurnoId))
+    );
+    if (conflictoPac) {
+        alert(`⚠️ El paciente ${nombreInput} ya tiene un turno asignado en ese mismo día y horario.`);
+        return;
+    }
+
+    if (editTurnoId) {
+        // 2. ACTUALIZACIÓN (Modificar turno existente sin duplicarlo)
+        const { error: errUpdate } = await _supabase.from('nutricion_turnos').update({
+            paciente_id: pacienteId,
+            nutricionista_nombre: nutriNombre,
+            fecha_hora: fechaHora,
+            monto: monto
+        }).eq('id', editTurnoId);
+
+        if (errUpdate) {
+            alert('Error actualizando turno: ' + errUpdate.message);
+            return;
+        }
+        alert('Turno modificado con éxito');
+    } else {
+        // CREACIÓN DE NUEVO TURNO
+        const { error: errTurno } = await _supabase.from('nutricion_turnos').insert([{
+            paciente_id: pacienteId,
+            nutricionista_nombre: nutriNombre,
+            fecha_hora: fechaHora,
+            monto: monto,
+            estado: 'pendiente'
+        }]);
+
+        if (errTurno) {
+            alert('Error agendando turno: ' + errTurno.message);
+            return;
+        }
+    }
+
+    document.getElementById('modalNuevoTurnoNutri').style.display = 'none';
+    const hiddenId = document.getElementById('turnoIdNutriEdit');
+    if (hiddenId) hiddenId.value = '';
+    cargarDatosNutricion();
   } catch(e) {
       alert('ERROR CRÍTICO JS: ' + e.message);
   }
@@ -5430,6 +5477,7 @@ function renderizarRendicionNutri() {
         <input type="text" id="inputPacienteNutri" list="listaAlumnosNutriAutocomplete" placeholder="Nombre completo..." autocomplete="off">
         <datalist id="listaAlumnosNutriAutocomplete"></datalist>
         <input type="hidden" id="pacienteIdNutriSelec">
+        <input type="hidden" id="turnoIdNutriEdit">
         
         <label>Nutricionista:</label>
         <select id="selectNutricionistaTurno"></select>
