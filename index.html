@@ -257,40 +257,50 @@
 
     /* ESTILOS DEL CRONOGRAMA DINÁMICO */
     .grid-cronograma {
-        display: grid;
-        grid-template-columns: 50px repeat(6, minmax(0, 1fr));
-        gap: 4px;
-        overflow-x: auto;
-        margin-top: 10px;
-        font-size: 0.85rem;
-      }
+      display: grid;
+      grid-template-columns: 60px repeat(6, minmax(140px, 1fr));
+      gap: 6px;
+      overflow-x: auto;
+      margin-top: 10px;
+      font-size: 0.85rem;
+      padding-bottom: 8px;
+    }
     .crono-header {
-        background: rgba(0,0,0,0.2);
-        padding: 6px;
-        text-align: center;
-        font-weight: bold;
-        font-size: 0.8rem;
-        border-radius: 6px;
-        border: 1px solid var(--border-color);
-      }
+      background: rgba(255, 255, 255, 0.04);
+      padding: 8px 6px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.82rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      color: #fff;
+      letter-spacing: 0.3px;
+    }
+    .crono-header.crono-header-hoy {
+      border-color: var(--neon-green);
+      background: rgba(149, 255, 83, 0.12);
+      color: var(--neon-green);
+      box-shadow: 0 0 10px rgba(149, 255, 83, 0.15);
+    }
     .crono-hora {
-        background: rgba(0,0,0,0.2);
-        padding: 6px 2px;
-        text-align: center;
-        font-size: 0.75rem;
-        font-weight: bold;
-        color: var(--text-dim);
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
+      background: rgba(255, 255, 255, 0.02);
+      padding: 6px 4px;
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
     .crono-divider {
       grid-column: 1 / -1;
-      background: var(--card-bg);
+      background: linear-gradient(90deg, rgba(149, 255, 83, 0.12) 0%, rgba(20, 20, 29, 0.8) 100%);
       color: var(--neon-green);
-      padding: 10px 16px;
-      font-size: 0.9rem;
+      padding: 8px 14px;
+      font-size: 0.85rem;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -303,33 +313,81 @@
       gap: 8px;
     }
     .crono-cell {
-      background: var(--bg-dark);
+      background: rgba(20, 20, 29, 0.7);
       border: 1px solid var(--border-color);
       border-radius: 6px;
-      padding: 8px;
-      min-height: 70px;
+      padding: 6px;
+      min-height: 80px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    .crono-cell:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .crono-cell-highlight {
+      border-color: var(--neon-green) !important;
+      background: rgba(149, 255, 83, 0.09) !important;
+      box-shadow: 0 0 12px rgba(149, 255, 83, 0.25) !important;
+    }
+    .crono-chip-highlight {
+      background: rgba(149, 255, 83, 0.25) !important;
+      color: #fff !important;
+      font-weight: bold !important;
+      border-color: var(--neon-green) !important;
     }
     .cupo-tag {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       padding: 2px 6px;
       border-radius: 4px;
-      font-weight: bold;
-      align-self: flex-start;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      display: inline-flex;
+      align-items: center;
     }
-    .cupo-disponible { background: rgba(149, 255, 83, 0.2); color: var(--neon-green); border: 1px solid var(--neon-green); }
-    .cupo-alerta { background: rgba(255, 193, 7, 0.2); color: var(--warning-yellow); border: 1px solid var(--warning-yellow); }
-    .cupo-lleno { background: rgba(255, 83, 83, 0.2); color: var(--danger-red); border: 1px solid var(--danger-red); }
-    .alumno-chip {
-      font-size: 0.75rem;
-      background: rgba(255, 255, 255, 0.05);
-      padding: 2px 4px;
-      border-radius: 3px;
-      margin-top: 2px;
+    .cupo-disponible { background: rgba(149, 255, 83, 0.15); color: var(--neon-green); border: 1px solid rgba(149, 255, 83, 0.4); }
+    .cupo-alerta { background: rgba(255, 193, 7, 0.15); color: #ffea00; border: 1px solid rgba(255, 193, 7, 0.4); }
+    .cupo-lleno { background: rgba(255, 83, 83, 0.15); color: var(--danger-red); border: 1px solid rgba(255, 83, 83, 0.4); }
+    
+    .crono-alumno-chip, .alumno-chip {
+      font-size: 0.72rem;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 3px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .crono-alumno-chip:hover, .alumno-chip:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+    .crono-btn-agregar {
+      width: 100%;
+      margin-top: 4px;
+      padding: 4px 0;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      background: transparent;
+      border: 1px dashed rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .crono-btn-agregar:hover {
+      border-color: var(--neon-green);
+      color: var(--neon-green);
+      background: rgba(149, 255, 83, 0.05);
+    }
+    .crono-filtro-dia.active {
+      background: var(--neon-green) !important;
+      color: #000 !important;
+      font-weight: 700 !important;
+      border-color: var(--neon-green) !important;
     }
   
     /* --- NEW AESTHETIC MONTH FILTER --- */
@@ -479,12 +537,16 @@
       
 
       /* === CRONOGRAMA MEJORADO === */
-      .grid-cronograma {
-        grid-template-columns: 60px repeat(6, minmax(140px, 1fr)) !important; 
+      .grid-cronograma:not(.single-col) {
+        grid-template-columns: 60px repeat(6, minmax(130px, 1fr)) !important; 
+      }
+      .grid-cronograma.single-col {
+        grid-template-columns: 60px 1fr !important;
+        min-width: 0 !important;
       }
       .crono-cell {
-        padding: 8px !important;
-        font-size: 0.9rem !important;
+        padding: 6px !important;
+        font-size: 0.85rem !important;
       }
       
       /* === TABLA DE ASISTENCIAS === */
@@ -549,6 +611,15 @@
       main { margin: 0 !important; padding: 10px !important; width: 100% !important; overflow: visible !important; }
       .section-page { display: none !important; }
       #cierreMensualSection { display: block !important; }
+      body.printing-crono #cierreMensualSection { display: none !important; }
+      body.printing-crono #cronogramaSection { display: block !important; }
+      body.printing-crono .crono-btn-agregar,
+      body.printing-crono .crono-filtro-dia,
+      body.printing-crono #cronoFiltroFranja,
+      body.printing-crono #cronoBuscadorAlumno,
+      body.printing-crono #cronoClearSearch,
+      body.printing-crono #cronoResultadosBusqueda,
+      body.printing-crono .crono-alumno-chip span:last-child { display: none !important; }
       .card { background: #fff !important; border: 1px solid #ccc !important; box-shadow: none !important; color: #000 !important; margin-bottom: 20px !important; break-inside: avoid; }
       .btn, .month-filter-pill { display: none !important; }
       * { color: #000 !important; text-shadow: none !important; }
@@ -1139,47 +1210,160 @@
       </div>
     </div>
 
-    <!-- SECCIÓN CRONOGRAMA DE TURNOS (REEMPLAZO LOCAL DINÁMICO) -->
+    <!-- SECCIÓN CRONOGRAMA DE TURNOS -->
     <div id="cronogramaSection" class="section-page">
-      <h1 style="margin-bottom: 20px;">Cronograma</h1>
-
-      <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 12px;">
-          <h3>Grilla de Turnos por Hora</h3>
-          <p style="color: var(--text-dim); font-size: 0.85rem;">
-            🟢 0-4 personas (Disponible) | 🟡 5 personas (Llenándose) | 🔴 6+ personas (Lleno / Límite máx)
+      <!-- ENCABEZADO CON ACCIONES PRINCIPALES -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <h1 style="margin: 0 0 6px 0; font-size: 1.8rem; display: flex; align-items: center; gap: 10px;">
+            <span>⏰ Cronograma de Turnos</span>
+          </h1>
+          <p style="margin: 0; color: var(--text-dim); font-size: 0.9rem;">
+            Planificación y asignación semanal de clases grupales y personalizadas
           </p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <button class="btn btn-outline" onclick="imprimirCronograma()" title="Imprimir o guardar como PDF" style="display: flex; align-items: center; gap: 6px;">
+            🖨️ Imprimir
+          </button>
+          <button class="btn btn-outline" onclick="cargarTurnosSupabase()" title="Recargar turnos desde Supabase" style="display: flex; align-items: center; gap: 6px;">
+            🔄 Actualizar
+          </button>
+          <button class="btn" onclick="abrirModalAvisoCronoRapido()" style="display: flex; align-items: center; gap: 6px;">
+            🔔 + Nuevo Aviso
+          </button>
+        </div>
+      </div>
+
+      <!-- TARJETAS DE RESUMEN RÁPIDO DE OCUPACIÓN -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 20px;">
+        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+          <div style="font-size: 1.6rem; background: rgba(149, 255, 83, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">👥</div>
+          <div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Inscriptos Semana</div>
+            <div id="cronoMetricaInscriptos" style="font-size: 1.4rem; font-weight: 800; color: #fff;">0</div>
+          </div>
+        </div>
+        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+          <div style="font-size: 1.6rem; background: rgba(149, 255, 83, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">🟢</div>
+          <div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Turnos con Cupo</div>
+            <div id="cronoMetricaDisponibles" style="font-size: 1.4rem; font-weight: 800; color: var(--neon-green);">0</div>
+          </div>
+        </div>
+        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color);">
+          <div style="font-size: 1.6rem; background: rgba(255, 83, 83, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">🔴</div>
+          <div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Turnos Llenos</div>
+            <div id="cronoMetricaLlenos" style="font-size: 1.4rem; font-weight: 800; color: var(--danger-red);">0</div>
+          </div>
+        </div>
+        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+          <div style="font-size: 1.6rem; background: rgba(255, 193, 7, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">🔔</div>
+          <div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Avisos Activos</div>
+            <div id="cronoMetricaAvisos" style="font-size: 1.4rem; font-weight: 800; color: #ffea00;">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BARRA DE CONTROL Y FILTROS INTERACTIVOS -->
+      <div class="card" style="margin-bottom: 20px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+          <!-- FILTRO DÍAS DE LA SEMANA (BOTONES / TABS) -->
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+            <span style="font-size: 0.85rem; color: var(--text-dim); margin-right: 4px; font-weight: 600;">Día:</span>
+            <button class="btn btn-outline crono-filtro-dia active" data-dia="todos" onclick="filtrarCronoDia('todos', this)" style="padding: 6px 12px; font-size: 0.85rem;">Todos</button>
+            <button class="btn btn-outline crono-filtro-dia" data-dia="hoy" onclick="filtrarCronoDia('hoy', this)" style="padding: 6px 12px; font-size: 0.85rem;" id="btnCronoFiltroHoy">📅 Hoy</button>
+            <button class="btn btn-outline crono-filtro-dia" data-dia="Lunes" onclick="filtrarCronoDia('Lunes', this)" style="padding: 6px 12px; font-size: 0.85rem;">Lun</button>
+            <button class="btn btn-outline crono-filtro-dia" data-dia="Martes" onclick="filtrarCronoDia('Martes', this)" style="padding: 6px 12px; font-size: 0.85rem;">Mar</button>
+            <button class="btn btn-outline crono-filtro-dia" data-dia="Miércoles" onclick="filtrarCronoDia('Miércoles', this)" style="padding: 6px 12px; font-size: 0.85rem;">Mié</button>
+            <button class="btn btn-outline crono-filtro-dia" data-dia="Jueves" onclick="filtrarCronoDia('Jueves', this)" style="padding: 6px 12px; font-size: 0.85rem;">Jue</button>
+            <button class="btn btn-outline crono-filtro-dia" data-dia="Viernes" onclick="filtrarCronoDia('Viernes', this)" style="padding: 6px 12px; font-size: 0.85rem;">Vie</button>
+            <button class="btn btn-outline crono-filtro-dia" data-dia="Sábado" onclick="filtrarCronoDia('Sábado', this)" style="padding: 6px 12px; font-size: 0.85rem;">Sáb</button>
+          </div>
+
+          <!-- FILTRO DE FRANJA HORARIA Y BUSCADOR -->
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; justify-content: flex-end;">
+            <select id="cronoFiltroFranja" onchange="renderizarCronogramaDinamico()" style="padding: 7px 12px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+              <option value="todas">Todas las franjas</option>
+              <option value="manana">🌅 Mañana (08:00 - 11:30)</option>
+              <option value="mediodia">☀️ Mediodía (14:00 - 15:30)</option>
+              <option value="tarde">🌆 Tarde (16:00 - 19:30)</option>
+            </select>
+
+            <div style="position: relative; min-width: 220px;">
+              <input type="text" id="cronoBuscadorAlumno" oninput="buscarAlumnoEnGrilla()" placeholder="🔍 Buscar alumno en grilla..." style="width: 100%; padding: 7px 32px 7px 12px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+              <span id="cronoClearSearch" onclick="limpiarBusquedaCrono()" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-dim); display: none; font-size: 0.9rem;">✕</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- INDICADOR DE RESULTADOS DE BÚSQUEDA -->
+        <div id="cronoResultadosBusqueda" style="display: none; margin-top: 10px; padding: 8px 12px; border-radius: 6px; background: rgba(149, 255, 83, 0.1); border: 1px solid var(--neon-green); font-size: 0.85rem; color: #fff;"></div>
+      </div>
+
+      <!-- GRILLA DEL CRONOGRAMA -->
+      <div class="card" style="padding: 16px; overflow-x: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 12px;">
+          <h3 id="cronoTituloGrilla" style="margin: 0; font-size: 1.1rem;">Grilla Semanal de Clases</h3>
+          <div style="display: flex; align-items: center; gap: 14px; font-size: 0.8rem; color: var(--text-dim); flex-wrap: wrap;">
+            <span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: var(--neon-green); display: inline-block;"></span> 0-5 Disponible</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ffea00; display: inline-block;"></span> Últimos cupos</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: var(--danger-red); display: inline-block;"></span> Completo</span>
+          </div>
         </div>
         <div id="cronogramaGridContainer" class="grid-cronograma"></div>
       </div>
 
-      <div class="card" style="margin-top: 20px; border-left: 5px solid var(--neon-green);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <h3>Avisos del Día y Nuevos Ingresos</h3>
-          <button class="btn" onclick="document.getElementById('modalAltaAvisoCrono').style.display='flex'">+ Nuevo Aviso</button>
+      <!-- SECCIÓN AVISOS DEL DÍA -->
+      <div class="card" style="margin-top: 20px; border-left: 5px solid var(--neon-green); padding: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 style="margin: 0 0 4px 0;">Avisos del Día y Novedades</h3>
+            <p style="margin: 0; color: var(--text-dim); font-size: 0.85rem;">
+              Modificaciones de horarios de última hora, altas recientes y ausencias temporales.
+            </p>
+          </div>
+          <button class="btn" onclick="abrirModalAvisoCronoRapido()">+ Nuevo Aviso</button>
         </div>
-        <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 12px;">
-          Modificaciones de horarios de última hora y altas recientes.
-        </p>
-        <ul id="listaAvisosDiarios"></ul>
+        <ul id="listaAvisosDiarios" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;"></ul>
       </div>
     </div>
     
     <!-- MODAL PARA INSCRIBIR EN CRONOGRAMA -->
-    <div id="modalInscribirCrono" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
-      <div style="background: var(--bg-dark); border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; display: flex; flex-direction: column; max-height: 90vh;">
-        <h3 style="margin-bottom: 12px; color: var(--neon-green);" id="modalInscribirTitulo">Agregar Alumno</h3>
-        <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 8px;" id="modalInscribirSubtitulo">Seleccioná a los alumnos a inscribir:</p>
+    <div id="modalInscribirCrono" class="modal-overlay">
+      <div class="modal-content" style="max-width: 460px; width: 100%; display: flex; flex-direction: column; max-height: 90vh;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="margin: 0; color: var(--neon-green);" id="modalInscribirTitulo">Agregar Alumno</h3>
+          <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.85rem;" onclick="cerrarModalInscribirCrono()">✕</button>
+        </div>
+        <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 12px;" id="modalInscribirSubtitulo">Seleccioná a los alumnos a inscribir:</p>
         
-        <input type="text" id="buscadorModalCrono" oninput="filtrarListaCrono()" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;" placeholder="🔍 Buscar alumno...">
-        
-        <div id="listaCheckboxesCrono" style="overflow-y: auto; flex: 1; min-height: 150px; max-height: 300px; border: 1px solid var(--border-color); border-radius: 6px; background: #1a1a24; padding: 10px; display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px;">
-          <!-- Checkboxes dynamically added -->
+        <!-- Pestañas o selector: Alumno registrado vs Nombre manual / Invitado -->
+        <div style="display: flex; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+          <button type="button" id="tabInscribirLista" class="btn btn-outline" style="flex: 1; padding: 6px 10px; font-size: 0.85rem; background: rgba(149, 255, 83, 0.1); border-color: var(--neon-green);" onclick="alternarTabInscripcion('lista')">👥 Alumno Registrado</button>
+          <button type="button" id="tabInscribirManual" class="btn btn-outline" style="flex: 1; padding: 6px 10px; font-size: 0.85rem;" onclick="alternarTabInscripcion('manual')">✍️ Manual / Invitado</button>
+        </div>
+
+        <!-- Vista Lista de Alumnos -->
+        <div id="cronoVistaInscripcionLista">
+          <input type="text" id="buscadorModalCrono" oninput="filtrarListaCrono()" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;" placeholder="🔍 Filtrar alumnos...">
+          
+          <div id="listaCheckboxesCrono" style="overflow-y: auto; flex: 1; min-height: 180px; max-height: 280px; border: 1px solid var(--border-color); border-radius: 6px; background: #1a1a24; padding: 10px; display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px;">
+            <!-- Checkboxes dynamically added -->
+          </div>
+        </div>
+
+        <!-- Vista Manual / Invitado -->
+        <div id="cronoVistaInscripcionManual" style="display: none; margin-bottom: 16px;">
+          <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px;">Ingresá el nombre completo del alumno o invitado (ej. clase de prueba):</p>
+          <input type="text" id="cronoInputNombreManual" placeholder="Ej: Marcos Gómez (Prueba)" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
         </div>
         
-        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: auto;">
           <button class="btn btn-outline" onclick="cerrarModalInscribirCrono()">Cancelar</button>
-          <button class="btn" onclick="confirmarInscribirCrono()">Agregar Seleccionados</button>
+          <button class="btn" id="btnConfirmarInscribirCrono" onclick="confirmarInscribirCrono()">Agregar Seleccionados</button>
         </div>
       </div>
     </div>
@@ -1463,17 +1647,22 @@
   
   <!-- MODAL AVISOS CRONOGRAMA -->
   <div id="modalAltaAvisoCrono" class="modal-overlay">
-    <div class="modal-content" style="max-width: 450px;">
-      <h3>Registrar Aviso en Turno</h3>
-      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+    <div class="modal-content" style="max-width: 480px; width: 100%;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h3 style="margin: 0;">Registrar Aviso en Turno</h3>
+        <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.85rem;" onclick="document.getElementById('modalAltaAvisoCrono').style.display='none'">✕</button>
+      </div>
+      <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 12px;">Se mostrará en la grilla horaria y en el listado de novedades del día.</p>
+
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
         <select id="avisoCronoTipo" required>
           <option value="" disabled selected>Tipo de Aviso...</option>
-          <option value="Persona nueva">Persona nueva</option>
-          <option value="Cambio de horario">Cambio de horario</option>
-          <option value="Ausencia / Otro">Ausencia / Otro</option>
+          <option value="Persona nueva">🟢 Persona nueva</option>
+          <option value="Cambio de horario">🟡 Cambio de horario</option>
+          <option value="Ausencia / Otro">🔵 Ausencia / Otro</option>
         </select>
         
-        <input type="text" id="avisoCronoNombre" placeholder="Nombre de la persona" required>
+        <input type="text" id="avisoCronoNombre" placeholder="Nombre de la persona o detalle" required>
         
         <div style="display: flex; gap: 10px;">
             <select id="avisoCronoDia" style="flex: 1;" required>
@@ -1511,11 +1700,14 @@
             </select>
         </div>
         
-        <input type="date" id="avisoCronoFecha" required>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 4px;">Fecha del aviso / vigencia:</label>
+          <input type="date" id="avisoCronoFecha" style="width: 100%;" required>
+        </div>
         
         <div style="display: flex; gap: 8px; margin-top: 10px;">
           <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('modalAltaAvisoCrono').style.display='none'">Cancelar</button>
-          <button class="btn" style="flex: 1;" onclick="guardarAvisoCrono()">Guardar</button>
+          <button class="btn" id="btnGuardarAvisoCrono" style="flex: 1;" onclick="guardarAvisoCrono()">Guardar Aviso</button>
         </div>
       </div>
     </div>
@@ -1960,7 +2152,9 @@
       _supabase.channel('schema-db-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'alumnos' }, () => { cargarDatosAlumnos(); })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'caja_diaria' }, () => { cargarLibroDiario(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'clases' }, () => { cargarTurnosSupabase(); })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas_clases' }, () => { cargarTurnosSupabase(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'avisos_cronograma' }, () => { cargarTurnosSupabase(); })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'nutricion_turnos' }, () => { cargarDatosNutricion(); })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'nutricion_pacientes' }, () => { cargarDatosNutricion(); })
         .subscribe();
@@ -2219,7 +2413,7 @@
           poblarSelectsProfesorPlanes();
         if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
       } else if (idSeccion === 'cronogramaSection') {
-        renderizarCronogramaDinamico();
+        cargarTurnosSupabase();
       }
     }
 
@@ -4230,137 +4424,388 @@ function renderizarLibroDiario(esCargarMas) {
       }
 
     // FUNCIONES DEL CRONOGRAMA DINÁMICO
+    let cronoDiaSeleccionado = 'todos'; // 'todos', 'hoy', o nombre del día
+
     async function cargarTurnosSupabase() {
-      const { data: clases } = await _supabase.from('clases').select('*');
-      const { data: reservas } = await _supabase.from('reservas_clases').select('*');
-        const { data: avisosData } = await _supabase.from('avisos_cronograma').select('*');
+      try {
+        const [
+          { data: clases, error: errClases },
+          { data: reservas, error: errReservas },
+          { data: avisosData, error: errAvisos }
+        ] = await Promise.all([
+          _supabase.from('clases').select('*'),
+          _supabase.from('reservas_clases').select('*'),
+          _supabase.from('avisos_cronograma').select('*')
+        ]);
+
+        if (errClases) console.warn("Error cargando clases:", errClases);
+        if (errReservas) console.warn("Error cargando reservas:", errReservas);
+        if (errAvisos) console.warn("Error cargando avisos:", errAvisos);
+
         if (avisosData) {
-            const ahora = new Date();
-            const validos = [];
-            for (let a of avisosData) {
-                if (a.fecha) {
-                    const [y, m, d] = a.fecha.split('-').map(Number);
-                    const limite = new Date(y, m - 1, d, 1, 0, 0); 
-                    limite.setDate(limite.getDate() + 1); // Al dia siguiente a la 1:00 AM
-                    if (ahora > limite) {
-                        // Borrar aviso expirado
-                        _supabase.from('avisos_cronograma').delete().eq('id', a.id).then();
-                        continue;
-                    }
-                }
-                validos.push(a);
+          const ahora = new Date();
+          const validos = [];
+          for (let a of avisosData) {
+            if (a.fecha) {
+              const [y, m, d] = a.fecha.split('-').map(Number);
+              const limite = new Date(y, m - 1, d, 1, 0, 0); 
+              limite.setDate(limite.getDate() + 1); // Al día siguiente a la 1:00 AM
+              if (ahora > limite) {
+                // Borrar aviso expirado
+                _supabase.from('avisos_cronograma').delete().eq('id', a.id).then();
+                continue;
+              }
             }
-            cronogramaData.avisos = validos;
+            validos.push(a);
+          }
+          cronogramaData.avisos = validos;
         } else {
-            cronogramaData.avisos = [];
+          cronogramaData.avisos = [];
         }
-      
-      cronogramaData.turnos = {};
-      cronogramaData.clasesMap = {};
-      
-      if (clases) {
-        clases.forEach(c => {
-          const key = `${c.dia}-${c.hora}`;
-          cronogramaData.clasesMap[key] = c.id;
-          cronogramaData.turnos[key] = reservas ? reservas.filter(r => r.clase_id === c.id) : [];
-        });
+
+        cronogramaData.turnos = {};
+        cronogramaData.clasesMap = {};
+        
+        if (clases) {
+          clases.forEach(c => {
+            const key = `${c.dia}-${c.hora}`;
+            cronogramaData.clasesMap[key] = c.id;
+            cronogramaData.turnos[key] = reservas ? reservas.filter(r => r.clase_id === c.id) : [];
+          });
+        }
+      } catch (err) {
+        console.error("Error al cargar turnos del cronograma:", err);
       }
       renderizarCronogramaDinamico();
     }
 
-    function renderizarCronogramaDinamico() {
-        const container = document.getElementById('cronogramaGridContainer');
-        if (!container) return;
-  
-        let html = '<div></div>';
-        cronogramaData.dias.forEach(d => {
-          html += `<div class="crono-header">${d}</div>`;
-        });
-  
-        cronogramaData.horas.forEach(hora => {
-          if (hora === "08:00") {
-            html += `<div class="crono-divider">🌅 Turno Mañana</div>`;
-          } else if (hora === "14:00") {
-            html += `<div class="crono-divider">☀️ Turno Mediodía</div>`;
-          } else if (hora === "16:00") {
-            html += `<div class="crono-divider">🌆 Turno Tarde</div>`;
-          }
-  
-          html += `<div class="crono-hora">${hora}</div>`;
-          cronogramaData.dias.forEach(dia => {
-            
-            if (dia === "Sábado" && !["09:00", "09:30", "10:00", "10:30"].includes(hora)) {
-               html += `<div class="crono-cell" style="background: transparent; border: none;"></div>`;
-               return;
-            }
-  
-            const key = `${dia}-${hora}`;
-            const inscriptos = cronogramaData.turnos[key] || [];
-            const cant = inscriptos.length;
-            
-            const avisosCelda = (cronogramaData.avisos || []).filter(a => a.dia === dia && a.hora === hora);
-            
-            let maxCap = (hora === "08:00" || hora === "14:00") ? 8 : 7;
-            let colorTexto = cant >= maxCap ? 'var(--danger-red)' : 'var(--text-dim)';
-            
-            let contenidoAvisos = avisosCelda.map(a => {
-                let colorBase = a.tipo.includes('Persona') ? 'var(--neon-green)' : '#ffea00';
-                return `<div style="font-size: 0.6rem; background: rgba(0,0,0,0.3); border-left: 2px solid ${colorBase}; padding: 2px; margin-bottom: 2px; border-radius: 2px; line-height: 1.1;">
-                   <strong style="color: ${colorBase};">${a.tipo}</strong>: ${a.nombre}
-                </div>`;
-            }).join('');
+    function filtrarCronoDia(dia, btn) {
+      cronoDiaSeleccionado = dia;
+      document.querySelectorAll('.crono-filtro-dia').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      renderizarCronogramaDinamico();
+    }
 
-            html += `
-              <div class="crono-cell" style="position: relative; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.15); padding: 4px; display: flex; flex-direction: column; gap: 2px;">
-                
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                  <span style="font-size: 0.65rem; color: ${colorTexto}; font-weight: bold; background: rgba(255,255,255,0.05); padding: 2px 4px; border-radius: 4px;">${cant} / ${maxCap}</span>
-                </div>
-                
-                ${contenidoAvisos}
-                
-                <div style="display: flex; flex-direction: column; gap: 3px; flex: 1;">
-                  ${inscriptos.map(r => `
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; background: rgba(255,255,255,0.03); padding: 2px 4px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.02); font-size: 0.7rem;">
-                      <span style="word-break: break-word; line-height: 1.2; flex: 1; padding-right: 4px;">${r.nombre_alumno}</span>
-                      <span style="cursor: pointer; color: var(--danger-red); opacity: 0.5; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'" onclick="quitarAlumnoTurno('${r.id}')" title="Quitar">✖</span>
-                    </div>
-                  `).join('')}
-                </div>
-                
-                ${cant < maxCap ? `
-                  <button style="width: 100%; margin-top: 4px; padding: 4px 0; font-size: 0.75rem; color: var(--text-dim); background: transparent; border: 1px dashed rgba(255,255,255,0.1); border-radius: 6px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--neon-green)'; this.style.color='var(--neon-green)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='var(--text-dim)';" onclick="inscribirAlumnoTurno('${key}')">+ Agregar</button>
-                ` : `<div style="text-align: center; font-size: 0.7rem; color: var(--danger-red); padding: 4px 0; font-weight: bold; opacity: 0.7;">COMPLETO</div>`}
-              </div>
-            `;
-          });
-        });
-  
-        container.innerHTML = html;
-        renderizarAvisosDiarios();
+    function renderizarCronogramaDinamico() {
+      const container = document.getElementById('cronogramaGridContainer');
+      if (!container) return;
+
+      const nombresDias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+      const diaHoyIdx = new Date().getDay();
+      let diaHoyNombre = nombresDias[diaHoyIdx];
+      if (diaHoyNombre === "Domingo") diaHoyNombre = "Lunes";
+
+      const btnHoy = document.getElementById('btnCronoFiltroHoy');
+      if (btnHoy) btnHoy.innerText = `📅 Hoy (${diaHoyNombre.slice(0, 3)})`;
+
+      const diasAMostrar = cronoDiaSeleccionado === 'todos'
+        ? cronogramaData.dias
+        : (cronoDiaSeleccionado === 'hoy' ? [diaHoyNombre] : [cronoDiaSeleccionado]);
+
+      const franja = document.getElementById('cronoFiltroFranja') ? document.getElementById('cronoFiltroFranja').value : 'todas';
+      let horasAMostrar = cronogramaData.horas;
+      if (franja === 'manana') {
+        horasAMostrar = horasAMostrar.filter(h => h < "12:00");
+      } else if (franja === 'mediodia') {
+        horasAMostrar = horasAMostrar.filter(h => h >= "12:00" && h < "16:00");
+      } else if (franja === 'tarde') {
+        horasAMostrar = horasAMostrar.filter(h => h >= "16:00");
       }
-  
-      function inscribirAlumnoTurno(key) {
+
+      // Configuración de columnas adaptable
+      const esColumnaUnica = diasAMostrar.length === 1;
+      if (esColumnaUnica) {
+        container.classList.add('single-col');
+        container.style.gridTemplateColumns = '60px 1fr';
+        container.style.minWidth = 'auto';
+      } else {
+        container.classList.remove('single-col');
+        container.style.gridTemplateColumns = '60px repeat(6, minmax(135px, 1fr))';
+        container.style.minWidth = '920px';
+      }
+
+      // Actualizar métricas globales
+      let totalInscriptos = 0;
+      let turnosConCupo = 0;
+      let turnosLlenos = 0;
+
+      cronogramaData.horas.forEach(hora => {
+        cronogramaData.dias.forEach(dia => {
+          if (dia === "Sábado" && !["09:00", "09:30", "10:00", "10:30"].includes(hora)) return;
+          const key = `${dia}-${hora}`;
+          const inscriptos = cronogramaData.turnos[key] || [];
+          const cant = inscriptos.length;
+          let maxCap = (hora === "08:00" || hora === "14:00") ? 8 : 7;
+          totalInscriptos += cant;
+          if (cant >= maxCap) {
+            turnosLlenos++;
+          } else {
+            turnosConCupo++;
+          }
+        });
+      });
+
+      const elInsc = document.getElementById('cronoMetricaInscriptos');
+      if (elInsc) elInsc.innerText = totalInscriptos;
+      const elDisp = document.getElementById('cronoMetricaDisponibles');
+      if (elDisp) elDisp.innerText = turnosConCupo;
+      const elLlen = document.getElementById('cronoMetricaLlenos');
+      if (elLlen) elLlen.innerText = turnosLlenos;
+      const elAvisos = document.getElementById('cronoMetricaAvisos');
+      if (elAvisos) elAvisos.innerText = (cronogramaData.avisos || []).length;
+
+      // Generación del HTML de la cuadrícula
+      let html = '<div class="crono-hora" style="background: transparent; border: none; font-size: 0.75rem; color: var(--text-dim);">HORA</div>';
+      diasAMostrar.forEach(d => {
+        const esHoy = (d === diaHoyNombre);
+        html += `<div class="crono-header ${esHoy ? 'crono-header-hoy' : ''}">
+          ${d} ${esHoy ? '<span style="font-size: 0.7rem; display: block; opacity: 0.9;">(Hoy)</span>' : ''}
+        </div>`;
+      });
+
+      horasAMostrar.forEach(hora => {
+        if (hora === "08:00") {
+          html += `<div class="crono-divider">🌅 Turno Mañana (08:00 - 11:30)</div>`;
+        } else if (hora === "14:00") {
+          html += `<div class="crono-divider">☀️ Turno Mediodía (14:00 - 15:30)</div>`;
+        } else if (hora === "16:00") {
+          html += `<div class="crono-divider">🌆 Turno Tarde (16:00 - 19:30)</div>`;
+        }
+
+        html += `<div class="crono-hora">${hora}</div>`;
+
+        diasAMostrar.forEach(dia => {
+          if (dia === "Sábado" && !["09:00", "09:30", "10:00", "10:30"].includes(hora)) {
+            html += `
+              <div class="crono-cell" style="background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: center; min-height: 50px;">
+                <span style="font-size: 0.65rem; color: rgba(255,255,255,0.2); letter-spacing: 0.5px; text-transform: uppercase;">Sin turno</span>
+              </div>`;
+            return;
+          }
+
+          const key = `${dia}-${hora}`;
+          const inscriptos = cronogramaData.turnos[key] || [];
+          const cant = inscriptos.length;
+          let maxCap = (hora === "08:00" || hora === "14:00") ? 8 : 7;
+          let pct = Math.min(100, Math.round((cant / maxCap) * 100));
+
+          let badgeClase = 'cupo-disponible';
+          let badgeColor = 'var(--neon-green)';
+          let badgeTexto = `${cant} / ${maxCap}`;
+
+          if (cant >= maxCap) {
+            badgeClase = 'cupo-lleno';
+            badgeColor = 'var(--danger-red)';
+            badgeTexto = `${cant} / ${maxCap} (Lleno)`;
+          } else if (cant >= maxCap - 1) {
+            badgeClase = 'cupo-alerta';
+            badgeColor = '#ffea00';
+            badgeTexto = `${cant} / ${maxCap} (Último)`;
+          }
+
+          const avisosCelda = (cronogramaData.avisos || []).filter(a => a.dia === dia && a.hora === hora);
+          let contenidoAvisos = avisosCelda.map(a => {
+            let colorBase = a.tipo.includes('Persona') ? 'var(--neon-green)' : (a.tipo.includes('Cambio') ? '#ffea00' : '#4cc9f0');
+            return `
+              <div style="font-size: 0.68rem; background: rgba(0,0,0,0.4); border-left: 3px solid ${colorBase}; padding: 3px 5px; margin-bottom: 3px; border-radius: 3px; line-height: 1.15;">
+                <strong style="color: ${colorBase};">${a.tipo}</strong>: ${a.nombre}
+              </div>`;
+          }).join('');
+
+          html += `
+            <div class="crono-cell" data-key="${key}" style="position: relative;">
+              <!-- Cabecera del turno con cupo y acceso a avisos -->
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span class="cupo-tag ${badgeClase}">
+                  ${badgeTexto}
+                </span>
+                <button title="Registrar aviso en este turno" onclick="abrirModalAvisoCronoRapido('${dia}', '${hora}')" style="background: transparent; border: none; cursor: pointer; font-size: 0.75rem; opacity: 0.45; padding: 0 2px; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.45'">
+                  🔔
+                </button>
+              </div>
+
+              <!-- Mini barra de progreso de ocupación -->
+              <div style="height: 3px; width: 100%; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-bottom: 4px;">
+                <div style="height: 100%; width: ${pct}%; background: ${badgeColor}; transition: width 0.3s;"></div>
+              </div>
+
+              <!-- Avisos de última hora en el slot -->
+              ${contenidoAvisos}
+
+              <!-- Lista de Alumnos Inscriptos -->
+              <div style="display: flex; flex-direction: column; gap: 3px; flex: 1;">
+                ${inscriptos.map(r => `
+                  <div class="crono-alumno-chip" data-nombre="${r.nombre_alumno || ''}">
+                    <span style="word-break: break-word; line-height: 1.2; flex: 1; padding-right: 4px;">${r.nombre_alumno}</span>
+                    <span style="cursor: pointer; color: var(--danger-red); opacity: 0.5; padding: 0 2px; font-size: 0.75rem; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'" onclick="quitarAlumnoTurno('${r.id}', '${encodeURIComponent(r.nombre_alumno || '')}')" title="Quitar alumno">✕</span>
+                  </div>
+                `).join('')}
+              </div>
+
+              <!-- Botón de agregar alumno o estado lleno -->
+              ${cant < maxCap ? `
+                <button class="crono-btn-agregar" onclick="inscribirAlumnoTurno('${key}')" title="Agregar alumno">+ Agregar</button>
+              ` : `
+                <div style="text-align: center; font-size: 0.68rem; color: var(--danger-red); padding: 3px 0; font-weight: 800; letter-spacing: 0.5px; opacity: 0.85;">COMPLETO</div>
+              `}
+            </div>
+          `;
+        });
+      });
+
+      container.innerHTML = html;
+      renderizarAvisosDiarios();
+      buscarAlumnoEnGrilla(); // Preservar resaltado de búsqueda si hay texto activo
+    }
+
+    function buscarAlumnoEnGrilla() {
+      const input = document.getElementById('cronoBuscadorAlumno');
+      const texto = (input ? input.value : '').trim().toLowerCase();
+      const clearBtn = document.getElementById('cronoClearSearch');
+      const resultadosDiv = document.getElementById('cronoResultadosBusqueda');
+
+      if (clearBtn) clearBtn.style.display = texto ? 'block' : 'none';
+
+      const celdas = document.querySelectorAll('.crono-cell');
+      const chips = document.querySelectorAll('.crono-alumno-chip');
+
+      if (!texto) {
+        celdas.forEach(c => {
+          c.classList.remove('crono-cell-highlight');
+          c.style.borderColor = '';
+          c.style.background = '';
+        });
+        chips.forEach(ch => {
+          ch.classList.remove('crono-chip-highlight');
+        });
+        if (resultadosDiv) {
+          resultadosDiv.style.display = 'none';
+          resultadosDiv.innerHTML = '';
+        }
+        return;
+      }
+
+      let matches = [];
+      celdas.forEach(c => {
+        const key = c.getAttribute('data-key');
+        if (!key) return;
+        const inscriptos = cronogramaData.turnos[key] || [];
+        const coincidencias = inscriptos.filter(ins => (ins.nombre_alumno || '').toLowerCase().includes(texto));
+
+        if (coincidencias.length > 0) {
+          c.classList.add('crono-cell-highlight');
+          matches.push({ key, nombres: coincidencias.map(co => co.nombre_alumno) });
+        } else {
+          c.classList.remove('crono-cell-highlight');
+        }
+      });
+
+      chips.forEach(ch => {
+        const nombre = ch.getAttribute('data-nombre') || '';
+        if (nombre.toLowerCase().includes(texto)) {
+          ch.classList.add('crono-chip-highlight');
+        } else {
+          ch.classList.remove('crono-chip-highlight');
+        }
+      });
+
+      if (resultadosDiv) {
+        if (matches.length > 0) {
+          resultadosDiv.style.display = 'block';
+          const turnosStr = matches.map(m => `<strong>${m.key.replace('-', ' ')} hs</strong>`).join(', ');
+          resultadosDiv.innerHTML = `🎯 Coincidencias encontradas (${matches.length} turnos): ${turnosStr}`;
+        } else {
+          resultadosDiv.style.display = 'block';
+          resultadosDiv.innerHTML = `🔍 No se encontraron alumnos en la grilla que coincidan con "<strong>${texto}</strong>"`;
+        }
+      }
+    }
+
+    function limpiarBusquedaCrono() {
+      const input = document.getElementById('cronoBuscadorAlumno');
+      if (input) input.value = '';
+      buscarAlumnoEnGrilla();
+    }
+
+    function imprimirCronograma() {
+      document.body.classList.add('printing-crono');
+      window.print();
+      setTimeout(() => document.body.classList.remove('printing-crono'), 1000);
+    }
+
+    function alternarTabInscripcion(tab) {
+      const btnLista = document.getElementById('tabInscribirLista');
+      const btnManual = document.getElementById('tabInscribirManual');
+      const vistaLista = document.getElementById('cronoVistaInscripcionLista');
+      const vistaManual = document.getElementById('cronoVistaInscripcionManual');
+      const btnConfirmar = document.getElementById('btnConfirmarInscribirCrono');
+
+      if (tab === 'lista') {
+        if (btnLista) {
+          btnLista.style.background = 'rgba(149, 255, 83, 0.1)';
+          btnLista.style.borderColor = 'var(--neon-green)';
+        }
+        if (btnManual) {
+          btnManual.style.background = 'transparent';
+          btnManual.style.borderColor = 'var(--border-color)';
+        }
+        if (vistaLista) vistaLista.style.display = 'block';
+        if (vistaManual) vistaManual.style.display = 'none';
+        if (btnConfirmar) btnConfirmar.innerText = 'Agregar Seleccionados';
+      } else {
+        if (btnManual) {
+          btnManual.style.background = 'rgba(149, 255, 83, 0.1)';
+          btnManual.style.borderColor = 'var(--neon-green)';
+        }
+        if (btnLista) {
+          btnLista.style.background = 'transparent';
+          btnLista.style.borderColor = 'var(--border-color)';
+        }
+        if (vistaLista) vistaLista.style.display = 'none';
+        if (vistaManual) vistaManual.style.display = 'block';
+        if (btnConfirmar) btnConfirmar.innerText = 'Inscribir Alumno';
+        setTimeout(() => {
+          const input = document.getElementById('cronoInputNombreManual');
+          if (input) input.focus();
+        }, 50);
+      }
+    }
+
+    function inscribirAlumnoTurno(key) {
       window.cronoClaveActual = key;
-      document.getElementById('modalInscribirTitulo').innerText = `Agregar a ${key}`;
+      document.getElementById('modalInscribirTitulo').innerText = `Agregar a ${key.replace('-', ' ')} hs`;
       
       const [dia, hora] = key.split('-');
       let maxCap = (hora === "08:00" || hora === "14:00") ? 8 : 7;
       const inscriptosActuales = cronogramaData.turnos[key] || [];
       const cuposDisponibles = maxCap - inscriptosActuales.length;
       
-      document.getElementById('modalInscribirSubtitulo').innerText = `Seleccioná a los alumnos (cupos disponibles: ${cuposDisponibles}):`;
+      document.getElementById('modalInscribirSubtitulo').innerText = `Seleccioná o escribí alumnos (cupos disponibles: ${cuposDisponibles}):`;
       
+      alternarTabInscripcion('lista');
+      const inputManual = document.getElementById('cronoInputNombreManual');
+      if (inputManual) inputManual.value = '';
+
       const listaDiv = document.getElementById('listaCheckboxesCrono');
-      if (listaDiv && alumnosData) {
-         const alumnosNoInscriptos = alumnosData.filter(a => !inscriptosActuales.some(ins => ins.nombre_alumno === a.nombre));
-         
-         listaDiv.innerHTML = alumnosNoInscriptos.map(a => `
-           <label class="crono-checkbox-item" style="display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: 4px; cursor: pointer;">
-             <input type="checkbox" name="alumnosCronoSel" value="${a.nombre}" onchange="validarCuposCrono(${cuposDisponibles}, this)">
-             <span style="font-size: 0.95rem;">${a.nombre}</span>
-           </label>
-         `).join('');
+      if (listaDiv) {
+        if (!alumnosData || alumnosData.length === 0) {
+          listaDiv.innerHTML = '<div style="color: var(--text-dim); padding: 8px;">No hay alumnos registrados. Usá la pestaña "Manual / Invitado".</div>';
+        } else {
+          const alumnosNoInscriptos = alumnosData
+            .filter(a => a && a.nombre && !inscriptosActuales.some(ins => (ins.nombre_alumno || '').trim().toLowerCase() === (a.nombre || '').trim().toLowerCase()))
+            .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+
+          if (alumnosNoInscriptos.length === 0) {
+            listaDiv.innerHTML = '<div style="color: var(--text-dim); padding: 8px;">Todos los alumnos registrados ya se encuentran en este turno o no hay cupos.</div>';
+          } else {
+            listaDiv.innerHTML = alumnosNoInscriptos.map(a => `
+              <label class="crono-checkbox-item" style="display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 4px; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+                <input type="checkbox" name="alumnosCronoSel" value="${a.nombre}" onchange="validarCuposCrono(${cuposDisponibles}, this)" style="cursor: pointer;">
+                <span style="font-size: 0.9rem;">${a.nombre}</span>
+              </label>
+            `).join('');
+          }
+        }
       }
       
       document.getElementById('buscadorModalCrono').value = '';
@@ -4369,23 +4814,23 @@ function renderizarLibroDiario(esCargarMas) {
     }
 
     function validarCuposCrono(maximos, checkboxElement) {
-       const checkboxes = document.querySelectorAll('input[name="alumnosCronoSel"]:checked');
-       if(checkboxes.length > maximos) {
-         alert(`Solo quedan ${maximos} cupos disponibles para este horario.`);
-         checkboxElement.checked = false;
-       }
+      const checkboxes = document.querySelectorAll('input[name="alumnosCronoSel"]:checked');
+      if (checkboxes.length > maximos) {
+        alert(`Solo quedan ${maximos} cupos disponibles para este horario.`);
+        checkboxElement.checked = false;
+      }
     }
 
     function filtrarListaCrono() {
       const texto = document.getElementById('buscadorModalCrono').value.toLowerCase();
       const labels = document.querySelectorAll('.crono-checkbox-item');
       labels.forEach(lbl => {
-         const nombre = lbl.innerText.toLowerCase();
-         if(nombre.includes(texto)) {
-            lbl.style.display = 'flex';
-         } else {
-            lbl.style.display = 'none';
-         }
+        const nombre = lbl.innerText.toLowerCase();
+        if (nombre.includes(texto)) {
+          lbl.style.display = 'flex';
+        } else {
+          lbl.style.display = 'none';
+        }
       });
     }
 
@@ -4398,43 +4843,89 @@ function renderizarLibroDiario(esCargarMas) {
       const key = window.cronoClaveActual;
       if (!key) return;
       
-      const seleccionados = Array.from(document.querySelectorAll('input[name="alumnosCronoSel"]:checked')).map(cb => cb.value);
-      if (seleccionados.length === 0) {
-        alert("Seleccioná al menos un alumno.");
-        return;
+      const btn = document.getElementById('btnConfirmarInscribirCrono');
+      const vistaManual = document.getElementById('cronoVistaInscripcionManual');
+      const esModoManual = vistaManual && vistaManual.style.display !== 'none';
+
+      let nombresAInscribir = [];
+
+      if (esModoManual) {
+        const inputNombre = document.getElementById('cronoInputNombreManual');
+        const nombreManual = inputNombre ? inputNombre.value.trim() : '';
+        if (!nombreManual) {
+          alert("Ingresá el nombre del alumno o invitado.");
+          if (inputNombre) inputNombre.focus();
+          return;
+        }
+        nombresAInscribir = [nombreManual];
+      } else {
+        nombresAInscribir = Array.from(document.querySelectorAll('input[name="alumnosCronoSel"]:checked')).map(cb => cb.value);
+        if (nombresAInscribir.length === 0) {
+          alert("Seleccioná al menos un alumno.");
+          return;
+        }
       }
-      
+
       const [dia, hora] = key.split('-');
       let claseId = cronogramaData.clasesMap[key];
       let maxCap = (hora === "08:00" || hora === "14:00") ? 8 : 7;
       const inscriptosActuales = cronogramaData.turnos[key] || [];
       const cuposDisponibles = maxCap - inscriptosActuales.length;
 
-      if (seleccionados.length > cuposDisponibles) {
-        alert(`No hay suficientes cupos. Intentas agregar ${seleccionados.length} pero quedan ${cuposDisponibles}.`);
+      if (nombresAInscribir.length > cuposDisponibles) {
+        alert(`No hay suficientes cupos. Intentas agregar ${nombresAInscribir.length} pero quedan ${cuposDisponibles}.`);
         return;
       }
-      
-      if (!claseId) {
-        const { data: nuevaClase, error: errC } = await _supabase.from('clases').insert([{ dia, hora, cupo_maximo: maxCap }]).select().single();
-        if (errC) { alert("Error al crear clase: " + errC.message); return; }
-        claseId = nuevaClase.id;
-        cronogramaData.clasesMap[key] = claseId;
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Guardando...';
       }
-      
-      const inserts = seleccionados.map(nombre => ({ clase_id: claseId, nombre_alumno: nombre }));
-      const { error } = await _supabase.from('reservas_clases').insert(inserts);
-      
-      if (error) {
-        alert("Error al inscribir: " + error.message);
-      } else {
-        cerrarModalInscribirCrono();
-        await cargarTurnosSupabase();
+
+      try {
+        if (!claseId) {
+          const { data: nuevaClase, error: errC } = await _supabase.from('clases').insert([{ dia, hora, cupo_maximo: maxCap }]).select().single();
+          if (errC) { 
+            alert("Error al crear clase: " + errC.message); 
+            if (btn) { btn.disabled = false; btn.innerText = 'Agregar Seleccionados'; }
+            return; 
+          }
+          claseId = nuevaClase.id;
+          cronogramaData.clasesMap[key] = claseId;
+        }
+        
+        const inserts = nombresAInscribir.map(nombre => ({ clase_id: claseId, nombre_alumno: nombre }));
+        const { error } = await _supabase.from('reservas_clases').insert(inserts);
+        
+        if (error) {
+          alert("Error al inscribir: " + error.message);
+        } else {
+          cerrarModalInscribirCrono();
+          await cargarTurnosSupabase();
+        }
+      } catch (err) {
+        alert("Error de conexión: " + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = 'Agregar Seleccionados';
+        }
       }
     }
 
-    async function quitarAlumnoTurno(idReserva) {
-      if (await confirmAsync('¿Quitar alumno del turno?')) {
+    async function quitarAlumnoTurno(idReserva, nombreAlumnoRaw) {
+      let nombreAlumno = nombreAlumnoRaw || '';
+      try {
+        if (typeof nombreAlumno === 'string' && nombreAlumno.includes('%')) {
+          nombreAlumno = decodeURIComponent(nombreAlumno);
+        }
+      } catch (e) {}
+
+      const msg = nombreAlumno 
+        ? `¿Quitar a "${nombreAlumno}" de este turno?`
+        : '¿Quitar alumno del turno?';
+
+      if (await confirmAsync(msg)) {
         const { error } = await _supabase.from('reservas_clases').delete().eq('id', idReserva);
         if (error) alert("Error: " + error.message);
         else await cargarTurnosSupabase();
@@ -4446,51 +4937,98 @@ function renderizarLibroDiario(esCargarMas) {
       if (!ul) return;
       const avisos = cronogramaData.avisos || [];
       if (avisos.length === 0) {
-        ul.innerHTML = '<li style="color: var(--text-dim);">No hay avisos registrados.</li>';
+        ul.innerHTML = '<li style="color: var(--text-dim); padding: 8px 0;">No hay avisos registrados para la semana.</li>';
         return;
       }
-      ul.innerHTML = avisos.map(a => `
-        <li style="padding: 10px; background: rgba(255,255,255,0.05); margin-bottom: 5px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <strong style="color: ${a.tipo.includes('Persona') ? 'var(--neon-green)' : '#ffea00'};">${a.tipo}</strong>: ${a.nombre}
-            <span style="font-size: 0.85rem; color: var(--text-dim); margin-left: 8px;">-> ${a.dia} ${a.hora} (${a.fecha ? a.fecha.split('-').reverse().join('/') : ''})</span>
-          </div>
-          <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.8rem;" onclick="borrarAviso('${a.id}')">🗑️</button>
-        </li>
-      `).join('');
+      ul.innerHTML = avisos.map(a => {
+        let colorBase = a.tipo.includes('Persona') ? 'var(--neon-green)' : (a.tipo.includes('Cambio') ? '#ffea00' : '#4cc9f0');
+        return `
+          <li style="padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+            <div>
+              <strong style="color: ${colorBase};">${a.tipo}</strong>: <span style="font-weight: 600; color: #fff;">${a.nombre}</span>
+              <span style="font-size: 0.85rem; color: var(--text-dim); margin-left: 8px;">→ ${a.dia} ${a.hora} hs ${a.fecha ? '(' + a.fecha.split('-').reverse().join('/') + ')' : ''}</span>
+            </div>
+            <button class="btn btn-outline" style="padding: 3px 8px; font-size: 0.85rem;" onclick="borrarAviso('${a.id}')" title="Eliminar aviso">🗑️</button>
+          </li>
+        `;
+      }).join('');
+    }
+
+    function abrirModalAvisoCronoRapido(diaPrefiltrado, horaPrefiltrada) {
+      const modal = document.getElementById('modalAltaAvisoCrono');
+      if (!modal) return;
+
+      const hoyStr = new Date().toISOString().split('T')[0];
+      const elFecha = document.getElementById('avisoCronoFecha');
+      if (elFecha) elFecha.value = hoyStr;
+
+      const nombresDias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+      const diaHoy = nombresDias[new Date().getDay()];
+
+      const elDia = document.getElementById('avisoCronoDia');
+      if (elDia) {
+        elDia.value = diaPrefiltrado || (diaHoy === "Domingo" ? "Lunes" : diaHoy);
+      }
+
+      const elHora = document.getElementById('avisoCronoHora');
+      if (elHora && horaPrefiltrada) {
+        elHora.value = horaPrefiltrada;
+      }
+
+      const elNombre = document.getElementById('avisoCronoNombre');
+      if (elNombre) elNombre.value = '';
+
+      modal.style.display = 'flex';
+      setTimeout(() => {
+        if (elNombre) elNombre.focus();
+      }, 50);
     }
 
     async function guardarAvisoCrono() {
-        const tipo = document.getElementById('avisoCronoTipo').value;
-        const nombre = document.getElementById('avisoCronoNombre').value;
-        const dia = document.getElementById('avisoCronoDia').value;
-        const hora = document.getElementById('avisoCronoHora').value;
-        const fecha = document.getElementById('avisoCronoFecha').value;
-        
-        if (!tipo || !nombre || !dia || !hora || !fecha) {
-            alert('Por favor completá todos los campos.');
-            return;
-        }
+      const tipo = document.getElementById('avisoCronoTipo').value;
+      const nombre = document.getElementById('avisoCronoNombre').value.trim();
+      const dia = document.getElementById('avisoCronoDia').value;
+      const hora = document.getElementById('avisoCronoHora').value;
+      const fecha = document.getElementById('avisoCronoFecha').value;
+      
+      if (!tipo || !nombre || !dia || !hora || !fecha) {
+        alert('Por favor completá todos los campos.');
+        return;
+      }
 
+      const btn = document.getElementById('btnGuardarAvisoCrono');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Guardando...';
+      }
+
+      try {
         const { error } = await _supabase.from('avisos_cronograma').insert([{ tipo, nombre, dia, hora, fecha }]);
         if (error) {
-            alert('Error al guardar el aviso: ' + error.message);
+          alert('Error al guardar el aviso: ' + error.message);
         } else {
-            alert('Aviso registrado con éxito.');
-            document.getElementById('modalAltaAvisoCrono').style.display = 'none';
-            document.getElementById('avisoCronoNombre').value = '';
-            document.getElementById('avisoCronoFecha').value = '';
-            await cargarTurnosSupabase();
+          document.getElementById('modalAltaAvisoCrono').style.display = 'none';
+          document.getElementById('avisoCronoNombre').value = '';
+          document.getElementById('avisoCronoFecha').value = '';
+          await cargarTurnosSupabase();
         }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = 'Guardar Aviso';
+        }
+      }
     }
 
     async function borrarAviso(id) {
       if (!(await confirmAsync('¿Seguro que deseas eliminar este aviso?'))) return;
       const { error } = await _supabase.from('avisos_cronograma').delete().eq('id', id);
       if (error) {
-          alert('Error al borrar aviso: ' + error.message);
+        alert('Error al borrar aviso: ' + error.message);
       } else {
-          await cargarTurnosSupabase();
+        await cargarTurnosSupabase();
       }
     }
 
