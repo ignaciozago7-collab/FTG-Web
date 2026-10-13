@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>From The Ground - Gestión Integral</title>
   <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://ltoiylrqpbplfiuhvfbi.supabase.co" crossorigin>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -629,7 +631,7 @@
       .chart-container canvas { max-width: 100% !important; }
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 </head>
 <body>
 
@@ -719,11 +721,11 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
           <h3>Nómina de Clientes</h3>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <input type="text" id="buscador" placeholder="Buscar cliente..." oninput="filtrarAlumnos()" style="width: 200px;">
-            <input type="date" id="filtroFechaAlumnos" oninput="filtrarAlumnos()">
+            <input type="text" id="buscador" placeholder="Buscar cliente..." oninput="filtrarAlumnosDebounced()" style="width: 200px;">
+            <input type="date" id="filtroFechaAlumnos" onchange="filtrarAlumnos()">
             <select id="filtroProfesorAlumnos" onchange="filtrarAlumnos()"><option value="">Todos los Profesores</option></select>
             <select id="filtroCobradorAlumnos" onchange="filtrarAlumnos()"></select>
-            <input type="number" id="filtroMontoAlumnos" placeholder="Valor $" oninput="filtrarAlumnos()" style="width: 100px;">
+            <input type="number" id="filtroMontoAlumnos" placeholder="Valor $" oninput="filtrarAlumnosDebounced()" style="width: 100px;">
           </div>
         </div>
 
@@ -837,7 +839,7 @@
 
             <!-- BUSCADOR -->
             <div style="position: relative; min-width: 220px;">
-              <input type="text" id="buscadorAsistencia" placeholder="🔍 Buscar por nombre..." oninput="filtrarAsistencias()" style="width: 100%; padding: 7px 28px 7px 12px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+              <input type="text" id="buscadorAsistencia" placeholder="🔍 Buscar por nombre..." oninput="filtrarAsistenciasDebounced()" style="width: 100%; padding: 7px 28px 7px 12px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
               <span id="asistClearSearch" onclick="limpiarBuscadorAsistencias()" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-dim); display: none; font-size: 0.9rem;">✕</span>
             </div>
           </div>
@@ -1155,7 +1157,7 @@
            <div class="card">
              <h3 style="margin:0; margin-bottom: 15px;">Directorio de Pacientes</h3>
              <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                 <input type="text" id="buscadorPacientesNutri" placeholder="Buscar paciente..." oninput="filtrarPacientesNutri()" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+                 <input type="text" id="buscadorPacientesNutri" placeholder="Buscar paciente..." oninput="filtrarPacientesNutriDebounced()" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
                  <button class="btn" style="background: var(--neon-green); color: #000; font-weight: bold; white-space: nowrap;" onclick="agregarPacienteNutriManual()">+ Nuevo Paciente</button>
                </div>
              <ul id="listaPacientesNutri"><div style="color: var(--text-dim);">Construyendo historial...</div></ul>
@@ -1210,10 +1212,10 @@
               </div>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <input type="text" id="buscadorCaja" placeholder="Filtrar movimientos..." oninput="cargarLibroDiario()" style="width: 200px;">
-            <input type="date" id="filtroFechaCaja" oninput="cargarLibroDiario()">
-            <select id="filtroCobradorCaja" onchange="cargarLibroDiario()"></select>
-            <input type="number" id="filtroMontoCaja" placeholder="Valor $" oninput="cargarLibroDiario()" style="width: 100px;">
+            <input type="text" id="buscadorCaja" placeholder="Filtrar movimientos..." oninput="renderizarLibroDiarioDebounced()" style="width: 200px;">
+            <input type="date" id="filtroFechaCaja" onchange="renderizarLibroDiario()">
+            <select id="filtroCobradorCaja" onchange="renderizarLibroDiario()"></select>
+            <input type="number" id="filtroMontoCaja" placeholder="Valor $" oninput="renderizarLibroDiarioDebounced()" style="width: 100px;">
           </div>
         </div>
         <table>
@@ -1271,10 +1273,10 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
           <h3>Planes Asignados por Profesor</h3>
           <div style="display: flex; gap: 12px;">
-            <select id="filtroProfesorPlan" onchange="cargarPlanesRenovacion()" style="padding: 8px;">
+            <select id="filtroProfesorPlan" onchange="filtrarPlanes()" style="padding: 8px;">
               <option value="">Todos los Profesores</option>
             </select>
-            <input type="text" id="buscadorPlan" placeholder="🔍 Buscar por alumno o semana..." oninput="filtrarPlanes()" style="width: 250px;">
+            <input type="text" id="buscadorPlan" placeholder="🔍 Buscar por alumno o semana..." oninput="filtrarPlanesDebounced()" style="width: 250px;">
           </div>
         </div>
 
@@ -1367,7 +1369,7 @@
             </select>
 
             <div style="position: relative; min-width: 220px;">
-              <input type="text" id="cronoBuscadorAlumno" oninput="buscarAlumnoEnGrilla()" placeholder="🔍 Buscar alumno en grilla..." style="width: 100%; padding: 7px 32px 7px 12px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+              <input type="text" id="cronoBuscadorAlumno" oninput="buscarAlumnoEnGrillaDebounced()" placeholder="🔍 Buscar alumno en grilla..." style="width: 100%; padding: 7px 32px 7px 12px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
               <span id="cronoClearSearch" onclick="limpiarBusquedaCrono()" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-dim); display: none; font-size: 0.9rem;">✕</span>
             </div>
           </div>
@@ -1422,7 +1424,7 @@
 
         <!-- Vista Lista de Alumnos -->
         <div id="cronoVistaInscripcionLista">
-          <input type="text" id="buscadorModalCrono" oninput="filtrarListaCrono()" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;" placeholder="🔍 Filtrar alumnos...">
+          <input type="text" id="buscadorModalCrono" oninput="filtrarListaCronoDebounced()" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;" placeholder="🔍 Filtrar alumnos...">
           
           <div id="listaCheckboxesCrono" style="overflow-y: auto; flex: 1; min-height: 180px; max-height: 280px; border: 1px solid var(--border-color); border-radius: 6px; background: #1a1a24; padding: 10px; display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px;">
             <!-- Checkboxes dynamically added -->
@@ -1496,7 +1498,7 @@
       </p>
       
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
-        <input type="text" id="buscadorMasivoAsistencia" placeholder="🔍 Filtrar alumnos por nombre..." oninput="filtrarListaMasivaAsistencia()" style="flex: 1; min-width: 220px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+        <input type="text" id="buscadorMasivoAsistencia" placeholder="🔍 Filtrar alumnos por nombre..." oninput="filtrarListaMasivaAsistenciaDebounced()" style="flex: 1; min-width: 220px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
         <div style="display: flex; gap: 8px;">
           <button type="button" class="btn btn-outline" style="padding: 6px 10px; font-size: 0.8rem;" onclick="seleccionarTodosMasivo(true)">Marcar Todos</button>
           <button type="button" class="btn btn-outline" style="padding: 6px 10px; font-size: 0.8rem;" onclick="seleccionarTodosMasivo(false)">Desmarcar</button>
@@ -1819,9 +1821,133 @@
         </div>
       </div>
     </div>
+  <!-- MODAL NUEVO TURNO NUTRICIÓN -->
+  <div id="modalNuevoTurnoNutri" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px;">
+        <h3>Nuevo Turno - Nutrición</h3>
+        <label>Paciente (Buscar o crear nuevo):</label>
+        <input type="text" id="inputPacienteNutri" list="listaAlumnosNutriAutocomplete" placeholder="Nombre completo..." autocomplete="off">
+        <datalist id="listaAlumnosNutriAutocomplete"></datalist>
+        <input type="hidden" id="pacienteIdNutriSelec">
+        <input type="hidden" id="turnoIdNutriEdit">
+        
+        <label>Nutricionista:</label>
+        <select id="selectNutricionistaTurno"></select>
+
+        <label>Fecha y Hora:</label>
+        <div style="display: flex; gap: 10px;">
+            <input type="date" id="fechaTurnoNutri" style="flex: 1;">
+            <input type="time" id="horaTurnoNutri" style="flex: 1;">
+        </div>
+
+        <label>Monto a cobrar ($):</label>
+        <input type="number" id="montoTurnoNutri" placeholder="Ej: 15000">
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn btn-outline" style="flex: 1;" onclick="cerrarModalNuevoTurnoNutri()">Cancelar</button>
+            <button class="btn" style="flex: 1; background: var(--neon-green); color: #000;" id="btnGuardarTurnoNutri" onclick="guardarTurnoNutri()">Agendar Turno</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- MODAL FICHA CLÍNICA -->
+  <div id="modalFichaPacienteNutri" class="modal-overlay">
+    <div class="modal-content" style="max-width: 700px; width: 95%; max-height: 90vh; overflow-y: auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 id="tituloFichaPaciente" style="margin:0;">Ficha Médica</h3>
+            <button class="btn" style="background: var(--danger-red); padding: 4px 10px; font-size: 0.8rem; border:none;" onclick="borrarPacienteNutriTotal()">🗑️ Borrar Ficha</button>
+        </div>
+
+        <!-- FICHA BASE / PERFIL GENERAL DEL PACIENTE -->
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-top: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                <span style="color: #fff; font-weight: bold; font-size: 0.9rem; display: flex; align-items: center; gap: 6px;">
+                    📌 <span>Ficha Base y Datos Generales</span>
+                </span>
+                <button class="btn" style="padding: 4px 12px; font-size: 0.8rem; background: var(--neon-green); color: #000; font-weight: bold;" onclick="guardarPerfilBasePacienteNutri()">
+                    💾 Guardar Ficha Base
+                </button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 10px;">
+                <div>
+                    <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: bold; text-transform: uppercase;">🎯 Objetivo Principal:</label>
+                    <input type="text" id="perfilNutriObjetivo" placeholder="Ej: Aumento de masa muscular y rendimiento..." style="width: 100%; padding: 7px 10px; border-radius: 6px; background: #14141D; border: 1px solid var(--border-color); color: #fff; font-size: 0.85rem; margin-top: 4px;">
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: bold; text-transform: uppercase;">🏃 Actividad Física Actual:</label>
+                    <input type="text" id="perfilNutriActividad" placeholder="Ej: 4 veces por semana en FTG + fútbol los sábados..." style="width: 100%; padding: 7px 10px; border-radius: 6px; background: #14141D; border: 1px solid var(--border-color); color: #fff; font-size: 0.85rem; margin-top: 4px;">
+                </div>
+            </div>
+            <div>
+                <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: bold; text-transform: uppercase;">📝 Notas / Datos Generales y Hábitos:</label>
+                <textarea id="perfilNutriObservaciones" placeholder="Alergias, preferencias alimentarias, horarios, etc..." style="width: 100%; padding: 7px 10px; border-radius: 6px; background: #14141D; border: 1px solid var(--border-color); color: #fff; font-size: 0.85rem; min-height: 55px; margin-top: 4px; resize: vertical;"></textarea>
+            </div>
+        </div>
+
+        <!-- RESUMEN PROGRESO / COMPARATIVA INICIAL VS ACTUAL -->
+        <div id="resumenProgresoNutri"></div>
+
+        <h4 style="margin-bottom: 0; margin-top: 20px;">Historial Detallado</h4>
+        <div id="historialConsultasPaciente" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
+        </div>
+
+        <!-- Gráfico temporalmente oculto a pedido -->
+        <div id="wrapperGraficoEvolucion" style="display: none; height: 300px; width: 100%; position: relative; background: #fff; border-radius: 8px; padding: 10px; margin-top: 15px;">
+            <canvas id="graficoEvolucion"></canvas>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.1);">
+            <h4 style="margin-top:0;">+ Cargar Historial (Fechas anteriores)</h4>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                <input type="date" id="evoFecha" style="flex:1; min-width:130px;">
+                <input type="number" id="evoPeso" placeholder="Peso (kg)" step="0.1" style="flex:1; min-width:100px;">
+                <input type="number" id="evoGrasa" placeholder="Masa Adiposa (kg)" step="0.1" style="flex:1; min-width:100px;">
+                <input type="number" id="evoMusculo" placeholder="Masa Muscular (kg)" step="0.1" style="flex:1; min-width:100px;">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <input type="text" id="evoObservaciones" placeholder="Detalles / Notas de esta consulta..." style="flex:3;">
+                <button class="btn" onclick="guardarMedicionNutri()" style="flex:1;">Guardar Historial</button>
+            </div>
+        </div>
+        <div style="margin-top: 20px;">
+            <button class="btn btn-outline" style="width: 100%;" onclick="document.getElementById('modalFichaPacienteNutri').style.display='none'">Cerrar Ficha</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- MODAL HISTORIAL DE CUOTAS ALUMNO -->
+  <div id="modalHistorialPagosAlumno" class="modal-overlay">
+    <div class="modal-content" style="max-width: 580px; width: 95%; max-height: 85vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+            <div>
+                <h3 id="historialAlumnoTitulo" style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    📜 Historial de Cuotas
+                </h3>
+                <span id="historialAlumnoSubtitulo" style="font-size: 0.85rem; color: var(--text-dim);"></span>
+            </div>
+            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.9rem;" onclick="cerrarHistorialPagosAlumno()">✕</button>
+        </div>
+
+        <div id="historialAlumnoContenido">
+            <div class="skeleton skeleton-row"></div>
+            <div class="skeleton skeleton-row"></div>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+            <button class="btn btn-outline" style="padding: 8px 18px;" onclick="cerrarHistorialPagosAlumno()">Cerrar</button>
+        </div>
+    </div>
   </div>
 
   <script>
+    // --- UTILIDAD DE RENDIMIENTO: DEBOUNCE ---
+    function debounce(fn, delay = 150) {
+      let timer = null;
+      return function(...args) {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+      };
+    }
     
     // --- UX GLOBAL ---
     window.alert = function(msg) {
@@ -1988,6 +2114,16 @@
       ]
     };
 
+    // Funciones debounced para entradas de búsqueda en tiempo real
+    const filtrarAlumnosDebounced = debounce(() => filtrarAlumnos(), 140);
+    const filtrarAsistenciasDebounced = debounce(() => filtrarAsistencias(), 140);
+    const renderizarLibroDiarioDebounced = debounce(() => renderizarLibroDiario(), 140);
+    const filtrarPacientesNutriDebounced = debounce(() => filtrarPacientesNutri(), 140);
+    const filtrarPlanesDebounced = debounce(() => filtrarPlanes(), 140);
+    const buscarAlumnoEnGrillaDebounced = debounce(() => buscarAlumnoEnGrilla(), 140);
+    const filtrarListaCronoDebounced = debounce(() => filtrarListaCrono(), 140);
+    const filtrarListaMasivaAsistenciaDebounced = debounce(() => filtrarListaMasivaAsistencia(), 140);
+
     document.addEventListener('DOMContentLoaded', async () => {
 
         // Auto-cargar mes actual de forma global y sincronicar todos los selectores
@@ -1999,12 +2135,13 @@
         monthInputsIds.forEach(id => {
             const el = document.getElementById(id);
             if (el) {
-                // Set default month if empty
-                if (!el.value) el.value = strMesGlobal;
+                if (!el.value) el.value = localStorage.getItem('mesOperativo') || strMesGlobal;
                 
                 // Add sync listener
                 el.addEventListener('change', function(e) {
                     const newVal = e.target.value;
+                    if (newVal) localStorage.setItem('mesOperativo', newVal);
+                    else localStorage.removeItem('mesOperativo');
                     monthInputsIds.forEach(otherId => {
                         const otherEl = document.getElementById(otherId);
                         if (otherEl && otherEl !== e.target && otherEl.value !== newVal) {
@@ -2047,25 +2184,6 @@
       const elFechaAsistencia = document.getElementById('fechaAsistencia');
       if (elFechaAsistencia) elFechaAsistencia.value = hoy;
 
-      const elFiltro = document.getElementById('cierreMesFiltro');
-      if (elFiltro) elFiltro.value = mesActual;
-      if (document.getElementById('filtroMesCaja')) document.getElementById('filtroMesCaja').value = mesActual;
-      if (document.getElementById('filtroMesLiq')) document.getElementById('filtroMesLiq').value = mesActual;
-      
-      const syncMes = (e) => {
-          const val = e.target.value;
-          if (val) localStorage.setItem('mesOperativo', val);
-          else localStorage.removeItem('mesOperativo'); // If they click "Todos", clear it
-          
-          if (elFiltro && elFiltro !== e.target) elFiltro.value = val;
-          if (document.getElementById('filtroMesCaja') && document.getElementById('filtroMesCaja') !== e.target) document.getElementById('filtroMesCaja').value = val;
-          if (document.getElementById('filtroMesLiq') && document.getElementById('filtroMesLiq') !== e.target) document.getElementById('filtroMesLiq').value = val;
-      };
-      
-      if (elFiltro) elFiltro.addEventListener('change', syncMes);
-      if (document.getElementById('filtroMesCaja')) document.getElementById('filtroMesCaja').addEventListener('change', syncMes);
-      if (document.getElementById('filtroMesLiq')) document.getElementById('filtroMesLiq').addEventListener('change', syncMes);
-      
       const elFechaCaja = document.getElementById('cajaFecha');
       if (elFechaCaja) elFechaCaja.value = hoy;
 
@@ -2241,26 +2359,36 @@
       if (window.realtimeSuscrito) return;
       window.realtimeSuscrito = true;
       
+      const rtCargarAlumnos = debounce(() => cargarDatosAlumnos(), 300);
+      const rtCargarLibroDiario = debounce(() => cargarLibroDiario(), 300);
+      const rtCargarAsistencias = debounce(() => cargarAsistencias(), 300);
+      const rtCargarTurnos = debounce(() => cargarTurnosSupabase(), 300);
+      const rtCargarNutricion = debounce(() => cargarDatosNutricion(), 300);
+
       _supabase.channel('schema-db-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'alumnos' }, () => { cargarDatosAlumnos(); })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'caja_diaria' }, () => { cargarLibroDiario(); })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'asistencias' }, () => { cargarAsistencias(); })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'clases' }, () => { cargarTurnosSupabase(); })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas_clases' }, () => { cargarTurnosSupabase(); })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'avisos_cronograma' }, () => { cargarTurnosSupabase(); })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'nutricion_turnos' }, () => { cargarDatosNutricion(); })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'nutricion_pacientes' }, () => { cargarDatosNutricion(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'alumnos' }, () => rtCargarAlumnos())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'caja_diaria' }, () => rtCargarLibroDiario())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'asistencias' }, () => rtCargarAsistencias())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'clases' }, () => rtCargarTurnos())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas_clases' }, () => rtCargarTurnos())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'avisos_cronograma' }, () => rtCargarTurnos())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'nutricion_turnos' }, () => rtCargarNutricion())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'nutricion_pacientes' }, () => rtCargarNutricion())
         .subscribe();
     }
 
-    async function guardarReservas() {
-      const valARS = parseFloat(document.getElementById("reservaARS").value) || 0;
-      const valUSD = parseFloat(document.getElementById("reservaUSD").value) || 0;
-      await _supabase.from('configuracion').upsert({
-          id: 1,
-          reserva_ars: valARS,
-          reserva_usd: valUSD
-      });
+    let timerGuardarReservas = null;
+    function guardarReservas() {
+      if (timerGuardarReservas) clearTimeout(timerGuardarReservas);
+      timerGuardarReservas = setTimeout(async () => {
+        const valARS = parseFloat(document.getElementById("reservaARS").value) || 0;
+        const valUSD = parseFloat(document.getElementById("reservaUSD").value) || 0;
+        await _supabase.from('configuracion').upsert({
+            id: 1,
+            reserva_ars: valARS,
+            reserva_usd: valUSD
+        });
+      }, 500);
     }
 
     
@@ -2836,22 +2964,25 @@
       const pagados = items.filter(a => a.pago_confirmado);
 
       if (listaTodos) {
-          listaTodos.innerHTML = renderizarListaAlumnosHTML(items.slice(0, limiteAlumnos));
+          let html = renderizarListaAlumnosHTML(items.slice(0, limiteAlumnos));
           if (items.length > limiteAlumnos) {
-              listaTodos.innerHTML += `<button class="btn btn-outline" style="width: 100%; margin-top: 10px;" onclick="cargarMasAlumnos()">Cargar más (${items.length - limiteAlumnos} restantes)</button>`;
+              html += `<button class="btn btn-outline" style="width: 100%; margin-top: 10px;" onclick="cargarMasAlumnos()">Cargar más (${items.length - limiteAlumnos} restantes)</button>`;
           }
+          listaTodos.innerHTML = html;
       }
       if (listaPendientes) {
-          listaPendientes.innerHTML = renderizarListaAlumnosHTML(pendientes.slice(0, limiteAlumnos));
+          let htmlP = renderizarListaAlumnosHTML(pendientes.slice(0, limiteAlumnos));
           if (pendientes.length > limiteAlumnos) {
-              listaPendientes.innerHTML += `<button class="btn btn-outline" style="width: 100%; margin-top: 10px;" onclick="cargarMasAlumnos()">Cargar más (${pendientes.length - limiteAlumnos} restantes)</button>`;
+              htmlP += `<button class="btn btn-outline" style="width: 100%; margin-top: 10px;" onclick="cargarMasAlumnos()">Cargar más (${pendientes.length - limiteAlumnos} restantes)</button>`;
           }
+          listaPendientes.innerHTML = htmlP;
       }
       if (listaPagados) {
-          listaPagados.innerHTML = renderizarListaAlumnosHTML(pagados.slice(0, limiteAlumnos));
+          let htmlPag = renderizarListaAlumnosHTML(pagados.slice(0, limiteAlumnos));
           if (pagados.length > limiteAlumnos) {
-              listaPagados.innerHTML += `<button class="btn btn-outline" style="width: 100%; margin-top: 10px;" onclick="cargarMasAlumnos()">Cargar más (${pagados.length - limiteAlumnos} restantes)</button>`;
+              htmlPag += `<button class="btn btn-outline" style="width: 100%; margin-top: 10px;" onclick="cargarMasAlumnos()">Cargar más (${pagados.length - limiteAlumnos} restantes)</button>`;
           }
+          listaPagados.innerHTML = htmlPag;
       }
     }
 
@@ -3567,15 +3698,13 @@
 
         const tbodyIntegrantes = document.getElementById('tbodyCierreIntegrantes');
         if (tbodyIntegrantes) {
-          tbodyIntegrantes.innerHTML = '';
-          
-          listadoSocios.forEach(nombre => {
+          tbodyIntegrantes.innerHTML = listadoSocios.map(nombre => {
             const item = liquidacion[nombre];
             const efectivoEnMano = item.cobrado - item.gastado;
             const gananciaSocio = cuotaParteGanancia;
             const saldoFinal = efectivoEnMano - item.sueldo - gananciaSocio;
 
-            tbodyIntegrantes.innerHTML += `
+            return `
               <tr>
                 <td><strong>${nombre}</strong></td>
                 <td style="color: var(--neon-green);">$${item.cobrado.toLocaleString('es-AR')}</td>
@@ -3588,7 +3717,7 @@
                 </td>
               </tr>
             `;
-          });
+          }).join('');
         }
 
         const tbodyIngresos = document.getElementById('tbodyCierreCatIngresos');
@@ -3911,13 +4040,13 @@
       const datalist = document.getElementById('listaAlumnosProfesor');
       if (!datalist) return;
       
-      datalist.innerHTML = '';
-      if (!profesorSeleccionado) return;
+      if (!profesorSeleccionado) {
+        datalist.innerHTML = '';
+        return;
+      }
       
       const alumnosACargo = alumnosData.filter(a => a.profesor_cargo === profesorSeleccionado);
-      alumnosACargo.forEach(a => {
-        datalist.innerHTML += `<option value="${a.nombre}">`;
-      });
+      datalist.innerHTML = alumnosACargo.map(a => `<option value="${a.nombre}">`).join('');
     }
 
     async function actualizarConfigStaff(id, rol) {
@@ -4345,11 +4474,11 @@ function renderizarLibroDiario(esCargarMas) {
             </tr>
           `;
         }).join('');
-        tbody.innerHTML += htmlStr;
         
         if (filtrados.length > limiteLibroDiario) {
-            tbody.innerHTML += `<tr><td colspan="8"><button class="btn btn-outline" style="width: 100%;" onclick="cargarMasLibroDiario()">Cargar más (${filtrados.length - limiteLibroDiario} restantes)</button></td></tr>`;
+            htmlStr += `<tr><td colspan="8"><button class="btn btn-outline" style="width: 100%;" onclick="cargarMasLibroDiario()">Cargar más (${filtrados.length - limiteLibroDiario} restantes)</button></td></tr>`;
         }
+        tbody.innerHTML = htmlStr;
       }
 
       const balanceNeto = totalIngresos - totalEgresos;
@@ -4722,11 +4851,21 @@ function renderizarLibroDiario(esCargarMas) {
         cronogramaData.clasesMap = {};
         
         if (clases) {
-          clases.forEach(c => {
+          const reservasPorClase = {};
+          if (Array.isArray(reservas)) {
+            for (let i = 0; i < reservas.length; i++) {
+              const r = reservas[i];
+              if (!reservasPorClase[r.clase_id]) reservasPorClase[r.clase_id] = [];
+              reservasPorClase[r.clase_id].push(r);
+            }
+          }
+
+          for (let i = 0; i < clases.length; i++) {
+            const c = clases[i];
             const key = `${c.dia}-${c.hora}`;
             cronogramaData.clasesMap[key] = c.id;
-            cronogramaData.turnos[key] = reservas ? reservas.filter(r => r.clase_id === c.id) : [];
-          });
+            cronogramaData.turnos[key] = reservasPorClase[c.id] || [];
+          }
         }
       } catch (err) {
         console.error("Error al cargar turnos del cronograma:", err);
@@ -5696,13 +5835,26 @@ function renderizarPacientesNutri(filtroTexto = '') {
         return;
     }
     
-    let innerHtml = '';
-    pacientesAMostrar.forEach(p => {
-        const turnosDelPac = nutriTurnosData.filter(t => String(t.paciente_id) === String(p.id));
-        const manuales = nutricionMedicionesData.filter(m => String(m.paciente_id) === String(p.id)).length;
-        const cantConsultas = turnosDelPac.length + manuales;
+    const turnosCountPorPac = {};
+    if (Array.isArray(nutriTurnosData)) {
+        for (let i = 0; i < nutriTurnosData.length; i++) {
+            const pid = String(nutriTurnosData[i].paciente_id);
+            turnosCountPorPac[pid] = (turnosCountPorPac[pid] || 0) + 1;
+        }
+    }
+    const manualesCountPorPac = {};
+    if (Array.isArray(nutricionMedicionesData)) {
+        for (let i = 0; i < nutricionMedicionesData.length; i++) {
+            const pid = String(nutricionMedicionesData[i].paciente_id);
+            manualesCountPorPac[pid] = (manualesCountPorPac[pid] || 0) + 1;
+        }
+    }
+
+    lista.innerHTML = pacientesAMostrar.map(p => {
+        const pid = String(p.id);
+        const cantConsultas = (turnosCountPorPac[pid] || 0) + (manualesCountPorPac[pid] || 0);
         const tieneFichaBase = (p.objetivo && p.objetivo.trim()) || (p.actividad_fisica && p.actividad_fisica.trim()) || (p.observaciones && p.observaciones.trim());
-        innerHtml += `
+        return `
             <div class="card" style="padding: 16px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #3b82f6; transition: transform 0.15s, border-color 0.15s;">
                 <div>
                     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -5717,8 +5869,7 @@ function renderizarPacientesNutri(filtroTexto = '') {
                 <button class="btn btn-outline" style="font-size: 0.9rem;" onclick="abrirFichaPacienteNutri('${p.id}')">📋 Abrir Ficha Clínica</button>
             </div>
         `;
-    });
-    lista.innerHTML = innerHtml;
+    }).join('');
 }
 
 function filtrarPacientesNutri() {
@@ -5838,11 +5989,10 @@ function renderizarGraficoEvolucion() {
     // Actualizar la tablita
     const tbody = document.getElementById('tablaHistorialMediciones');
     if (tbody) {
-        tbody.innerHTML = '';
-        medicionesPaciente.forEach(m => {
+        tbody.innerHTML = medicionesPaciente.map(m => {
             const parts = m.fecha.split('-');
             const fFormat = `${parts[2]}/${parts[1]}/${parts[0]}`;
-            tbody.innerHTML += `
+            return `
               <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                 <td style="padding: 5px 0;">${fFormat}</td>
                 <td>${m.peso || '-'}</td>
@@ -5854,7 +6004,7 @@ function renderizarGraficoEvolucion() {
                 </td>
               </tr>
             `;
-        });
+        }).join('');
     }
 }
 
@@ -6561,133 +6711,6 @@ function cerrarHistorialPagosAlumno() {
     const modal = document.getElementById('modalHistorialPagosAlumno');
     if (modal) modal.style.display = 'none';
 }
-// ==========================================
-
 </script>
-
-<!-- MODAL NUEVO TURNO NUTRICIÓN -->
-<div id="modalNuevoTurnoNutri" class="modal-overlay">
-    <div class="modal-content" style="max-width: 400px;">
-        <h3>Nuevo Turno - Nutrición</h3>
-        <label>Paciente (Buscar o crear nuevo):</label>
-        <input type="text" id="inputPacienteNutri" list="listaAlumnosNutriAutocomplete" placeholder="Nombre completo..." autocomplete="off">
-        <datalist id="listaAlumnosNutriAutocomplete"></datalist>
-        <input type="hidden" id="pacienteIdNutriSelec">
-        <input type="hidden" id="turnoIdNutriEdit">
-        
-        <label>Nutricionista:</label>
-        <select id="selectNutricionistaTurno"></select>
-
-        <label>Fecha y Hora:</label>
-        <div style="display: flex; gap: 10px;">
-            <input type="date" id="fechaTurnoNutri" style="flex: 1;">
-            <input type="time" id="horaTurnoNutri" style="flex: 1;">
-        </div>
-
-        <label>Monto a cobrar ($):</label>
-        <input type="number" id="montoTurnoNutri" placeholder="Ej: 15000">
-
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button class="btn btn-outline" style="flex: 1;" onclick="cerrarModalNuevoTurnoNutri()">Cancelar</button>
-            <button class="btn" style="flex: 1; background: var(--neon-green); color: #000;" id="btnGuardarTurnoNutri" onclick="guardarTurnoNutri()">Agendar Turno</button>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL FICHA CLÍNICA -->
-<div id="modalFichaPacienteNutri" class="modal-overlay">
-    <div class="modal-content" style="max-width: 700px; width: 95%; max-height: 90vh; overflow-y: auto;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h3 id="tituloFichaPaciente" style="margin:0;">Ficha Médica</h3>
-            <button class="btn" style="background: var(--danger-red); padding: 4px 10px; font-size: 0.8rem; border:none;" onclick="borrarPacienteNutriTotal()">🗑️ Borrar Ficha</button>
-        </div>
-        
-        
-
-        <!-- FICHA BASE / PERFIL GENERAL DEL PACIENTE -->
-        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-top: 15px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
-                <span style="color: #fff; font-weight: bold; font-size: 0.9rem; display: flex; align-items: center; gap: 6px;">
-                    📌 <span>Ficha Base y Datos Generales</span>
-                </span>
-                <button class="btn" style="padding: 4px 12px; font-size: 0.8rem; background: var(--neon-green); color: #000; font-weight: bold;" onclick="guardarPerfilBasePacienteNutri()">
-                    💾 Guardar Ficha Base
-                </button>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 10px;">
-                <div>
-                    <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: bold; text-transform: uppercase;">🎯 Objetivo Principal:</label>
-                    <input type="text" id="perfilNutriObjetivo" placeholder="Ej: Aumento de masa muscular y rendimiento..." style="width: 100%; padding: 7px 10px; border-radius: 6px; background: #14141D; border: 1px solid var(--border-color); color: #fff; font-size: 0.85rem; margin-top: 4px;">
-                </div>
-                <div>
-                    <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: bold; text-transform: uppercase;">🏃 Actividad Física Actual:</label>
-                    <input type="text" id="perfilNutriActividad" placeholder="Ej: 4 veces por semana en FTG + fútbol los sábados..." style="width: 100%; padding: 7px 10px; border-radius: 6px; background: #14141D; border: 1px solid var(--border-color); color: #fff; font-size: 0.85rem; margin-top: 4px;">
-                </div>
-            </div>
-            <div>
-                <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: bold; text-transform: uppercase;">📝 Notas / Datos Generales y Hábitos:</label>
-                <textarea id="perfilNutriObservaciones" placeholder="Alergias, preferencias alimentarias, horarios, etc..." style="width: 100%; padding: 7px 10px; border-radius: 6px; background: #14141D; border: 1px solid var(--border-color); color: #fff; font-size: 0.85rem; min-height: 55px; margin-top: 4px; resize: vertical;"></textarea>
-            </div>
-        </div>
-
-        <!-- RESUMEN PROGRESO / COMPARATIVA INICIAL VS ACTUAL -->
-        <div id="resumenProgresoNutri"></div>
-
-        <h4 style="margin-bottom: 0; margin-top: 20px;">Historial Detallado</h4>
-        <div id="historialConsultasPaciente" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
-        </div>
-
-        <!-- Gráfico temporalmente oculto a pedido -->
-        <div id="wrapperGraficoEvolucion" style="display: none; height: 300px; width: 100%; position: relative; background: #fff; border-radius: 8px; padding: 10px; margin-top: 15px;">
-            <canvas id="graficoEvolucion"></canvas>
-        </div>
-
-<div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.1);">
-            <h4 style="margin-top:0;">+ Cargar Historial (Fechas anteriores)</h4>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
-                <input type="date" id="evoFecha" style="flex:1; min-width:130px;">
-                <input type="number" id="evoPeso" placeholder="Peso (kg)" step="0.1" style="flex:1; min-width:100px;">
-                <input type="number" id="evoGrasa" placeholder="Masa Adiposa (kg)" step="0.1" style="flex:1; min-width:100px;">
-                <input type="number" id="evoMusculo" placeholder="Masa Muscular (kg)" step="0.1" style="flex:1; min-width:100px;">
-            </div>
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <input type="text" id="evoObservaciones" placeholder="Detalles / Notas de esta consulta..." style="flex:3;">
-                <button class="btn" onclick="guardarMedicionNutri()" style="flex:1;">Guardar Historial</button>
-            </div>
-        </div>
-        <div style="margin-top: 20px;">
-            <button class="btn btn-outline" style="width: 100%;" onclick="document.getElementById('modalFichaPacienteNutri').style.display='none'">Cerrar Ficha</button>
-        </div>
-    </div>
-</div>
-
-
-
-
-    
-<!-- MODAL HISTORIAL DE CUOTAS ALUMNO -->
-<div id="modalHistorialPagosAlumno" class="modal-overlay">
-    <div class="modal-content" style="max-width: 580px; width: 95%; max-height: 85vh; overflow-y: auto;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
-            <div>
-                <h3 id="historialAlumnoTitulo" style="margin: 0; display: flex; align-items: center; gap: 8px;">
-                    📜 Historial de Cuotas
-                </h3>
-                <span id="historialAlumnoSubtitulo" style="font-size: 0.85rem; color: var(--text-dim);"></span>
-            </div>
-            <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.9rem;" onclick="cerrarHistorialPagosAlumno()">✕</button>
-        </div>
-
-        <div id="historialAlumnoContenido">
-            <div class="skeleton skeleton-row"></div>
-            <div class="skeleton skeleton-row"></div>
-        </div>
-
-        <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
-            <button class="btn btn-outline" style="padding: 8px 18px;" onclick="cerrarHistorialPagosAlumno()">Cerrar</button>
-        </div>
-    </div>
-</div>
-
 </body>
 </html>
