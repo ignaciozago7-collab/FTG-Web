@@ -1295,8 +1295,11 @@
 
 
   <div id="modalEditCliente" class="modal-overlay">
-    <div class="modal-content">
-      <h3>Modificar Cliente</h3>
+    <div class="modal-content" style="max-width: 460px; width: 95%;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 12px;">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">📋 Ficha del Cliente</h3>
+        <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.9rem;" onclick="cerrarModalEditCliente()">✕</button>
+      </div>
       <input type="hidden" id="editClienteId">
 
       <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -1304,21 +1307,37 @@
         <input type="text" id="editClienteNombre">
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <label style="font-size: 0.8rem; color: var(--text-dim);">Días por semana (1 a 7):</label>
-        <input type="number" id="editClienteDias" min="1" max="7">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">Cuota Mensual ($):</label>
+          <input type="number" id="editClienteMonto" placeholder="Ej: 25000">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">Días por semana (1 a 7):</label>
+          <input type="number" id="editClienteDias" min="1" max="7">
+        </div>
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 4px;">
-        <label style="font-size: 0.8rem; color: var(--text-dim);">Profesor a cargo:</label>
+        <label style="font-size: 0.8rem; color: var(--text-dim);">👨‍🏫 Profesor a cargo:</label>
         <select id="editClienteProfesor">
            <!-- se poblará dinámicamente -->
         </select>
       </div>
 
-      <div style="display: flex; gap: 8px; margin-top: 16px;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 0.8rem; color: var(--text-dim);">📝 Notas / Observaciones:</label>
+        <input type="text" id="editClienteNotas" placeholder="Ej: Debe mes pasado, horario especial...">
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);">
+        <button type="button" class="btn btn-outline" style="font-size: 0.82rem; padding: 6px 12px;" onclick="abrirHistorialDesdeFicha()">📜 Ver Historial de Pagos</button>
+        <button type="button" class="btn btn-danger" style="font-size: 0.82rem; padding: 6px 12px;" onclick="borrarClienteDesdeFicha()">🗑️ Eliminar Cliente</button>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 12px;">
         <button class="btn btn-outline" style="flex: 1;" onclick="cerrarModalEditCliente()">Cancelar</button>
-        <button class="btn" style="flex: 1;" onclick="guardarEdicionCliente()">Guardar</button>
+        <button class="btn" style="flex: 1; font-weight: bold;" onclick="guardarEdicionCliente()">💾 Guardar Ficha</button>
       </div>
     </div>
   </div>
@@ -2325,11 +2344,52 @@
       if (error) return;
       alumnosData = alumnos.map(a => {
         a.nombre = formatearTitulo(a.nombre);
+        if (a.profesor_cargo) a.profesor_cargo = formatearTitulo(a.profesor_cargo.trim());
         return a;
       });
+      actualizarFiltroProfesoresAlumnos();
       actualizarMetricasAlumnos();
       filtrarAlumnos();
       cargarAsistencias();
+    }
+
+    function actualizarFiltroProfesoresAlumnos() {
+      const fProfesor = document.getElementById('filtroProfesorAlumnos');
+      if (!fProfesor) return;
+      const valorActual = fProfesor.value;
+      const nombresProfes = new Set();
+
+      if (Array.isArray(staffData)) {
+        staffData.forEach(s => {
+          if (s.rol && String(s.rol).toLowerCase().includes('profesor') && s.nombre) {
+            nombresProfes.add(formatearTitulo(s.nombre.trim()));
+          }
+        });
+      }
+      if (Array.isArray(alumnosData)) {
+        alumnosData.forEach(a => {
+          if (a.profesor_cargo && a.profesor_cargo.trim()) {
+            nombresProfes.add(formatearTitulo(a.profesor_cargo.trim()));
+          }
+        });
+      }
+
+      let optsProf = '<option value="">👨‍🏫 Todos los Profesores</option>';
+      optsProf += '<option value="__SIN_ASIGNAR__">⚠️ Sin profesor asignado</option>';
+      Array.from(nombresProfes).sort((a, b) => a.localeCompare(b, 'es')).forEach(nombre => {
+        optsProf += `<option value="${nombre}">👨‍🏫 Prof: ${nombre}</option>`;
+      });
+
+      fProfesor.innerHTML = optsProf;
+      if (valorActual) fProfesor.value = valorActual;
+    }
+
+    function togglePanelCobroAlumno(id) {
+      const tabActivo = document.querySelector('.tab-content.active') || document;
+      const panel = tabActivo.querySelector(`[id="panel-cobro-${id}"]`);
+      if (!panel) return;
+      const isHidden = panel.style.display === 'none' || !panel.style.display;
+      panel.style.display = isHidden ? 'flex' : 'none';
     }
 
     async function agregarCliente() {
@@ -2409,63 +2469,69 @@
           const estaPagado = a.pago_confirmado;
           const fechaFormateada = a.fecha_pago ? new Date(a.fecha_pago + 'T12:00:00').toLocaleDateString('es-AR') : 'Sin fecha';
           const fechaInput = a.fecha_pago || hoy;
-          
-          const opcionesProfesores = staffData.map(s => 
-            `<option value="${s.nombre}" ${s.nombre === a.profesor_cargo ? 'selected' : ''}>${s.nombre}</option>`
-          ).join('');
+          const montoNum = parseFloat(a.monto) || 0;
+          const tieneNotas = a.notas && String(a.notas).trim() !== '';
+          const tieneProfe = a.profesor_cargo && String(a.profesor_cargo).trim() !== '';
   
           return `
-            <li style="padding: 14px 16px; background: rgba(255,255,255,0.01); border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; border: 1px solid var(--border-color);">
-              
-              <div class="info-cliente" style="flex: 1; min-width: 250px;">
-                <div style="margin-bottom: 8px;">
-                  <strong style="font-size: 1.1rem;">${a.nombre}</strong> 
-                  <span style="font-size: 0.85em; color: var(--text-dim); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 6px;">${a.dias_semana || 3} días/sem</span>
-                  ${estaPagado 
-                    ? `<span style="color: var(--bg-dark); background-color: var(--neon-green); font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 6px; margin-left: 8px;">✔ Pagado</span>` 
-                    : `<span style="color: var(--danger-red); border: 1px solid var(--danger-red); background-color: rgba(255, 83, 83, 0.1); font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 6px; margin-left: 8px;">⏳ Pendiente</span>`
-                  }
-                </div>
+            <li style="padding: 12px 16px; background: rgba(255,255,255,0.015); border-radius: 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--border-color); border-left: 3px solid ${estaPagado ? 'var(--neon-green)' : 'var(--danger-red)'};">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; width: 100%;">
                 
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                     <span style="font-size: 0.85rem; color: var(--text-dim);">Prof. a cargo:</span>
-                     <select onchange="actualizarProfesorCargo(${a.id}, this.value)" style="padding: 4px 8px; font-size: 0.85rem; border-radius: 8px; background: #14141D; border: 1px solid var(--border-color); color: #fff;">
-                        <option value="">Sin asignar</option>
-                        ${opcionesProfesores}
-                     </select>
+                <div class="info-cliente" style="flex: 1; min-width: 240px;">
+                  <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <strong style="font-size: 1.05rem; color: #fff; cursor: pointer;" onclick="abrirModalEditCliente('${a.id}')" title="Ver o editar ficha del cliente">${a.nombre}</strong> 
+                    <span style="font-size: 0.78rem; color: var(--text-dim); background: rgba(255,255,255,0.06); padding: 2px 7px; border-radius: 6px;">${a.dias_semana || 3} días/sem</span>
+                    ${estaPagado 
+                      ? `<span style="color: var(--bg-dark); background-color: var(--neon-green); font-size: 0.73rem; font-weight: 800; padding: 2px 8px; border-radius: 6px;">✔ Pagado</span>` 
+                      : `<span style="color: var(--danger-red); border: 1px solid var(--danger-red); background-color: rgba(255, 83, 83, 0.1); font-size: 0.73rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">⏳ Pendiente</span>`
+                    }
+                    <span style="font-size: 0.85rem; font-weight: 700; color: ${estaPagado ? 'var(--neon-green)' : '#fff'}; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 6px;">$${montoNum.toLocaleString('es-AR')}</span>
                   </div>
                   
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                     <span style="font-size: 0.85rem; color: var(--text-dim);">Notas:</span>
-                     <input type="text" id="notas-al-${a.id}" value="${a.notas || ''}" placeholder="Ej: debe mes pasado..." style="padding: 4px 8px; font-size: 0.85rem; background: #14141D; border: 1px solid var(--border-color); color: #fff; border-radius: 8px; width: 200px;" onchange="guardarNotaAlumno(${a.id}, this.value)">
+                  <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px; font-size: 0.8rem; color: var(--text-dim);">
+                    <span onclick="abrirModalEditCliente('${a.id}')" style="cursor: pointer; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); padding: 2px 8px; border-radius: 6px; color: ${tieneProfe ? '#cbd5e1' : 'var(--text-dim)'};" title="Clic para cambiar profesor">
+                      👨‍🏫 ${tieneProfe ? `Prof: <strong style="color:#fff;">${a.profesor_cargo}</strong>` : 'Sin profe asignado'}
+                    </span>
+                    ${tieneNotas ? `
+                      <span onclick="abrirModalEditCliente('${a.id}')" style="cursor: pointer; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; padding: 2px 8px; border-radius: 6px;" title="Clic para editar nota">
+                        📝 ${a.notas}
+                      </span>
+                    ` : ''}
+                    ${estaPagado ? `
+                      <span style="color: var(--text-dim);">
+                        📅 Pagó: <strong style="color: var(--neon-green);">${fechaFormateada}</strong> · 👤 Cobró: <strong style="color: var(--neon-green);">${a.ultimo_cobrador || 'No especificado'}</strong>
+                      </span>
+                    ` : ''}
                   </div>
                 </div>
+                
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+                  ${estaPagado ? `
+                    <button class="btn btn-outline" style="padding: 6px 11px; border-radius: 8px; font-size: 0.8rem;" onclick="actualizarPago(${a.id}, false)">↩ Pasar a Pendiente</button>
+                  ` : `
+                    <button class="btn" style="padding: 6px 14px; border-radius: 8px; font-size: 0.83rem; font-weight: 700; box-shadow: 0 2px 8px rgba(149, 255, 83, 0.2);" onclick="togglePanelCobroAlumno('${a.id}')">💳 Cobrar</button>
+                    <a href="https://wa.me/?text=${encodeURIComponent(`Hola ${a.nombre}, buenos dias 😊\nTe escribimos para consultarte ¿por casualidad realizaste el pago del mes? Puede que se nos haya pasado anotarlo o simplemente no tengamos el registro aún.\nNo hay ningún apuro, es solo para confirmar y organizar los controles. 🙌\n\n¡Muchas gracias y saludos! ✨`)}" target="_blank" class="btn" style="background: #25D366; color: #000; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 8px; font-size: 0.82rem;" title="Reclamar Pago por WhatsApp">💬 WSP</a>
+                  `}
+                  <button class="btn btn-outline" style="padding: 6px 10px; font-size: 0.82rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;" onclick="abrirHistorialPagosAlumno('${a.id}', '${encodeURIComponent(a.nombre)}')" title="Historial de Cuotas">📜 Historial</button>
+                  <button class="btn btn-outline" style="padding: 6px 10px; font-size: 0.82rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;" onclick="abrirModalEditCliente('${a.id}')" title="Ficha del Cliente (Profe, Notas, Cuota, Borrar)">📋 Ficha</button>
+                </div>
+              </div>
 
-                ${estaPagado ? `
-                  <div class="meta-pago" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-dim);">
-                    📅 Fecha de pago: <strong style="color: var(--neon-green);">${fechaFormateada}</strong> | 👤 Cobró: <strong style="color: var(--neon-green);">${a.ultimo_cobrador || 'No especificado'}</strong> | 💵 Cuota: <strong style="color: var(--neon-green);">$${(parseFloat(a.monto)||0).toLocaleString('es-AR')}</strong>
-                  </div>
-                ` : ''}
-              </div>
-              
-              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
-                ${estaPagado ? `
-                  <button class="btn btn-outline" style="padding: 6px 12px; border-radius: 8px; font-size: 0.85rem;" onclick="actualizarPago(${a.id}, false)">Marcar Pendiente</button>
-                ` : `
-                  <input type="date" value="${fechaInput}" id="fecha-${a.id}" style="padding: 6px 10px; border-radius: 8px;">
-                  <input type="number" value="${a.monto || 0}" style="width: 90px; padding: 6px 10px; border-radius: 8px;" id="monto-${a.id}" placeholder="Cuota $">
-                  <select id="cobrador-${a.id}" style="padding: 6px 10px; border-radius: 8px;">
-                      <option value="" disabled selected>Seleccione cobrador...</option>
+              ${!estaPagado ? `
+                <div id="panel-cobro-${a.id}" style="display: none; width: 100%; background: rgba(149, 255, 83, 0.05); border: 1px solid rgba(149, 255, 83, 0.25); border-radius: 10px; padding: 10px 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                  <span style="font-size: 0.82rem; color: var(--neon-green); font-weight: 700;">💳 Registrar cobro de cuota:</span>
+                  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <input type="date" value="${fechaInput}" id="fecha-${a.id}" style="padding: 5px 8px; border-radius: 7px; font-size: 0.82rem;">
+                    <input type="number" value="${a.monto || 0}" style="width: 95px; padding: 5px 8px; border-radius: 7px; font-size: 0.82rem;" id="monto-${a.id}" placeholder="Cuota $">
+                    <select id="cobrador-${a.id}" style="padding: 5px 8px; border-radius: 7px; font-size: 0.82rem;">
+                      <option value="" disabled selected>¿Quién recibe?...</option>
                       ${staffData.filter(s => ['nacho','ignacio','zago','lea','leandro','villiani','ernesto','gomez','mariano','elias'].some(kw => String(s.nombre).toLowerCase().includes(kw))).map(s => `<option value="${s.nombre}">Recibe: ${s.nombre.split(' ')[0]}</option>`).join('')}
-                  </select>
-                  <a href="https://wa.me/?text=${encodeURIComponent(`Hola ${a.nombre}, buenos dias 😊\nTe escribimos para consultarte ¿por casualidad realizaste el pago del mes? Puede que se nos haya pasado anotarlo o simplemente no tengamos el registro aún.\nNo hay ningún apuro, es solo para confirmar y organizar los controles. 🙌\n\n¡Muchas gracias y saludos! ✨`)}" target="_blank" class="btn" style="background: #25D366; color: #000; font-weight: bold; text-decoration: none; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem;" title="Reclamar Pago">💬 WSP de pago</a>
-                  <button class="btn" style="padding: 6px 14px; border-radius: 8px; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(149, 255, 83, 0.2);" onclick="actualizarPago(${a.id}, true)">Cobrar Cuota</button>
-                `}
-                <button class="btn btn-outline" style="padding: 6px 10px; font-size: 0.85rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;" onclick="abrirHistorialPagosAlumno('${a.id}', '${encodeURIComponent(a.nombre)}')" title="Historial de Cuotas">📜 Historial</button>
-                <button class="btn btn-outline" style="padding: 6px 10px; font-size: 1rem; border-radius: 8px;" onclick="abrirModalEditCliente('${a.id}')" title="Editar">✏️</button>
-                <button class="btn btn-danger" style="padding: 6px 10px; font-size: 1rem; border-radius: 8px;" onclick="borrarCliente('${a.id}')" title="Borrar">🗑️</button>
-              </div>
+                    </select>
+                    <button class="btn" style="padding: 5px 12px; border-radius: 7px; font-size: 0.82rem; font-weight: 700;" onclick="actualizarPago(${a.id}, true)">✔ Confirmar Cobro</button>
+                    <button class="btn btn-outline" style="padding: 5px 10px; border-radius: 7px; font-size: 0.8rem;" onclick="togglePanelCobroAlumno('${a.id}')">Cancelar</button>
+                  </div>
+                </div>
+              ` : ''}
             </li>
           `;
         }).join('');
@@ -2562,7 +2628,11 @@
         let ok = true;
         if (texto && !a.nombre.toLowerCase().includes(texto)) ok = false;
         if (fechaFiltro && a.fecha_pago !== fechaFiltro) ok = false;
-        if (profFiltro && a.profesor_cargo !== profFiltro) ok = false;
+        if (profFiltro === '__SIN_ASIGNAR__') {
+          if (a.profesor_cargo && String(a.profesor_cargo).trim() !== '') ok = false;
+        } else if (profFiltro) {
+          if ((a.profesor_cargo || '').trim().toLowerCase() !== profFiltro.trim().toLowerCase()) ok = false;
+        }
         if (cobradorFiltro && a.ultimo_cobrador !== cobradorFiltro) ok = false;
         if (montoFiltro > 0 && parseFloat(a.monto) !== montoFiltro) ok = false;
         return ok;
@@ -3250,7 +3320,9 @@
         poblarSelectStaffLiquidacion();
         poblarSelectsProfesorPlanes();
         poblarSelectoresOperadores();
-          cargarHorasMesDesdeDB().then(() => renderizarGrillaHoras());
+        if (typeof actualizarFiltroProfesoresAlumnos === 'function') actualizarFiltroProfesoresAlumnos();
+        if (Array.isArray(alumnosData) && alumnosData.length > 0) filtrarAlumnos();
+        cargarHorasMesDesdeDB().then(() => renderizarGrillaHoras());
       }
     }
 
@@ -3276,15 +3348,8 @@
           const fAlumnos = document.getElementById('filtroCobradorAlumnos');
           if (fAlumnos) fAlumnos.innerHTML = opcionesFiltro;
 
-          const fProfesor = document.getElementById('filtroProfesorAlumnos');
-          if (fProfesor && staffData) {
-              const valorActual = fProfesor.value;
-              let optsProf = '<option value="">Todos los Profesores</option>';
-              staffData.filter(s => s.rol === 'profesor').forEach(s => {
-                  optsProf += `<option value="${s.nombre}">${s.nombre}</option>`;
-              });
-              fProfesor.innerHTML = optsProf;
-              if (valorActual) fProfesor.value = valorActual;
+          if (typeof actualizarFiltroProfesoresAlumnos === 'function') {
+              actualizarFiltroProfesoresAlumnos();
           }
 
           const fCaja = document.getElementById('filtroCobradorCaja');
@@ -4431,14 +4496,26 @@ function renderizarLibroDiario(esCargarMas) {
         
         document.getElementById('editClienteId').value = cliente.id;
         document.getElementById('editClienteNombre').value = cliente.nombre || '';
+        const montoInput = document.getElementById('editClienteMonto');
+        if (montoInput) montoInput.value = cliente.monto || 0;
         document.getElementById('editClienteDias').value = cliente.dias_semana || 3;
+        const notasInput = document.getElementById('editClienteNotas');
+        if (notasInput) notasInput.value = cliente.notas || '';
         
         const selectProfesor = document.getElementById('editClienteProfesor');
         let opciones = '<option value="">Sin asignar</option>';
+        const profesSet = new Set();
         staffData.forEach(s => {
-            if (s.rol === 'profesor') {
-                opciones += `<option value="${s.nombre}" ${s.nombre === cliente.profesor_cargo ? 'selected' : ''}>${s.nombre}</option>`;
+            if (s.rol && String(s.rol).toLowerCase().includes('profesor')) {
+                profesSet.add(s.nombre);
             }
+        });
+        if (cliente.profesor_cargo && cliente.profesor_cargo.trim()) {
+            profesSet.add(cliente.profesor_cargo.trim());
+        }
+        Array.from(profesSet).sort((a, b) => a.localeCompare(b, 'es')).forEach(nombreProf => {
+            const isSel = cliente.profesor_cargo && nombreProf.toLowerCase() === cliente.profesor_cargo.toLowerCase();
+            opciones += `<option value="${nombreProf}" ${isSel ? 'selected' : ''}>${nombreProf}</option>`;
         });
         selectProfesor.innerHTML = opciones;
         
@@ -4449,11 +4526,27 @@ function renderizarLibroDiario(esCargarMas) {
         document.getElementById('modalEditCliente').style.display = 'none';
     }
 
+    function abrirHistorialDesdeFicha() {
+        const id = document.getElementById('editClienteId').value;
+        const cliente = alumnosData.find(a => String(a.id) === String(id));
+        const nombre = cliente ? cliente.nombre : (document.getElementById('editClienteNombre').value || '');
+        cerrarModalEditCliente();
+        abrirHistorialPagosAlumno(id, encodeURIComponent(nombre));
+    }
+
+    function borrarClienteDesdeFicha() {
+        const id = document.getElementById('editClienteId').value;
+        cerrarModalEditCliente();
+        borrarCliente(id);
+    }
+
     async function guardarEdicionCliente() {
         const id = document.getElementById('editClienteId').value;
         const nombre = document.getElementById('editClienteNombre').value.trim();
+        const monto = parseFloat(document.getElementById('editClienteMonto')?.value) || 0;
         const dias = document.getElementById('editClienteDias').value;
         const profesor = document.getElementById('editClienteProfesor').value;
+        const notas = (document.getElementById('editClienteNotas')?.value || '').trim();
 
         if (!nombre) {
             alert("El nombre no puede estar vacío.");
@@ -4462,8 +4555,10 @@ function renderizarLibroDiario(esCargarMas) {
 
         const { error } = await _supabase.from('alumnos').update({ 
             nombre: formatearTitulo(nombre),
+            monto: monto,
             dias_semana: parseInt(dias) || 3,
-            profesor_cargo: profesor
+            profesor_cargo: profesor,
+            notas: notas
         }).eq('id', id);
 
         if (error) {
@@ -4473,8 +4568,12 @@ function renderizarLibroDiario(esCargarMas) {
             const idx = alumnosData.findIndex(a => String(a.id) === String(id));
             if (idx !== -1) {
                 alumnosData[idx].nombre = formatearTitulo(nombre);
+                alumnosData[idx].monto = monto;
                 alumnosData[idx].dias_semana = parseInt(dias) || 3;
                 alumnosData[idx].profesor_cargo = profesor;
+                alumnosData[idx].notas = notas;
+                actualizarFiltroProfesoresAlumnos();
+                actualizarMetricasAlumnos();
                 filtrarAlumnos();
             }
         }
@@ -5512,6 +5611,7 @@ function renderizarRendicionNutri() {
 // ==========================================
 async function abrirHistorialPagosAlumno(alumnoId, alumnoNombreEncoded) {
     const alumnoNombre = decodeURIComponent(alumnoNombreEncoded || '');
+    const alumnoObj = Array.isArray(alumnosData) ? alumnosData.find(a => String(a.id) === String(alumnoId)) : null;
     const modal = document.getElementById('modalHistorialPagosAlumno');
     const titulo = document.getElementById('historialAlumnoTitulo');
     const subtitulo = document.getElementById('historialAlumnoSubtitulo');
@@ -5536,29 +5636,49 @@ async function abrirHistorialPagosAlumno(alumnoId, alumnoNombreEncoded) {
             return;
         }
 
-        if (!data || data.length === 0) {
+        const registros = Array.isArray(data) ? [...data] : [];
+        if (alumnoObj && alumnoObj.pago_confirmado && alumnoObj.fecha_pago) {
+            const yaExisteFecha = registros.some(r => r.fecha === alumnoObj.fecha_pago);
+            if (!yaExisteFecha) {
+                registros.unshift({
+                    fecha: alumnoObj.fecha_pago,
+                    monto: alumnoObj.monto || 0,
+                    cobrador: alumnoObj.ultimo_cobrador || 'No especificado',
+                    detalle: `Cobro Cuota Mensual - ${alumnoObj.nombre}`
+                });
+            }
+        }
+
+        if (registros.length === 0) {
             contenido.innerHTML = `
                 <div style="text-align: center; padding: 32px 16px; color: var(--text-dim); background: rgba(255,255,255,0.02); border-radius: 10px; border: 1px dashed var(--border-color);">
                     <div style="font-size: 2.2rem; margin-bottom: 8px;">📭</div>
                     <div style="font-weight: 500; font-size: 1rem; color: #fff;">Sin movimientos registrados</div>
-                    <div style="font-size: 0.85rem; margin-top: 4px;">Aún no hay cobros de cuotas registrados en el libro diario para <strong>${alumnoNombre}</strong>.</div>
+                    <div style="font-size: 0.85rem; margin-top: 4px;">Aún no hay cobros de cuotas registrados para <strong>${alumnoNombre}</strong>.</div>
                 </div>
             `;
             return;
         }
 
-        const totalPagado = data.reduce((acc, row) => acc + (parseFloat(row.monto) || 0), 0);
+        const totalPagado = registros.reduce((acc, row) => acc + (parseFloat(row.monto) || 0), 0);
+        const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
         let html = `
             <div style="background: rgba(149, 255, 83, 0.06); border: 1px solid rgba(149, 255, 83, 0.25); border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 0.85rem; color: #ccc;">Total histórico cobrado:</span>
-                <strong style="color: var(--neon-green); font-size: 1.15rem;">$${totalPagado.toLocaleString('es-AR')} <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-dim);">(${data.length} pago${data.length > 1 ? 's' : ''})</span></strong>
+                <strong style="color: var(--neon-green); font-size: 1.15rem;">$${totalPagado.toLocaleString('es-AR')} <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-dim);">(${registros.length} pago${registros.length > 1 ? 's' : ''})</span></strong>
             </div>
             <div style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 4px;">
         `;
 
-        data.forEach(pago => {
-            const fechaStr = pago.fecha ? new Date(pago.fecha + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Sin fecha';
+        registros.forEach(pago => {
+            let fechaStr = 'Sin fecha';
+            let mesAnioStr = 'Cuota Mensual';
+            if (pago.fecha) {
+                const dObj = new Date(pago.fecha + 'T12:00:00');
+                fechaStr = dObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                mesAnioStr = `${mesesNombres[dObj.getMonth()]} ${dObj.getFullYear()}`;
+            }
             const montoVal = parseFloat(pago.monto) || 0;
             const cobradorStr = pago.cobrador || 'No especificado';
 
@@ -5567,10 +5687,11 @@ async function abrirHistorialPagosAlumno(alumnoId, alumnoNombreEncoded) {
                     <div>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <span style="color: var(--neon-green); font-size: 0.95rem;">✔</span>
-                            <strong style="font-size: 0.95rem; color: #fff;">${pago.detalle || 'Cobro Cuota Mensual'}</strong>
+                            <strong style="font-size: 0.98rem; color: #fff;">${mesAnioStr}</strong>
+                            <span style="font-size: 0.78rem; color: var(--text-dim); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 5px;">📅 ${fechaStr}</span>
                         </div>
                         <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">
-                            📅 Fecha: <strong style="color: #ddd;">${fechaStr}</strong> &nbsp;|&nbsp; 👤 Cobró: <strong style="color: var(--neon-green);">${cobradorStr}</strong>
+                            👤 Cobró: <strong style="color: var(--neon-green);">${cobradorStr}</strong> &nbsp;·&nbsp; <span style="color: #94a3b8;">${pago.detalle || 'Cobro Cuota Mensual'}</span>
                         </div>
                     </div>
                     <div style="font-size: 1.1rem; font-weight: bold; color: var(--neon-green);">
