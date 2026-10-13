@@ -4862,7 +4862,7 @@ function renderizarPacientesNutri(filtroTexto = '') {
     const lista = document.getElementById('listaPacientesNutri');
     if(!lista) return;
     
-    let pacientesAMostrar = nutriPacientesData;
+    let pacientesAMostrar = [...nutriPacientesData];
     if (window.esNutriGlobal && !window.esSuperAdminGlobal) {
         const misNombresStaff = staffData.filter(s => {
             if (window.emailActualGlobal.toLowerCase().includes('lucia') && s.nombre.toLowerCase().includes('lucia')) return true;
@@ -4871,7 +4871,11 @@ function renderizarPacientesNutri(filtroTexto = '') {
         }).map(s => s.nombre);
         
         pacientesAMostrar = nutriPacientesData.filter(p => {
-            return nutriTurnosData.some(t => String(t.paciente_id) === String(p.id) && misNombresStaff.includes(t.nutricionista_nombre));
+            const turnosDelPac = nutriTurnosData.filter(t => String(t.paciente_id) === String(p.id));
+            // Si el paciente fue agregado sin turno (ficha directa), siempre debe mostrarse
+            if (turnosDelPac.length === 0) return true;
+            if (misNombresStaff.length === 0) return true;
+            return turnosDelPac.some(t => misNombresStaff.includes(t.nutricionista_nombre));
         });
     }
 
@@ -4890,11 +4894,18 @@ function renderizarPacientesNutri(filtroTexto = '') {
         const turnosDelPac = nutriTurnosData.filter(t => String(t.paciente_id) === String(p.id));
         const manuales = nutricionMedicionesData.filter(m => String(m.paciente_id) === String(p.id)).length;
         const cantConsultas = turnosDelPac.length + manuales;
+        const tieneFichaBase = (p.objetivo && p.objetivo.trim()) || (p.actividad_fisica && p.actividad_fisica.trim()) || (p.observaciones && p.observaciones.trim());
         innerHtml += `
             <div class="card" style="padding: 16px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #3b82f6; transition: transform 0.15s, border-color 0.15s;">
                 <div>
-                    <strong style="font-size: 1.1rem; color: #fff;">${p.nombre}</strong>
-                    <div style="font-size: 0.9rem; color: var(--text-dim); margin-top: 4px;">Consultas registradas: <strong style="color: #3b82f6;">${cantConsultas}</strong></div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <strong style="font-size: 1.1rem; color: #fff;">${p.nombre}</strong>
+                        ${tieneFichaBase ? `<span style="font-size: 0.72rem; background: rgba(149, 255, 83, 0.12); color: var(--neon-green); border: 1px solid rgba(149, 255, 83, 0.3); padding: 2px 7px; border-radius: 6px; font-weight: 600;">📌 Ficha Base activa</span>` : ''}
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--text-dim); margin-top: 4px;">
+                        Consultas registradas: <strong style="color: #3b82f6;">${cantConsultas}</strong>
+                        ${p.objetivo ? ` &nbsp;·&nbsp; 🎯 <span style="color: #cbd5e1;">${p.objetivo}</span>` : ''}
+                    </div>
                 </div>
                 <button class="btn btn-outline" style="font-size: 0.9rem;" onclick="abrirFichaPacienteNutri('${p.id}')">📋 Abrir Ficha Clínica</button>
             </div>
@@ -5050,6 +5061,8 @@ async function borrarMedicionNutri(id) {
     }
     
     nutricionMedicionesData = nutricionMedicionesData.filter(m => String(m.id) !== String(id));
+    renderizarPacientesNutri();
+    if (fichaActualPacienteId) abrirFichaPacienteNutri(fichaActualPacienteId);
     renderizarGraficoEvolucion();
 }
 
@@ -5102,7 +5115,6 @@ async function guardarMedicionNutri() {
             if (grasa) nutriPacientesData[index].porcentaje_grasa = grasa;
             if (musculo) nutriPacientesData[index].masa_muscular = musculo;
         }
-        renderizarPacientesNutri(); // Re-render table behind the modal
     }
 
     document.getElementById('evoPeso').value = '';
@@ -5110,6 +5122,8 @@ async function guardarMedicionNutri() {
     document.getElementById('evoMusculo').value = '';
     document.getElementById('evoObservaciones').value = '';
     
+    renderizarPacientesNutri();
+    abrirFichaPacienteNutri(evoPacienteActualId);
     renderizarGraficoEvolucion();
 }
 
@@ -5177,14 +5191,18 @@ async function borrarPacienteNutriTotal() {
 
 
 async function agregarPacienteNutriManual() {
-    const nombreInput = prompt("Ingresá el nombre completo del nuevo paciente:");
+    const buscadorEl = document.getElementById('buscadorPacientesNutri');
+    const sugerencia = buscadorEl && buscadorEl.value ? buscadorEl.value.trim() : '';
+    const nombreInput = prompt("Ingresá el nombre completo del nuevo paciente:", sugerencia);
     if (!nombreInput || !nombreInput.trim()) return;
     
-    const nombreClean = nombreInput.trim();
+    const nombreClean = formatearTitulo(nombreInput.trim());
+    if (buscadorEl) buscadorEl.value = '';
     
     const existente = nutriPacientesData.find(p => (p?.nombre || '').toLowerCase() === nombreClean.toLowerCase());
     if (existente) {
         alert('Este paciente ya existe en el directorio.');
+        renderizarPacientesNutri();
         abrirFichaPacienteNutri(existente.id);
         return;
     }
@@ -5202,8 +5220,16 @@ async function agregarPacienteNutriManual() {
         return;
     }
     
+    if (newPac && newPac.length > 0) {
+        // Asegurar que esté en memoria inmediatamente aunque cargarDatosNutricion tarde
+        if (!nutriPacientesData.some(p => String(p.id) === String(newPac[0].id))) {
+            nutriPacientesData.push(newPac[0]);
+        }
+    }
     await cargarDatosNutricion();
-    abrirFichaPacienteNutri(newPac[0].id);
+    if (newPac && newPac.length > 0) {
+        abrirFichaPacienteNutri(newPac[0].id);
+    }
 }
 
 function toggleDetalleConsulta(id) {
@@ -5242,6 +5268,7 @@ async function guardarPerfilBasePacienteNutri() {
         p.observaciones = obs;
     }
 
+    renderizarPacientesNutri();
     alert('Ficha base guardada con éxito');
 }
 
@@ -5291,8 +5318,8 @@ function abrirFichaPacienteNutri(pacienteId) {
         historialCont.innerHTML = historialTotal.map((t, idx) => {
             const f = new Date(t.fecha_hora).toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year:'numeric'});
             const isMan = t.esManual;
-            const btnSave = isMan ? '' : `<button class="btn" style="padding: 3px 10px; font-size: 0.75rem; background: var(--neon-green); color: #000; font-weight: bold;" onclick="guardarFichaConsultaNutri('${t.id}')">Guardar Cambios</button>`;
-            const btnDel = isMan ? `<button class="btn" style="background: var(--danger-red); padding: 3px 8px; font-size: 0.75rem; border:none;" onclick="borrarMedicionNutri('${t.id}'); abrirFichaPacienteNutri('${pacienteId}');">🗑️ Borrar</button>` : '';
+            const btnSave = `<button class="btn" style="padding: 3px 10px; font-size: 0.75rem; background: var(--neon-green); color: #000; font-weight: bold;" onclick="guardarFichaConsultaNutri('${t.id}', ${isMan ? 'true' : 'false'})">Guardar Cambios</button>`;
+            const btnDel = isMan ? `<button class="btn" style="background: var(--danger-red); padding: 3px 8px; font-size: 0.75rem; border:none;" onclick="borrarMedicionNutri('${t.id}')">🗑️ Borrar</button>` : '';
 
             // 1. LA ÚLTIMA CONSULTA (Destacada en Verde Neón FTG, completamente abierta)
             if (idx === 0) {
@@ -5477,23 +5504,37 @@ function abrirFichaPacienteNutri(pacienteId) {
     }, 100);
 }
 
-async function guardarFichaConsultaNutri(turnoId) {
-    const peso = parseFloat(document.getElementById(`peso-${turnoId}`).value) || null;
-    const grasa = parseFloat(document.getElementById(`grasa-${turnoId}`).value) || null;
-    const musculo = parseFloat(document.getElementById(`musculo-${turnoId}`).value) || null;
-    const notas = document.getElementById(`notas-${turnoId}`).value;
+async function guardarFichaConsultaNutri(turnoId, esManual = false) {
+    const peso = parseFloat(document.getElementById(`peso-${turnoId}`)?.value) || null;
+    const grasa = parseFloat(document.getElementById(`grasa-${turnoId}`)?.value) || null;
+    const musculo = parseFloat(document.getElementById(`musculo-${turnoId}`)?.value) || null;
+    const notas = document.getElementById(`notas-${turnoId}`)?.value || '';
     
-    const { error } = await _supabase.from('nutricion_turnos').update({
-        peso: peso,
-        porcentaje_grasa: grasa,
-        masa_muscular: musculo,
-        notas: notas
-    }).eq('id', turnoId);
+    let error = null;
+    if (esManual) {
+        const res = await _supabase.from('nutricion_mediciones').update({
+            peso: peso,
+            porcentaje_grasa: grasa,
+            masa_muscular: musculo,
+            observaciones: notas
+        }).eq('id', turnoId);
+        error = res.error;
+    } else {
+        const res = await _supabase.from('nutricion_turnos').update({
+            peso: peso,
+            porcentaje_grasa: grasa,
+            masa_muscular: musculo,
+            notas: notas
+        }).eq('id', turnoId);
+        error = res.error;
+    }
     
-    if(error) alert('Error guardando: ' + error.message);
-    else {
+    if(error) {
+        alert('Error guardando: ' + error.message);
+    } else {
         alert('Ficha médica actualizada');
-        cargarDatosNutricion();
+        await cargarDatosNutricion();
+        if (fichaActualPacienteId) abrirFichaPacienteNutri(fichaActualPacienteId);
     }
 }
 
