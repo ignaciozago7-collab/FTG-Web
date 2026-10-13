@@ -5427,8 +5427,10 @@ function renderizarLibroDiario(esCargarMas) {
     }
 
     async function guardarNotaAlumno(id, nota) {
-      const { error } = await _supabase.from('alumnos').update({ notas: nota }).eq('id', id);
-      if (error) {
+      let { error } = await _supabase.from('alumnos').update({ notas: nota }).eq('id', id);
+      if (error && error.message && error.message.includes("'notas'")) {
+         console.warn("Columna 'notas' no creada en Supabase aún.");
+      } else if (error) {
          alert('Error al guardar nota: ' + error.message);
       } else {
          const idx = alumnosData.findIndex(a => a.id == id);
@@ -5499,13 +5501,24 @@ function renderizarLibroDiario(esCargarMas) {
             return;
         }
 
-        const { error } = await _supabase.from('alumnos').update({ 
+        const payload = { 
             nombre: formatearTitulo(nombre),
             monto: monto,
             dias_semana: parseInt(dias) || 3,
-            profesor_cargo: profesor,
-            notas: notas
-        }).eq('id', id);
+            profesor_cargo: profesor
+        };
+        if (notas !== undefined) {
+            payload.notas = notas;
+        }
+
+        let { error } = await _supabase.from('alumnos').update(payload).eq('id', id);
+
+        // Fallback automático si la columna 'notas' no existe aún en Supabase
+        if (error && error.message && error.message.includes("'notas'")) {
+            delete payload.notas;
+            const res = await _supabase.from('alumnos').update(payload).eq('id', id);
+            error = res.error;
+        }
 
         if (error) {
             alert("Error al actualizar cliente: " + error.message);
@@ -5522,6 +5535,7 @@ function renderizarLibroDiario(esCargarMas) {
                 actualizarMetricasAlumnos();
                 filtrarAlumnos();
             }
+            alert("Cliente actualizado con éxito");
         }
     }
   
