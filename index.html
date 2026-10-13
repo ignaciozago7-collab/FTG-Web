@@ -753,38 +753,112 @@
 
     <!-- SECCIÓN ASISTENCIAS Y PRESENTES POR FECHA -->
     <div id="asistenciasSection" class="section-page">
-      <h1 style="margin-bottom: 20px;">Control de Asistencias por Fecha</h1>
-
-      <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-              <h3 style="margin: 0;">Fecha de Registro:</h3>
-              <div class="month-filter-pill">
-                <span class="icon">📅</span>
-                <input type="date" id="fechaAsistencia" onchange="cargarAsistencias()">
-              </div>
-              <button class="btn btn-warning" onclick="abrirModalAsistenciaMasiva()" style="font-weight: bold;">Carga Masiva</button>
-              <button class="btn" onclick="abrirModalPresentesHoy()">
-                📋 Presentes del Día (<span id="cantPresentesHoy">0</span>)
-              </button>
-            </div>
-          <input type="text" id="buscadorAsistencia" placeholder="🔍 Buscar por nombre..." oninput="filtrarAsistencias()" style="width: 250px;">
+      <!-- ENCABEZADO CON TITULO Y ACCIONES RÁPIDAS -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <h1 style="margin: 0 0 6px 0; font-size: 1.8rem; display: flex; align-items: center; gap: 10px;">
+            <span>📅 Control de Asistencias</span>
+          </h1>
+          <p style="margin: 0; color: var(--text-dim); font-size: 0.9rem;" id="asistenciasFechaLegibleSubtitulo">
+            Registro diario de presentes, control de frecuencia y regularidad de alumnos
+          </p>
         </div>
-        
-        <div id="resumenProfesores" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;"></div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <button class="btn btn-warning" onclick="abrirModalAsistenciaMasiva()" style="font-weight: bold; display: flex; align-items: center; gap: 6px;">
+            ⚡ Carga Masiva
+          </button>
+          <button class="btn" onclick="abrirModalPresentesHoy()" style="display: flex; align-items: center; gap: 6px;">
+            📋 Presentes del Día (<span id="cantPresentesHoy" style="font-weight: 800;">0</span>)
+          </button>
+        </div>
+      </div>
 
-        
+      <!-- TARJETAS DE MÉTRICAS DEL DÍA -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
+        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+          <div style="font-size: 1.6rem; background: rgba(255, 255, 255, 0.05); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">👥</div>
+          <div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Socios Activos</div>
+            <div id="asistMetricaTotalSocios" style="font-size: 1.4rem; font-weight: 800; color: #fff;">0</div>
+          </div>
+        </div>
+        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+          <div style="font-size: 1.6rem; background: rgba(149, 255, 83, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">🟢</div>
+          <div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Presentes Hoy</div>
+            <div id="asistMetricaPresentes" style="font-size: 1.4rem; font-weight: 800; color: var(--neon-green);">0</div>
+          </div>
+        </div>
+        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+          <div style="font-size: 1.6rem; background: rgba(255, 255, 255, 0.05); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">⚪</div>
+          <div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Sin Registro Hoy</div>
+            <div id="asistMetricaPendientes" style="font-size: 1.4rem; font-weight: 800; color: var(--text-dim);">0</div>
+          </div>
+        </div>
+        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+          <div style="font-size: 1.6rem; background: rgba(149, 255, 83, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">📊</div>
+          <div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Asistencia Hoy</div>
+            <div id="asistMetricaPorcentaje" style="font-size: 1.4rem; font-weight: 800; color: #fff;">0%</div>
+          </div>
+        </div>
+      </div>
 
-        <table>
+      <!-- BARRA DE CONTROL Y FILTROS -->
+      <div class="card" style="margin-bottom: 20px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+          <!-- NAVEGACIÓN RÁPIDA DE FECHA -->
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">Fecha:</span>
+            <button class="btn btn-outline" onclick="cambiarFechaAsistenciaRelativa(-1)" style="padding: 6px 10px; font-size: 0.85rem;" title="Día anterior">◀</button>
+            <div class="month-filter-pill">
+              <span class="icon">📅</span>
+              <input type="date" id="fechaAsistencia" onchange="cargarAsistencias()">
+            </div>
+            <button class="btn btn-outline" onclick="cambiarFechaAsistenciaRelativa(1)" style="padding: 6px 10px; font-size: 0.85rem;" title="Día siguiente">▶</button>
+            <button class="btn btn-outline" onclick="irAFechaHoyAsistencia()" style="padding: 6px 12px; font-size: 0.85rem;" title="Ir al día de hoy">Hoy</button>
+            <span id="labelFechaAsistenciaDia" style="font-size: 0.85rem; font-weight: 700; color: var(--neon-green); margin-left: 6px;"></span>
+          </div>
+
+          <!-- FILTROS POR PROFESOR, ESTADO Y BUSCADOR -->
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; justify-content: flex-end;">
+            <!-- FILTRO ESTADO DE ASISTENCIA -->
+            <select id="filtroEstadoAsistencia" onchange="filtrarAsistencias()" style="padding: 7px 10px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+              <option value="todos">Todos los estados</option>
+              <option value="presentes">🟢 Solo Presentes hoy</option>
+              <option value="pendientes">⚪ Solo No registrados</option>
+            </select>
+
+            <!-- FILTRO POR PROFESOR -->
+            <select id="filtroProfesorAsistencia" onchange="filtrarAsistencias()" style="padding: 7px 10px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+              <option value="">Todos los Profesores</option>
+            </select>
+
+            <!-- BUSCADOR -->
+            <div style="position: relative; min-width: 220px;">
+              <input type="text" id="buscadorAsistencia" placeholder="🔍 Buscar por nombre..." oninput="filtrarAsistencias()" style="width: 100%; padding: 7px 28px 7px 12px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+              <span id="asistClearSearch" onclick="limpiarBuscadorAsistencias()" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-dim); display: none; font-size: 0.9rem;">✕</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PILLS INTERACTIVOS DE PROFESORES CON CONTEO -->
+        <div id="resumenProfesores" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05);"></div>
+      </div>
+
+      <!-- TABLA DE ALUMNOS Y ASISTENCIAS -->
+      <div class="card" style="padding: 16px; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
           <thead>
             <tr>
-              <th>Alumno</th>
-              <th>Profesor</th>
-              <th>Días / Semana</th>
-              <th>Presentes del Mes</th>
-              <th>Estado Fecha Seleccionada</th>
-              <th>Marcar Presente</th>
-              <th>Historial de Días</th>
+              <th style="min-width: 180px;">Alumno</th>
+              <th style="min-width: 140px;">Profesor a Cargo</th>
+              <th style="min-width: 120px;">Plan Semanal</th>
+              <th style="min-width: 150px;">Presentes del Mes</th>
+              <th style="min-width: 150px;">Estado en Fecha</th>
+              <th style="min-width: 150px; text-align: center;">Acción Rápida</th>
+              <th style="min-width: 150px; text-align: center;">Historial</th>
             </tr>
           </thead>
           <tbody id="tbodyAsistencias">
@@ -1374,16 +1448,19 @@
 
   <!-- MODAL LISTADO DE PRESENTES DEL DÍA -->
   <div id="modalPresentesDia" class="modal-overlay">
-    <div class="modal-content">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h3 id="modalPresentesTitulo">Presentes del Día</h3>
-        <button class="btn btn-outline" style="padding: 4px 8px;" onclick="cerrarModalPresentesHoy()">✕</button>
+    <div class="modal-content" style="max-width: 520px; width: 100%;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <h3 id="modalPresentesTitulo" style="margin: 0;">Presentes del Día</h3>
+        <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.85rem;" onclick="cerrarModalPresentesHoy()">✕</button>
       </div>
-      <p style="color: var(--text-dim); font-size: 0.85rem;">Lista de personas con asistencia registrada para la fecha seleccionada:</p>
+      <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 12px;">Lista de alumnos con asistencia registrada para la fecha seleccionada:</p>
       
-      <div id="modalListaPresentes" style="max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-top: 8px;"></div>
+      <div id="modalListaPresentes" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;"></div>
 
-      <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <button class="btn btn-outline" onclick="copiarListadoPresentesWhatsApp()" style="display: flex; align-items: center; gap: 6px;">
+          📋 Copiar para WhatsApp
+        </button>
         <button class="btn btn-outline" onclick="cerrarModalPresentesHoy()">Cerrar</button>
       </div>
     </div>
@@ -1407,21 +1484,36 @@
   </div>
 
   <!-- MODAL EDICIÓN ASIENTO DE CAJA -->
-    <!-- MODAL ASISTENCIA MASIVA -->
+  <!-- MODAL ASISTENCIA MASIVA -->
   <div class="modal-overlay" id="modalAsistenciaMasiva">
-    <div class="modal-content" style="max-width: 600px;">
-      <h2>Carga Masiva de Asistencias</h2>
-      <p style="color: var(--text-dim); margin-bottom: 12px;">Selecciona los clientes que deseas marcar como PRESENTES para la fecha: <strong id="fechaAsistenciaMasivaTitulo"></strong></p>
+    <div class="modal-content" style="max-width: 650px; width: 100%; display: flex; flex-direction: column; max-height: 90vh;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <h2 style="margin: 0; font-size: 1.3rem;">Carga Masiva de Asistencias</h2>
+        <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.85rem;" onclick="cerrarModalAsistenciaMasiva()">✕</button>
+      </div>
+      <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 12px;">
+        Selecciona los alumnos para marcar como PRESENTES el día: <strong id="fechaAsistenciaMasivaTitulo" style="color: var(--neon-green);"></strong>
+      </p>
       
-      <input type="text" id="buscadorMasivoAsistencia" placeholder="Filtrar nombres..." oninput="filtrarListaMasivaAsistencia()" style="width: 100%; margin-bottom: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
+        <input type="text" id="buscadorMasivoAsistencia" placeholder="🔍 Filtrar alumnos por nombre..." oninput="filtrarListaMasivaAsistencia()" style="flex: 1; min-width: 220px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-outline" style="padding: 6px 10px; font-size: 0.8rem;" onclick="seleccionarTodosMasivo(true)">Marcar Todos</button>
+          <button type="button" class="btn btn-outline" style="padding: 6px 10px; font-size: 0.8rem;" onclick="seleccionarTodosMasivo(false)">Desmarcar</button>
+        </div>
+      </div>
+
+      <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px;" id="contadorSeleccionadosMasivo">
+        Seleccionados: 0 alumnos
+      </div>
       
-      <div id="listaAsistenciaMasiva" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; background: #14141D;">
+      <div id="listaAsistenciaMasiva" style="max-height: 360px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; background: #14141D; flex: 1;">
         <!-- Checkboxes se generan por JS -->
       </div>
       
-      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
         <button class="btn btn-outline" onclick="cerrarModalAsistenciaMasiva()">Cancelar</button>
-        <button class="btn" onclick="guardarAsistenciaMasiva()">Guardar Presentes</button>
+        <button class="btn" id="btnGuardarMasivoAsistencia" onclick="guardarAsistenciaMasiva()">Guardar Presentes</button>
       </div>
     </div>
   </div>
@@ -2152,6 +2244,7 @@
       _supabase.channel('schema-db-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'alumnos' }, () => { cargarDatosAlumnos(); })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'caja_diaria' }, () => { cargarLibroDiario(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'asistencias' }, () => { cargarAsistencias(); })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'clases' }, () => { cargarTurnosSupabase(); })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas_clases' }, () => { cargarTurnosSupabase(); })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'avisos_cronograma' }, () => { cargarTurnosSupabase(); })
@@ -2848,6 +2941,17 @@
 
       const fechaSel = fechaSelInput.value;
       
+      const fObj = new Date(fechaSel + 'T12:00:00');
+      const diaSemanaStr = fObj.toLocaleDateString('es-AR', { weekday: 'long' });
+      const diaSemanaCap = diaSemanaStr.charAt(0).toUpperCase() + diaSemanaStr.slice(1);
+      const fechaCortaStr = fObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+      const labelDia = document.getElementById('labelFechaAsistenciaDia');
+      if (labelDia) labelDia.innerText = `(${diaSemanaCap})`;
+
+      const subTit = document.getElementById('asistenciasFechaLegibleSubtitulo');
+      if (subTit) subTit.innerText = `Presentes y asistencias para el ${diaSemanaCap}, ${fechaCortaStr}`;
+
       const [anioStr, mesStr] = fechaSel.split('-');
       const anioNum = parseInt(anioStr, 10);
       const mesNum = parseInt(mesStr, 10);
@@ -2869,23 +2973,105 @@
         asistenciasMesData = data || [];
       }
 
-      renderizarTablaAsistencias(alumnosData);
+      poblarSelectProfesorAsistencias();
+      filtrarAsistencias();
     }
 
-    function filtrarAsistencias() {
+    function cambiarFechaAsistenciaRelativa(offset) {
+      const input = document.getElementById('fechaAsistencia');
+      if (!input || !input.value) return;
+      const d = new Date(input.value + 'T12:00:00');
+      d.setDate(d.getDate() + offset);
+      const [y, m, dia] = [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')];
+      input.value = `${y}-${m}-${dia}`;
+      cargarAsistencias();
+    }
+
+    function irAFechaHoyAsistencia() {
+      const input = document.getElementById('fechaAsistencia');
+      if (!input) return;
+      const fechaLocal = new Date();
+      fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
+      input.value = fechaLocal.toISOString().split('T')[0];
+      cargarAsistencias();
+    }
+
+    function poblarSelectProfesorAsistencias() {
+      const select = document.getElementById('filtroProfesorAsistencia');
+      if (!select || !staffData) return;
+      const valorPrevio = select.value;
+      const profes = staffData.filter(s => s.rol === 'profesor' && !s.nombre.toLowerCase().includes('eugenio'));
+      
+      let html = '<option value="">Todos los Profesores</option>';
+      profes.forEach(p => {
+        html += `<option value="${p.nombre}" ${p.nombre === valorPrevio ? 'selected' : ''}>Prof. ${p.nombre}</option>`;
+      });
+      select.innerHTML = html;
+    }
+
+    function filtrarAsistencias(profesorFiltroClick) {
       const buscador = document.getElementById('buscadorAsistencia');
       const texto = buscador ? buscador.value.toLowerCase().trim() : '';
+      const clearBtn = document.getElementById('asistClearSearch');
+      if (clearBtn) clearBtn.style.display = texto ? 'block' : 'none';
 
-      if (!texto) {
-        renderizarTablaAsistencias(alumnosData);
-        return;
+      const selectProf = document.getElementById('filtroProfesorAsistencia');
+      if (profesorFiltroClick !== undefined && selectProf) {
+        selectProf.value = profesorFiltroClick;
       }
+      const profFiltro = selectProf ? selectProf.value : '';
 
-      const alumnosFiltrados = alumnosData.filter(a => 
-        a.nombre && a.nombre.toLowerCase().includes(texto)
+      const estadoFiltro = document.getElementById('filtroEstadoAsistencia') 
+        ? document.getElementById('filtroEstadoAsistencia').value 
+        : 'todos';
+
+      const fechaSel = document.getElementById('fechaAsistencia') ? document.getElementById('fechaAsistencia').value : '';
+
+      // Alumnos activos base
+      const alumnosActivos = (alumnosData || []).filter(a => a.activo !== false);
+
+      // Calcular métricas del día antes de filtrar por texto
+      const presentesHoy = alumnosActivos.filter(a => 
+        asistenciasMesData.some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === String(fechaSel))
       );
+      const totalActivos = alumnosActivos.length;
+      const cantPresentes = presentesHoy.length;
+      const cantPendientes = totalActivos - cantPresentes;
+      const pctAsistencia = totalActivos > 0 ? Math.round((cantPresentes / totalActivos) * 100) : 0;
 
-      renderizarTablaAsistencias(alumnosFiltrados);
+      const elTotal = document.getElementById('asistMetricaTotalSocios');
+      if (elTotal) elTotal.innerText = totalActivos;
+      const elPres = document.getElementById('asistMetricaPresentes');
+      if (elPres) elPres.innerText = cantPresentes;
+      const elPend = document.getElementById('asistMetricaPendientes');
+      if (elPend) elPend.innerText = cantPendientes;
+      const elPct = document.getElementById('asistMetricaPorcentaje');
+      if (elPct) elPct.innerText = `${pctAsistencia}%`;
+      const elBadgeHoy = document.getElementById('cantPresentesHoy');
+      if (elBadgeHoy) elBadgeHoy.innerText = cantPresentes;
+
+      // Filtrar alumnos para la tabla
+      const filtrados = alumnosActivos.filter(a => {
+        // Filtro texto
+        if (texto && !(a.nombre && a.nombre.toLowerCase().includes(texto))) return false;
+        // Filtro profesor
+        if (profFiltro && a.profesor_cargo !== profFiltro) return false;
+        // Filtro estado
+        if (estadoFiltro !== 'todos') {
+          const tienePresente = asistenciasMesData.some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === String(fechaSel));
+          if (estadoFiltro === 'presentes' && !tienePresente) return false;
+          if (estadoFiltro === 'pendientes' && tienePresente) return false;
+        }
+        return true;
+      });
+
+      renderizarTablaAsistencias(filtrados);
+    }
+
+    function limpiarBuscadorAsistencias() {
+      const b = document.getElementById('buscadorAsistencia');
+      if (b) b.value = '';
+      filtrarAsistencias();
     }
 
     function capturarAsistencia(event, alumnoId) {
@@ -2901,31 +3087,33 @@
       tbody.innerHTML = '';
 
       const contenedorResumen = document.getElementById('resumenProfesores');
+      const selectProf = document.getElementById('filtroProfesorAsistencia');
+      const profActivo = selectProf ? selectProf.value : '';
+
       if (contenedorResumen && staffData && alumnosData) {
-        let resumenHTML = '';
+        let resumenHTML = `
+          <button type="button" class="btn btn-outline" onclick="filtrarAsistencias('')" style="padding: 4px 10px; font-size: 0.8rem; ${!profActivo ? 'background: var(--neon-green); color: #000; font-weight: bold; border-color: var(--neon-green);' : ''}">
+            Todos (${alumnosData.length})
+          </button>
+        `;
         const profesFiltrados = staffData.filter(s => s.rol === 'profesor' && !s.nombre.toLowerCase().includes('eugenio'));
         profesFiltrados.forEach(prof => {
-           const cant = alumnosData.filter(a => a.profesor_cargo === prof.nombre).length;
-           resumenHTML += `
-             <div style="background: rgba(43, 230, 150, 0.05); border: 1px solid rgba(43, 230, 150, 0.4); padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; color: #eee; display: flex; align-items: center; gap: 6px;">
-               <strong style="color: var(--neon-green);">${prof.nombre}:</strong> <span>${cant} a cargo</span>
-             </div>
-           `;
+          const cant = alumnosData.filter(a => a.profesor_cargo === prof.nombre).length;
+          const esSeleccionado = profActivo === prof.nombre;
+          resumenHTML += `
+            <button type="button" class="btn btn-outline" onclick="filtrarAsistencias('${prof.nombre}')" style="padding: 4px 10px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px; ${esSeleccionado ? 'background: var(--neon-green); color: #000; font-weight: bold; border-color: var(--neon-green);' : ''}">
+              <span>${prof.nombre}</span>
+              <span style="background: rgba(255,255,255,0.15); padding: 1px 6px; border-radius: 10px; font-size: 0.72rem;">${cant}</span>
+            </button>
+          `;
         });
         contenedorResumen.innerHTML = resumenHTML;
       }
 
-      const fechaSel = document.getElementById('fechaAsistencia').value;
-
-      const cantPresentesEl = document.getElementById('cantPresentesHoy');
-      const alumnosPresentesHoy = alumnosData.filter(a => 
-        asistenciasMesData.some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === String(fechaSel))
-      );
-
-      if (cantPresentesEl) cantPresentesEl.innerText = alumnosPresentesHoy.length;
+      const fechaSel = document.getElementById('fechaAsistencia') ? document.getElementById('fechaAsistencia').value : '';
 
       if (!items || items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7">No hay alumnos registrados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-dim); padding: 20px;">No se encontraron alumnos con los filtros seleccionados.</td></tr>';
         return;
       }
 
@@ -2938,46 +3126,48 @@
         const presentesCantidad = asistenciasAlumnoMes.length;
         const yaVinoHoy = asistenciasAlumnoMes.some(ast => String(ast.fecha) === String(fechaSel));
 
-        const opcionesProfesores = staffData.map(s => 
+        const opcionesProfesores = (staffData || []).map(s => 
           `<option value="${s.nombre}" ${s.nombre === profActual ? 'selected' : ''}>${s.nombre}</option>`
         ).join('');
 
         return `
-          <tr>
-            <td><strong>${a.nombre}</strong></td>
+          <tr style="transition: background 0.15s;">
             <td>
-              <select onchange="actualizarProfesorCargo(${a.id}, this.value)" style="padding: 6px;">
+              <strong style="font-size: 0.95rem; color: #fff;">${a.nombre}</strong>
+            </td>
+            <td>
+              <select onchange="actualizarProfesorCargo(${a.id}, this.value)" style="padding: 5px 8px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
                 <option value="">Sin asignar</option>
                 ${opcionesProfesores}
               </select>
             </td>
             <td>
-              <select onchange="actualizarDiasSemana(${a.id}, this.value)">
+              <select onchange="actualizarDiasSemana(${a.id}, this.value)" style="padding: 5px 8px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
                 ${[1, 2, 3, 4, 5].map(d => `<option value="${d}" ${d === diasSemana ? 'selected' : ''}>${d} días/sem</option>`).join('')}
               </select>
             </td>
             <td>
-              <span id="cant-presentes-${a.id}" style="font-weight: bold; color: var(--neon-green); font-size: 1.2rem;">
-                ${presentesCantidad}
-              </span> asistencias
-            </td>
-            <td>
-              ${yaVinoHoy 
-                ? `<span class="badge-presente">✓ Presente en fecha</span>` 
-                : `<span style="color: var(--text-dim); font-size: 0.85rem;">— No registrado</span>`}
-            </td>
-            <td>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                
-                ${yaVinoHoy 
-                  ? `<button class="btn btn-danger" style="padding: 4px 8px; font-size:0.8rem;" onclick="quitarAsistenciaFecha('${a.id}')">Quitar Presente</button>`
-                  : `<button class="btn" style="padding: 6px 10px;" onclick="marcarAsistenciaFecha('${a.id}')">Marcar Presente</button>`
-                }
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span id="cant-presentes-${a.id}" style="font-weight: 800; color: var(--neon-green); font-size: 1.1rem;">
+                  ${presentesCantidad}
+                </span>
+                <span style="font-size: 0.8rem; color: var(--text-dim);">asistencias</span>
               </div>
             </td>
             <td>
-              <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.85rem;" onclick="verHistorialAlumno('${a.id}', '${encodeURIComponent(a.nombre || '')}')">
-                📅 Historial / Días
+              ${yaVinoHoy 
+                ? `<span class="badge-presente" style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.82rem;">✓ Presente hoy</span>` 
+                : `<span style="color: var(--text-dim); font-size: 0.85rem; padding: 4px 6px;">— Pendiente</span>`}
+            </td>
+            <td style="text-align: center;">
+              ${yaVinoHoy 
+                ? `<button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.82rem; white-space: nowrap;" onclick="quitarAsistenciaFecha('${a.id}')">✕ Quitar Presente</button>`
+                : `<button class="btn" style="padding: 6px 12px; font-size: 0.85rem; font-weight: 700; background: var(--neon-green); color: #000; white-space: nowrap;" onclick="marcarAsistenciaFecha('${a.id}')">✓ Marcar Presente</button>`
+              }
+            </td>
+            <td style="text-align: center;">
+              <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.82rem; white-space: nowrap;" onclick="verHistorialAlumno('${a.id}', '${encodeURIComponent(a.nombre || '')}')">
+                📅 Historial (${presentesCantidad})
               </button>
             </td>
           </tr>
@@ -2996,6 +3186,7 @@
       
       document.getElementById('buscadorMasivoAsistencia').value = '';
       renderizarListaMasivaAsistencia();
+      actualizarContadorMasivo();
       document.getElementById('modalAsistenciaMasiva').style.display = 'flex';
     }
     
@@ -3005,44 +3196,61 @@
     }
     
     function renderizarListaMasivaAsistencia() {
-       const contenedor = document.getElementById('listaAsistenciaMasiva');
-       const fechaSel = document.getElementById('fechaAsistencia').value;
-       
-       let html = '';
-       const activos = alumnosData.filter(a => a.activo);
-       let cantidadRenderizados = 0;
-       
-       activos.forEach(a => {
-         const yaTiene = asistenciasMesData.some(as => String(as.alumno_id) === String(a.id) && as.fecha === fechaSel);
-         if (yaTiene) return;
-         
-         cantidadRenderizados++;
-         html += `
-           <label class="item-masivo-asistencia" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px; border-radius: 4px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);" data-nombre="${a.nombre.toLowerCase()}">
-             <input type="checkbox" class="chk-masivo-asistencia" value="${a.id}">
-             <span>${a.nombre}</span>
-           </label>
-         `;
-       });
-       
-       if (cantidadRenderizados === 0) {
-           html = '<div style="color: var(--text-dim); grid-column: 1/-1;">No hay alumnos disponibles o todos ya estan presentes hoy.</div>';
-       }
-       contenedor.innerHTML = html;
-       filtrarListaMasivaAsistencia();
+      const contenedor = document.getElementById('listaAsistenciaMasiva');
+      const fechaSel = document.getElementById('fechaAsistencia').value;
+      
+      let html = '';
+      const activos = (alumnosData || []).filter(a => a.activo !== false);
+      let cantidadRenderizados = 0;
+      
+      activos.forEach(a => {
+        const yaTiene = asistenciasMesData.some(as => String(as.alumno_id) === String(a.id) && as.fecha === fechaSel);
+        if (yaTiene) return;
+        
+        cantidadRenderizados++;
+        html += `
+          <label class="item-masivo-asistencia" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 7px 10px; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); transition: background 0.15s;" data-nombre="${a.nombre.toLowerCase()}">
+            <input type="checkbox" class="chk-masivo-asistencia" value="${a.id}" onchange="actualizarContadorMasivo()" style="cursor: pointer;">
+            <span style="font-size: 0.9rem;">${a.nombre}</span>
+          </label>
+        `;
+      });
+      
+      if (cantidadRenderizados === 0) {
+        html = '<div style="color: var(--text-dim); grid-column: 1/-1; text-align: center; padding: 20px;">Todos los alumnos activos ya tienen presente registrado para esta fecha.</div>';
+      }
+      contenedor.innerHTML = html;
+      filtrarListaMasivaAsistencia();
     }
 
     function filtrarListaMasivaAsistencia() {
-       const filtro = document.getElementById('buscadorMasivoAsistencia').value.toLowerCase();
-       const items = document.querySelectorAll('.item-masivo-asistencia');
-       items.forEach(item => {
-           const nombre = item.getAttribute('data-nombre');
-           if (filtro && !nombre.includes(filtro)) {
-               item.style.display = 'none';
-           } else {
-               item.style.display = 'flex';
-           }
-       });
+      const filtro = document.getElementById('buscadorMasivoAsistencia').value.toLowerCase();
+      const items = document.querySelectorAll('.item-masivo-asistencia');
+      items.forEach(item => {
+        const nombre = item.getAttribute('data-nombre');
+        if (filtro && !nombre.includes(filtro)) {
+          item.style.display = 'none';
+        } else {
+          item.style.display = 'flex';
+        }
+      });
+    }
+
+    function seleccionarTodosMasivo(marcar) {
+      const chks = document.querySelectorAll('.chk-masivo-asistencia');
+      chks.forEach(chk => {
+        const item = chk.closest('.item-masivo-asistencia');
+        if (item && item.style.display !== 'none') {
+          chk.checked = marcar;
+        }
+      });
+      actualizarContadorMasivo();
+    }
+
+    function actualizarContadorMasivo() {
+      const cant = document.querySelectorAll('.chk-masivo-asistencia:checked').length;
+      const el = document.getElementById('contadorSeleccionadosMasivo');
+      if (el) el.innerText = `Seleccionados: ${cant} alumno${cant === 1 ? '' : 's'}`;
     }
     
     async function guardarAsistenciaMasiva() {
@@ -3050,58 +3258,66 @@
       if (chks.length === 0) return alert('Selecciona al menos un alumno.');
       
       const fechaSel = document.getElementById('fechaAsistencia').value;
-      if (!fechaSel) return;
-      
-      let guardados = 0;
-      let errores = [];
-      console.log("Iniciando guardado masivo para", chks.length, "alumnos.");
-      
-      for (const chk of Array.from(chks)) {
-          console.log("Guardando alumno_id:", chk.value, "fecha:", fechaSel);
-          const { error } = await _supabase.from('asistencias').insert([{
-              alumno_id: parseInt(chk.value, 10),
-              fecha: fechaSel
-          }]);
-          if (!error) {
-              guardados++;
-          } else {
-              console.error("Error al guardar alumno", chk.value, error);
-              errores.push(error.message);
-          }
+      if (!fechaSel) return alert('Fecha inválida.');
+
+      const btn = document.getElementById('btnGuardarMasivoAsistencia');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Guardando...';
       }
       
-      if (errores.length > 0) {
-          alert(`Se registraron ${guardados} presentes, pero hubo errores: \n` + errores.join('\n'));
-      } else {
-          alert(`Se registraron ${guardados} presentes correctamente!`);
+      const inserts = Array.from(chks).map(chk => ({
+        alumno_id: parseInt(chk.value, 10),
+        fecha: fechaSel
+      }));
+
+      try {
+        const { error } = await _supabase.from('asistencias').insert(inserts);
+        if (error) {
+          alert('Error al guardar asistencias: ' + error.message);
+        } else {
+          // Actualización optimista en memoria
+          inserts.forEach(ins => {
+            asistenciasMesData.push(ins);
+          });
+          cerrarModalAsistenciaMasiva();
+          filtrarAsistencias();
+          await cargarAsistencias();
+        }
+      } catch (err) {
+        alert('Error de conexión: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = 'Guardar Presentes';
+        }
       }
-      cerrarModalAsistenciaMasiva();
-      cargarAsistencias();
     }
 
     function abrirModalPresentesHoy() {
       const fechaSel = document.getElementById('fechaAsistencia').value;
-      const fechaFormateada = new Date(fechaSel + 'T12:00:00').toLocaleDateString('es-AR', {
-        day: '2-digit', month: '2-digit', year: 'numeric'
+      const fObj = new Date(fechaSel + 'T12:00:00');
+      const fechaFormateada = fObj.toLocaleDateString('es-AR', {
+        weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric'
       });
 
-      document.getElementById('modalPresentesTitulo').innerText = `Presentes del Día (${fechaFormateada})`;
+      document.getElementById('modalPresentesTitulo').innerText = `Presentes: ${fechaFormateada}`;
       const contLista = document.getElementById('modalListaPresentes');
 
-      const alumnosPresentes = alumnosData.filter(a => 
+      const alumnosPresentes = (alumnosData || []).filter(a => 
         asistenciasMesData.some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === String(fechaSel))
       );
 
       if (alumnosPresentes.length === 0) {
-        contLista.innerHTML = `<p style="color: var(--text-dim); text-align: center; padding: 12px;">No hay asistencias registradas para esta fecha.</p>`;
+        contLista.innerHTML = `<p style="color: var(--text-dim); text-align: center; padding: 20px;">No hay asistencias registradas para esta fecha.</p>`;
       } else {
         contLista.innerHTML = alumnosPresentes.map((a, i) => `
           <div style="display: flex; justify-content: space-between; align-items: center; background: #14141D; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color);">
             <div>
-              <strong>${i + 1}. ${a.nombre}</strong>
+              <strong style="color: #fff;">${i + 1}. ${a.nombre}</strong>
               ${a.profesor_cargo ? `<span style="font-size: 0.8rem; color: var(--text-dim); margin-left: 6px;">(Prof: ${a.profesor_cargo})</span>` : ''}
             </div>
-            <span class="badge-presente">Presente</span>
+            <span class="badge-presente" style="padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;">✓ Presente</span>
           </div>
         `).join('');
       }
@@ -3111,6 +3327,34 @@
 
     function cerrarModalPresentesHoy() {
       document.getElementById('modalPresentesDia').style.display = 'none';
+    }
+
+    function copiarListadoPresentesWhatsApp() {
+      const fechaSel = document.getElementById('fechaAsistencia').value;
+      const fObj = new Date(fechaSel + 'T12:00:00');
+      const fechaFormateada = fObj.toLocaleDateString('es-AR', {
+        weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric'
+      });
+
+      const alumnosPresentes = (alumnosData || []).filter(a => 
+        asistenciasMesData.some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === String(fechaSel))
+      );
+
+      if (alumnosPresentes.length === 0) {
+        alert('No hay alumnos presentes para copiar.');
+        return;
+      }
+
+      let texto = `🏋️ FTG Fitness - Presentes\n📅 ${fechaFormateada}\n👥 Total: ${alumnosPresentes.length} alumnos\n\n`;
+      alumnosPresentes.forEach((a, i) => {
+        texto += `${i + 1}. ${a.nombre}${a.profesor_cargo ? ' (Prof: ' + a.profesor_cargo + ')' : ''}\n`;
+      });
+
+      navigator.clipboard.writeText(texto).then(() => {
+        alert('¡Listado copiado al portapapeles! Listo para pegar en WhatsApp.');
+      }).catch(err => {
+        alert('No se pudo copiar automáticamente: ' + err.message);
+      });
     }
 
     async function actualizarProfesorCargo(alumnoId, nombreProfesor) {
@@ -3131,23 +3375,34 @@
       const fechaSel = document.getElementById('fechaAsistencia').value;
       if (!fechaSel) return alert('Seleccioná una fecha válida.');
 
+      // Actualización optimista en memoria para respuesta instantánea
+      const nuevoRegistro = { alumno_id: alumnoId, fecha: fechaSel };
+      asistenciasMesData.push(nuevoRegistro);
+      filtrarAsistencias();
+
       const { error } = await _supabase
         .from('asistencias')
         .insert([{ alumno_id: alumnoId, fecha: fechaSel }]);
 
       if (error) {
+        // Revertir optimismo
+        asistenciasMesData = asistenciasMesData.filter(ast => !(String(ast.alumno_id) === String(alumnoId) && String(ast.fecha) === String(fechaSel)));
+        filtrarAsistencias();
         if (error.code === '23505') {
           alert('El alumno ya tiene registrado el presente para esta fecha.');
         } else {
           alert('Error al registrar asistencia: ' + error.message);
         }
-      } else {
-        await cargarAsistencias();
       }
     }
 
     async function quitarAsistenciaFecha(alumnoId) {
       const fechaSel = document.getElementById('fechaAsistencia').value;
+
+      // Actualización optimista en memoria para respuesta instantánea
+      const backup = [...asistenciasMesData];
+      asistenciasMesData = asistenciasMesData.filter(ast => !(String(ast.alumno_id) === String(alumnoId) && String(ast.fecha) === String(fechaSel)));
+      filtrarAsistencias();
 
       const { error } = await _supabase
         .from('asistencias')
@@ -3156,9 +3411,9 @@
         .eq('fecha', fechaSel);
 
       if (error) {
+        asistenciasMesData = backup;
+        filtrarAsistencias();
         alert('Error al remover asistencia: ' + error.message);
-      } else {
-        cargarAsistencias();
       }
     }
 
