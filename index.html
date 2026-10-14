@@ -712,8 +712,8 @@
           <div class="val" id="metricaPendientes" style="color: var(--danger-red);">0</div>
         </div>
         <div class="metric-card">
-          <h4>Recaudación Estimada</h4>
-          <div class="val" id="metricaRecaudacion">$0</div>
+          <h4>% Cuotas Pagadas</h4>
+          <div class="val" id="metricaPorcentajePagados" style="color: var(--neon-green);">0%</div>
         </div>
       </div>
 
@@ -789,20 +789,31 @@
           <div>
             <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Presentes Hoy</div>
             <div id="asistMetricaPresentes" style="font-size: 1.4rem; font-weight: 800; color: var(--neon-green);">0</div>
-          </div>
-        </div>
-        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
-          <div style="font-size: 1.6rem; background: rgba(255, 255, 255, 0.05); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">⚪</div>
-          <div>
-            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Sin Registro Hoy</div>
-            <div id="asistMetricaPendientes" style="font-size: 1.4rem; font-weight: 800; color: var(--text-dim);">0</div>
+            <div id="asistSubPresentes" style="font-size: 0.72rem; color: var(--text-dim);">del total de socios</div>
           </div>
         </div>
         <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
           <div style="font-size: 1.6rem; background: rgba(149, 255, 83, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">📊</div>
           <div>
-            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Asistencia Hoy</div>
-            <div id="asistMetricaPorcentaje" style="font-size: 1.4rem; font-weight: 800; color: #fff;">0%</div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Asistencia Día</div>
+            <div id="asistMetricaPorcentaje" style="font-size: 1.4rem; font-weight: 800; color: var(--neon-green);">0%</div>
+            <div id="asistSubDia" style="font-size: 0.72rem; color: var(--text-dim);">vs cronograma de hoy</div>
+          </div>
+        </div>
+        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+          <div style="font-size: 1.6rem; background: rgba(59, 130, 246, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">📈</div>
+          <div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Asistencia Semanal</div>
+            <div id="asistMetricaSemanal" style="font-size: 1.4rem; font-weight: 800; color: #60a5fa;">0%</div>
+            <div id="asistSubSemanal" style="font-size: 0.72rem; color: var(--text-dim);">Promedio semana</div>
+          </div>
+        </div>
+        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+          <div style="font-size: 1.6rem; background: rgba(245, 158, 11, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">🗓️</div>
+          <div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Asistencia Mensual</div>
+            <div id="asistMetricaMensual" style="font-size: 1.4rem; font-weight: 800; color: #f59e0b;">0%</div>
+            <div id="asistSubMensual" style="font-size: 0.72rem; color: var(--text-dim);">Promedio del mes</div>
           </div>
         </div>
       </div>
@@ -1184,6 +1195,10 @@
         </div>
 
       <div class="metrics-grid">
+        <div class="metric-card">
+          <h4>Recaudación Estimada</h4>
+          <div class="val" id="metricaRecaudacionCaja" style="color: #60a5fa;">$0</div>
+        </div>
         <div class="metric-card">
           <h4>Total Ingresos</h4>
           <div class="val" id="metricaTotalIngresos" style="color: var(--neon-green);">$0</div>
@@ -1749,14 +1764,19 @@
       <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 12px;">Se mostrará en la grilla horaria y en el listado de novedades del día.</p>
 
       <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
-        <select id="avisoCronoTipo" required>
+        <select id="avisoCronoTipo" onchange="actualizarPlaceholderAvisoCrono()" required>
           <option value="" disabled selected>Tipo de Aviso...</option>
-          <option value="Persona nueva">🟢 Persona nueva</option>
-          <option value="Cambio de horario">🟡 Cambio de horario</option>
-          <option value="Ausencia / Otro">🔵 Ausencia / Otro</option>
+          <option value="Ausencia">🔴 Ausencia / Falta de alumno</option>
+          <option value="Cambio de horario">🟡 Cambio de horario (temporal)</option>
+          <option value="Persona nueva">🟢 Persona nueva / Clase de prueba</option>
+          <option value="Aviso General">📢 Aviso General / Otro</option>
         </select>
         
-        <input type="text" id="avisoCronoNombre" placeholder="Nombre de la persona o detalle" required>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 4px;">Cliente / Detalle:</label>
+          <input type="text" id="avisoCronoNombre" list="listaAlumnosAvisosAutocomplete" placeholder="Buscar cliente o escribir detalle..." required autocomplete="off" style="width: 100%;">
+          <datalist id="listaAlumnosAvisosAutocomplete"></datalist>
+        </div>
         
         <div style="display: flex; gap: 10px;">
             <select id="avisoCronoDia" style="flex: 1;" required>
@@ -2870,12 +2890,13 @@
       const total = alumnosData.length;
       const pagados = alumnosData.filter(a => a.pago_confirmado).length;
       const pendientes = total - pagados;
-      const recaudacion = alumnosData.reduce((acc, a) => acc + (parseFloat(a.monto) || 0), 0);
+      const pctPagados = total > 0 ? Math.round((pagados / total) * 100) : 0;
 
       document.getElementById('metricaTotal').innerText = total;
       document.getElementById('metricaPagados').innerText = pagados;
       document.getElementById('metricaPendientes').innerText = pendientes;
-      document.getElementById('metricaRecaudacion').innerText = `$${recaudacion.toLocaleString('es-AR')}`;
+      const elPct = document.getElementById('metricaPorcentajePagados');
+      if (elPct) elPct.innerText = `${pctPagados}%`;
     }
 
     function renderizarListaAlumnosHTML(items) {
@@ -3089,9 +3110,19 @@
       const anioNum = parseInt(anioStr, 10);
       const mesNum = parseInt(mesStr, 10);
 
-      const fechaInicio = `${anioNum}-${String(mesNum).padStart(2, '0')}-01`;
+      // Extendemos 7 días hacia atrás del inicio del mes para cubrir la semana completa de fechas que caigan al inicio del mes
+      const dInicio = new Date(anioNum, mesNum - 1, 1, 12, 0, 0);
+      dInicio.setDate(dInicio.getDate() - 7);
+      const [iy, im, id] = [dInicio.getFullYear(), String(dInicio.getMonth() + 1).padStart(2, '0'), String(dInicio.getDate()).padStart(2, '0')];
+      const fechaInicio = `${iy}-${im}-${id}`;
+
       const ultimoDiaNum = new Date(anioNum, mesNum, 0).getDate();
       const fechaFin = `${anioNum}-${String(mesNum).padStart(2, '0')}-${String(ultimoDiaNum).padStart(2, '0')}`;
+
+      // Asegurar que cronogramaData.turnos esté cargado para calcular alumnos esperados
+      if (!cronogramaData.turnos || Object.keys(cronogramaData.turnos).length === 0) {
+        try { await cargarTurnosSupabase(); } catch (e) { console.warn("Error cargando turnos:", e); }
+      }
 
       const { data, error } = await _supabase
         .from('asistencias')
@@ -3142,6 +3173,30 @@
       select.innerHTML = html;
     }
 
+    function obtenerAlumnosEsperadosDia(diaNombre) {
+      const setNombres = new Set();
+      if (cronogramaData && cronogramaData.turnos) {
+        Object.keys(cronogramaData.turnos).forEach(k => {
+          if (k.startsWith(diaNombre + '-')) {
+            const arr = cronogramaData.turnos[k] || [];
+            arr.forEach(r => {
+              if (r && r.nombre_alumno && r.nombre_alumno.trim()) {
+                setNombres.add(r.nombre_alumno.trim().toLowerCase());
+              }
+            });
+          }
+        });
+      }
+      return setNombres;
+    }
+
+    function obtenerCantidadEsperadosDia(diaNombre, totalActivos) {
+      if (diaNombre === "Domingo") return 0;
+      const setNombres = obtenerAlumnosEsperadosDia(diaNombre);
+      if (setNombres.size > 0) return setNombres.size;
+      return Math.max(1, Math.round(((totalActivos || 10) * 3) / 6));
+    }
+
     function filtrarAsistencias(profesorFiltroClick) {
       const buscador = document.getElementById('buscadorAsistencia');
       const texto = buscador ? buscador.value.toLowerCase().trim() : '';
@@ -3162,24 +3217,169 @@
 
       // Alumnos activos base
       const alumnosActivos = (alumnosData || []).filter(a => a.activo !== false);
+      const totalActivos = alumnosActivos.length;
 
-      // Calcular métricas del día antes de filtrar por texto
+      const dSel = new Date(fechaSel + 'T12:00:00');
+      const nombresDias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+      const diaSelNombre = nombresDias[dSel.getDay()];
+      const esDomingo = (dSel.getDay() === 0);
+
+      // Presentes del día seleccionado
       const presentesHoy = alumnosActivos.filter(a => 
         asistenciasMesData.some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === String(fechaSel))
       );
-      const totalActivos = alumnosActivos.length;
       const cantPresentes = presentesHoy.length;
-      const cantPendientes = totalActivos - cantPresentes;
-      const pctAsistencia = totalActivos > 0 ? Math.round((cantPresentes / totalActivos) * 100) : 0;
 
+      // 1. Asistencia Día (en base al cronograma)
+      let cantEsperadosDia = 0;
+      let pctDia = 0;
+      if (esDomingo) {
+        cantEsperadosDia = 0;
+        pctDia = 0;
+      } else {
+        cantEsperadosDia = obtenerCantidadEsperadosDia(diaSelNombre, totalActivos);
+        pctDia = cantEsperadosDia > 0 ? Math.round((cantPresentes / cantEsperadosDia) * 100) : 0;
+      }
+
+      // 2. Asistencia Semanal (Lunes a Sábado de la semana de fechaSel)
+      const offsetToMon = dSel.getDay() === 0 ? -6 : 1 - dSel.getDay();
+      const dMon = new Date(dSel);
+      dMon.setDate(dSel.getDate() + offsetToMon);
+
+      const hoyObj = new Date();
+      hoyObj.setHours(12, 0, 0, 0);
+
+      // Calcular inicio de semana actual
+      const diffHoyMon = hoyObj.getDay() === 0 ? -6 : 1 - hoyObj.getDay();
+      const dMonHoy = new Date(hoyObj);
+      dMonHoy.setDate(hoyObj.getDate() + diffHoyMon);
+      const esSemanaActual = (dMon.toDateString() === dMonHoy.toDateString());
+
+      let totalPresSemana = 0;
+      let totalEspSemana = 0;
+      let diasComputadosSemana = 0;
+      let ultimoDiaSemanaNombre = '';
+
+      for (let i = 0; i < 6; i++) { // 0: Lun, 1: Mar, 2: Mié, 3: Jue, 4: Vie, 5: Sáb
+        const dDia = new Date(dMon);
+        dDia.setDate(dMon.getDate() + i);
+
+        // Si es la semana actual y el día aún no transcurrió, no computarlo
+        if (esSemanaActual && dDia > hoyObj && dDia > dSel) {
+          continue;
+        }
+
+        const diaNom = nombresDias[dDia.getDay()];
+        const yStr = dDia.getFullYear();
+        const mStr = String(dDia.getMonth() + 1).padStart(2, '0');
+        const dStr = String(dDia.getDate()).padStart(2, '0');
+        const fechaDiaStr = `${yStr}-${mStr}-${dStr}`;
+
+        const setPres = new Set();
+        asistenciasMesData.forEach(ast => {
+          if (ast.fecha === fechaDiaStr) {
+            setPres.add(String(ast.alumno_id));
+          }
+        });
+
+        const espDia = obtenerCantidadEsperadosDia(diaNom, totalActivos);
+        totalPresSemana += setPres.size;
+        totalEspSemana += espDia;
+        diasComputadosSemana++;
+        ultimoDiaSemanaNombre = diaNom;
+      }
+
+      const pctSemanal = totalEspSemana > 0 ? Math.round((totalPresSemana / totalEspSemana) * 100) : 0;
+
+      // 3. Asistencia Mensual (Lunes a Sábado del mes seleccionado)
+      const [anioSel, mesSel] = fechaSel.split('-').map(Number);
+      const ultimoDiaMesNum = new Date(anioSel, mesSel, 0).getDate();
+      const anioActual = hoyObj.getFullYear();
+      const mesActual = hoyObj.getMonth() + 1;
+      const diaActual = hoyObj.getDate();
+
+      const esMesActual = (anioSel === anioActual && mesSel === mesActual);
+      const esMesFuturo = (anioSel > anioActual || (anioSel === anioActual && mesSel > mesActual));
+
+      let totalPresMes = 0;
+      let totalEspMes = 0;
+      let diasComputadosMes = 0;
+
+      if (!esMesFuturo) {
+        const limiteDia = esMesActual ? Math.min(ultimoDiaMesNum, Math.max(diaActual, dSel.getDate())) : ultimoDiaMesNum;
+
+        for (let diaN = 1; diaN <= limiteDia; diaN++) {
+          const dFechaMes = new Date(anioSel, mesSel - 1, diaN, 12, 0, 0);
+          const diaSemIdx = dFechaMes.getDay();
+          if (diaSemIdx === 0) continue; // Domingos no se computan
+
+          const diaNom = nombresDias[diaSemIdx];
+          const yStr = dFechaMes.getFullYear();
+          const mStr = String(dFechaMes.getMonth() + 1).padStart(2, '0');
+          const dStr = String(dFechaMes.getDate()).padStart(2, '0');
+          const fechaDiaStr = `${yStr}-${mStr}-${dStr}`;
+
+          const setPres = new Set();
+          asistenciasMesData.forEach(ast => {
+            if (ast.fecha === fechaDiaStr) {
+              setPres.add(String(ast.alumno_id));
+            }
+          });
+
+          const espDia = obtenerCantidadEsperadosDia(diaNom, totalActivos);
+          totalPresMes += setPres.size;
+          totalEspMes += espDia;
+          diasComputadosMes++;
+        }
+      }
+
+      const pctMensual = totalEspMes > 0 ? Math.round((totalPresMes / totalEspMes) * 100) : 0;
+
+      // Actualizar tarjetas de métricas
       const elTotal = document.getElementById('asistMetricaTotalSocios');
       if (elTotal) elTotal.innerText = totalActivos;
+
       const elPres = document.getElementById('asistMetricaPresentes');
       if (elPres) elPres.innerText = cantPresentes;
-      const elPend = document.getElementById('asistMetricaPendientes');
-      if (elPend) elPend.innerText = cantPendientes;
-      const elPct = document.getElementById('asistMetricaPorcentaje');
-      if (elPct) elPct.innerText = `${pctAsistencia}%`;
+      const elSubPres = document.getElementById('asistSubPresentes');
+      if (elSubPres) {
+        const pctPadron = totalActivos > 0 ? Math.round((cantPresentes / totalActivos) * 100) : 0;
+        elSubPres.innerText = `${pctPadron}% del padrón (${cantPresentes} de ${totalActivos})`;
+      }
+
+      const elPctDia = document.getElementById('asistMetricaPorcentaje');
+      if (elPctDia) elPctDia.innerText = `${pctDia}%`;
+      const elSubDia = document.getElementById('asistSubDia');
+      if (elSubDia) {
+        elSubDia.innerText = esDomingo ? 'Domingo sin actividades' : `${cantPresentes} de ${cantEsperadosDia} esperados hoy`;
+      }
+
+      const elSemanal = document.getElementById('asistMetricaSemanal');
+      if (elSemanal) elSemanal.innerText = `${pctSemanal}%`;
+      const elSubSemanal = document.getElementById('asistSubSemanal');
+      if (elSubSemanal) {
+        if (diasComputadosSemana === 6) {
+          elSubSemanal.innerText = `${totalPresSemana} de ${totalEspSemana} esperados (Lun - Sáb)`;
+        } else if (diasComputadosSemana > 1) {
+          elSubSemanal.innerText = `${totalPresSemana} de ${totalEspSemana} esperados (Lun - ${ultimoDiaSemanaNombre})`;
+        } else {
+          elSubSemanal.innerText = `${totalPresSemana} de ${totalEspSemana} esperados (Lunes)`;
+        }
+      }
+
+      const elMensual = document.getElementById('asistMetricaMensual');
+      if (elMensual) elMensual.innerText = `${pctMensual}%`;
+      const elSubMensual = document.getElementById('asistSubMensual');
+      if (elSubMensual) {
+        if (esMesFuturo) {
+          elSubMensual.innerText = 'Mes futuro';
+        } else if (esMesActual) {
+          elSubMensual.innerText = `${totalPresMes} de ${totalEspMes} esperados (${diasComputadosMes} días)`;
+        } else {
+          elSubMensual.innerText = `${totalPresMes} de ${totalEspMes} esperados (mes completo)`;
+        }
+      }
+
       const elBadgeHoy = document.getElementById('cantPresentesHoy');
       if (elBadgeHoy) elBadgeHoy.innerText = cantPresentes;
 
@@ -4484,10 +4684,15 @@ function renderizarLibroDiario(esCargarMas) {
       }
 
       const balanceNeto = totalIngresos - totalEgresos;
+      const elRecaudacion = document.getElementById('metricaRecaudacionCaja');
       const elIngresos = document.getElementById('metricaTotalIngresos');
       const elEgresos = document.getElementById('metricaTotalEgresos');
       const elBalance = document.getElementById('metricaBalanceNeto');
 
+      if (elRecaudacion) {
+        const recEst = (alumnosData || []).reduce((acc, a) => acc + (parseFloat(a.monto) || 0), 0);
+        elRecaudacion.innerText = `$${recEst.toLocaleString('es-AR')}`;
+      }
       if (elIngresos) elIngresos.innerText = `$${totalIngresos.toLocaleString('es-AR')}`;
       if (elEgresos) elEgresos.innerText = `$${totalEgresos.toLocaleString('es-AR')}`;
       if (elBalance) {
@@ -5337,11 +5542,17 @@ function renderizarLibroDiario(esCargarMas) {
         return;
       }
       ul.innerHTML = avisos.map(a => {
-        let colorBase = a.tipo.includes('Persona') ? 'var(--neon-green)' : (a.tipo.includes('Cambio') ? '#ffea00' : '#4cc9f0');
+        let colorBase = '#4cc9f0';
+        let icono = '📢';
+        const tipoNorm = (a.tipo || '').toLowerCase();
+        if (tipoNorm.includes('ausencia')) { colorBase = '#ff5353'; icono = '🔴'; }
+        else if (tipoNorm.includes('cambio')) { colorBase = '#ffea00'; icono = '🟡'; }
+        else if (tipoNorm.includes('persona') || tipoNorm.includes('prueba')) { colorBase = 'var(--neon-green)'; icono = '🟢'; }
+
         return `
           <li style="padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
             <div>
-              <strong style="color: ${colorBase};">${a.tipo}</strong>: <span style="font-weight: 600; color: #fff;">${a.nombre}</span>
+              <span style="margin-right: 6px;">${icono}</span><strong style="color: ${colorBase};">${a.tipo}</strong>: <span style="font-weight: 600; color: #fff;">${a.nombre}</span>
               <span style="font-size: 0.85rem; color: var(--text-dim); margin-left: 8px;">→ ${a.dia} ${a.hora} hs ${a.fecha ? '(' + a.fecha.split('-').reverse().join('/') + ')' : ''}</span>
             </div>
             <button class="btn btn-outline" style="padding: 3px 8px; font-size: 0.85rem;" onclick="borrarAviso('${a.id}')" title="Eliminar aviso">🗑️</button>
@@ -5374,10 +5585,34 @@ function renderizarLibroDiario(esCargarMas) {
       const elNombre = document.getElementById('avisoCronoNombre');
       if (elNombre) elNombre.value = '';
 
+      // Poblar datalist con clientes activos
+      const datalist = document.getElementById('listaAlumnosAvisosAutocomplete');
+      if (datalist && Array.isArray(alumnosData)) {
+        datalist.innerHTML = alumnosData
+          .filter(a => a && a.nombre && a.activo !== false)
+          .map(a => `<option value="${a.nombre}">`)
+          .join('');
+      }
+
       modal.style.display = 'flex';
       setTimeout(() => {
         if (elNombre) elNombre.focus();
       }, 50);
+    }
+
+    function actualizarPlaceholderAvisoCrono() {
+      const tipo = document.getElementById('avisoCronoTipo')?.value;
+      const inp = document.getElementById('avisoCronoNombre');
+      if (!inp) return;
+      if (tipo === 'Ausencia') {
+        inp.placeholder = 'Seleccionar cliente ausente...';
+      } else if (tipo === 'Cambio de horario') {
+        inp.placeholder = 'Cliente que recupera/cambia (ej: Juan Pérez recupera)...';
+      } else if (tipo === 'Persona nueva') {
+        inp.placeholder = 'Nombre de persona nueva o de prueba...';
+      } else {
+        inp.placeholder = 'Buscar cliente o escribir aviso...';
+      }
     }
 
     async function guardarAvisoCrono() {
