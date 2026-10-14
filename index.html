@@ -677,25 +677,11 @@
   <main style="display: none;">
     <!-- SECCIÓN CLIENTES -->
     <div id="alumnosSection" class="section-page active">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h1 style="margin: 0;">Panel de Clientes y Gestión de Cuotas</h1>
-          <button class="btn" style="padding: 10px 16px; font-weight: bold;" onclick="document.getElementById('modalAltaAlumno').style.display='flex'">+ Nuevo Cliente</button>
-        </div>
-
-      <div class="card">
-        <h3>Agregar Nuevo Cliente</h3>
-        <div class="form-row">
-          <input type="text" id="nuevoNombreCliente" placeholder="Nombre completo" style="flex: 2; min-width: 200px;" required>
-          <input type="number" id="nuevoMontoCliente" placeholder="Cuota ($)" style="flex: 1; min-width: 120px;">
-          <select id="nuevosDiasCliente" style="flex: 1; min-width: 120px;">
-            <option value="1">1 día/sem</option>
-            <option value="2">2 días/sem</option>
-            <option value="3" selected>3 días/sem</option>
-            <option value="4">4 días/sem</option>
-            <option value="5">5 días/sem</option>
-          </select>
-          <button class="btn" onclick="agregarCliente()" style="flex: 1; min-width: 150px;">+ Registrar Cliente</button>
-        </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+        <h1 style="margin: 0;">Panel de Clientes y Gestión de Cuotas</h1>
+        <button class="btn" style="padding: 10px 18px; font-weight: bold; background: var(--neon-green); color: #000; border: none; border-radius: 8px; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;" onclick="abrirModalAltaCliente()">
+          <span>+ Nuevo Cliente</span>
+        </button>
       </div>
 
       <div class="metrics-grid">
@@ -1657,23 +1643,54 @@
   </div>
 
 
-  <!-- MODAL ALTA ALUMNO -->
+  <!-- MODAL ALTA ALUMNO COMPLETO -->
   <div id="modalAltaAlumno" class="modal-overlay">
-    <div class="modal-content" style="max-width: 500px;">
-      <h3>Agregar Nuevo Cliente</h3>
-      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-        <input type="text" id="nuevoNombreCliente" placeholder="Nombre completo" required>
-        <input type="number" id="nuevoMontoCliente" placeholder="Cuota Base ($)">
-        <select id="nuevosDiasCliente">
-          <option value="1">1 día/sem</option>
-          <option value="2">2 días/sem</option>
-          <option value="3" selected>3 días/sem</option>
-          <option value="4">4 días/sem</option>
-          <option value="5">5 días/sem</option>
-        </select>
-        <div style="display: flex; gap: 8px; margin-top: 10px;">
-          <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('modalAltaAlumno').style.display='none'">Cancelar</button>
-          <button class="btn" style="flex: 1;" onclick="agregarAlumno(); document.getElementById('modalAltaAlumno').style.display='none';">Inscribir</button>
+    <div class="modal-content" style="max-width: 480px; width: 95%;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px;">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">👤 Alta de Nuevo Cliente</h3>
+        <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.9rem;" onclick="cerrarModalAltaCliente()">✕</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">Nombre completo: *</label>
+          <input type="text" id="altaClienteNombre" placeholder="Ej: Lucas Gómez" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 0.8rem; color: var(--text-dim);">Cuota Mensual ($):</label>
+            <input type="number" id="altaClienteMonto" placeholder="Ej: 25000">
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 0.8rem; color: var(--text-dim);">Días por semana:</label>
+            <select id="altaClienteDias">
+              <option value="1">1 día/sem</option>
+              <option value="2">2 días/sem</option>
+              <option value="3" selected>3 días/sem</option>
+              <option value="4">4 días/sem</option>
+              <option value="5">5 días/sem</option>
+              <option value="6">6 días/sem</option>
+              <option value="7">Pase Libre (7 días)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">👨‍🏫 Profesor a cargo:</label>
+          <select id="altaClienteProfesor">
+            <option value="">Sin profesor asignado</option>
+          </select>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">📝 Notas / Ficha / Observaciones:</label>
+          <input type="text" id="altaClienteNotas" placeholder="Ej: Turno fijo 19hs, apto médico entregado...">
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <button type="button" class="btn btn-outline" style="flex: 1;" onclick="cerrarModalAltaCliente()">Cancelar</button>
+          <button type="button" class="btn" style="flex: 1; font-weight: bold; background: var(--neon-green); color: #000;" id="btnGuardarAltaCliente" onclick="guardarNuevoCliente()">💾 Registrar Cliente</button>
         </div>
       </div>
     </div>
@@ -2832,41 +2849,108 @@
       panel.style.display = isHidden ? 'flex' : 'none';
     }
 
-    async function agregarCliente() {
-      try {
-        const nombreInput = document.getElementById('nuevoNombreCliente');
-        const montoInput = document.getElementById('nuevoMontoCliente');
-        const diasInput = document.getElementById('nuevosDiasCliente');
+    function abrirModalAltaCliente() {
+      const elNom = document.getElementById('altaClienteNombre');
+      if (elNom) elNom.value = '';
+      const elMonto = document.getElementById('altaClienteMonto');
+      if (elMonto) elMonto.value = '';
+      const elDias = document.getElementById('altaClienteDias');
+      if (elDias) elDias.value = '3';
+      const elNotas = document.getElementById('altaClienteNotas');
+      if (elNotas) elNotas.value = '';
 
-        const nombre = nombreInput ? formatearTitulo(nombreInput.value.trim()) : '';
-        const monto = montoInput ? Number(montoInput.value) : 0;
-        const dias = diasInput ? Number(diasInput.value) : 3;
-
-        if (!nombre) {
-          alert("Por favor, ingrese el nombre del cliente.");
-          return;
+      const selectProf = document.getElementById('altaClienteProfesor');
+      if (selectProf) {
+        let opciones = '<option value="">Sin profesor asignado</option>';
+        const profesSet = new Set();
+        if (staffData) {
+          staffData.forEach(s => {
+            if (s.rol && String(s.rol).toLowerCase().includes('profesor') && !s.nombre.toLowerCase().includes('eugenio')) {
+              profesSet.add(s.nombre);
+            }
+          });
         }
+        Array.from(profesSet).sort((a, b) => a.localeCompare(b, 'es')).forEach(nombreProf => {
+          opciones += `<option value="${nombreProf}">Prof. ${nombreProf}</option>`;
+        });
+        selectProf.innerHTML = opciones;
+      }
 
-        const { error } = await _supabase.from('alumnos').insert([{
+      document.getElementById('modalAltaAlumno').style.display = 'flex';
+      setTimeout(() => { if (elNom) elNom.focus(); }, 100);
+    }
+
+    function cerrarModalAltaCliente() {
+      document.getElementById('modalAltaAlumno').style.display = 'none';
+    }
+
+    async function guardarNuevoCliente() {
+      const btn = document.getElementById('btnGuardarAltaCliente');
+      const nombreInput = document.getElementById('altaClienteNombre');
+      const montoInput = document.getElementById('altaClienteMonto');
+      const diasInput = document.getElementById('altaClienteDias');
+      const profesorInput = document.getElementById('altaClienteProfesor');
+      const notasInput = document.getElementById('altaClienteNotas');
+
+      const nombre = nombreInput ? formatearTitulo(nombreInput.value.trim()) : '';
+      const monto = montoInput && montoInput.value ? Number(montoInput.value) : 0;
+      const dias = diasInput ? Number(diasInput.value) : 3;
+      const profesor = profesorInput ? profesorInput.value.trim() : '';
+      const notas = notasInput ? notasInput.value.trim() : '';
+
+      if (!nombre) {
+        alert("Por favor, ingrese el nombre del cliente.");
+        if (nombreInput) nombreInput.focus();
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Guardando...';
+      }
+
+      try {
+        const payload = {
           nombre: nombre,
           monto: monto,
           dias_semana: dias,
+          profesor_cargo: profesor || null,
           pago_confirmado: false
-        }]);
+        };
+        if (notas) {
+          payload.notas = notas;
+        }
+
+        let { error } = await _supabase.from('alumnos').insert([payload]);
+
+        // Fallback si la columna 'notas' no existe aún en la base de datos de Supabase
+        if (error && error.message && error.message.includes("'notas'")) {
+          delete payload.notas;
+          const res = await _supabase.from('alumnos').insert([payload]);
+          error = res.error;
+        }
 
         if (error) {
-          alert('Error al agregar el cliente: ' + error.message);
+          alert('Error al registrar el cliente: ' + error.message);
           return;
         }
 
-        nombreInput.value = '';
-        montoInput.value = '';
-        diasInput.value = '3';
-
+        cerrarModalAltaCliente();
         await cargarDatosAlumnos();
-      } catch (error) {
-        console.error("Error al agregar cliente:", error);
+      } catch (err) {
+        console.error("Error al registrar nuevo cliente:", err);
+        alert("Error inesperado: " + (err.message || err));
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = '💾 Registrar Cliente';
+        }
       }
+    }
+
+    // Alias retrocompatible
+    function agregarCliente() {
+      abrirModalAltaCliente();
     }
 
     async function borrarCliente(id) {
