@@ -5568,8 +5568,8 @@ function esMismoProfesionalNutri(nomA, nomB) {
 
 function obtenerProfesionalesNutricion() {
     const baseNutris = [
-        { id: 'def-lucia', nombre: 'Lucia Perruzza', rol: 'profesional', porcentaje: 30 },
-        { id: 'def-santiago', nombre: 'Santiago Ruiz Zavala', rol: 'profesional', porcentaje: 30 }
+        { id: 'def-lucia', nombre: 'Lucia Perruzza', rol: 'nutricionista', porcentaje: 30 },
+        { id: 'def-santiago', nombre: 'Santiago Ruiz Zavala', rol: 'nutricionista', porcentaje: 30 }
     ];
 
     let encontrados = [];
@@ -5597,7 +5597,7 @@ function obtenerProfesionalesNutricion() {
         staffData.forEach(s => {
             const nom = normalizarTextoNutri(s.nombre);
             const rolStr = normalizarTextoNutri(s.rol || '');
-            if ((rolStr.includes('profesional') || rolStr.includes('nutri')) && !nom.includes('lucia') && !nom.includes('santiago')) {
+            if (rolStr.includes('nutri') && !nom.includes('lucia') && !nom.includes('santiago')) {
                 if (!resultado.some(r => normalizarTextoNutri(r.nombre) === nom)) {
                     resultado.push(s);
                 }
