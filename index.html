@@ -1824,7 +1824,7 @@
   <!-- MODAL NUEVO TURNO NUTRICIÓN -->
   <div id="modalNuevoTurnoNutri" class="modal-overlay">
     <div class="modal-content" style="max-width: 400px;">
-        <h3>Nuevo Turno - Nutrición</h3>
+        <h3 id="tituloModalTurnoNutri">Nuevo Turno - Nutrición</h3>
         <label>Paciente (Buscar o crear nuevo):</label>
         <input type="text" id="inputPacienteNutri" list="listaAlumnosNutriAutocomplete" placeholder="Nombre completo..." autocomplete="off">
         <datalist id="listaAlumnosNutriAutocomplete"></datalist>
@@ -2635,6 +2635,8 @@
         if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
       } else if (idSeccion === 'cronogramaSection') {
         cargarTurnosSupabase();
+      } else if (idSeccion === 'nutricionSection') {
+        cargarDatosNutricion();
       }
     }
 
@@ -5617,7 +5619,13 @@ function sonMismoHorarioNutri(fhA, fhB) {
     if (!fhA || !fhB) return false;
     const normA = String(fhA).replace(' ', 'T').substring(0, 16);
     const normB = String(fhB).replace(' ', 'T').substring(0, 16);
-    return normA === normB;
+    if (normA === normB) return true;
+    const da = parsearFechaHoraNutri(fhA);
+    const db = parsearFechaHoraNutri(fhB);
+    if (da && db) {
+        return Math.abs(da.getTime() - db.getTime()) < 60000;
+    }
+    return false;
 }
 
 async function cargarDatosNutricion() {
@@ -5661,6 +5669,9 @@ function actualizarDatalistPacientes() {
 }
 
 function abrirModalNuevoTurnoNutri() {
+    const tit = document.getElementById('tituloModalTurnoNutri');
+    if (tit) tit.innerText = 'Nuevo Turno - Nutrición';
+
     const btn = document.getElementById('btnGuardarTurnoNutri');
     if (btn) {
         btn.innerText = 'Agendar Turno';
@@ -5683,7 +5694,10 @@ function abrirModalNuevoTurnoNutri() {
     const fechaEl = document.getElementById('fechaTurnoNutri');
     if(fechaEl && !fechaEl.value) {
         const d = new Date();
-        fechaEl.value = d.toISOString().substring(0, 10);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dia = String(d.getDate()).padStart(2, '0');
+        fechaEl.value = `${y}-${m}-${dia}`;
     }
     const horaEl = document.getElementById('horaTurnoNutri');
     if(horaEl) horaEl.value = '';
@@ -5711,28 +5725,39 @@ function cerrarModalNuevoTurnoNutri() {
     if (modal) modal.style.display = 'none';
     const hiddenId = document.getElementById('turnoIdNutriEdit');
     if (hiddenId) hiddenId.value = '';
+    const selPac = document.getElementById('pacienteIdNutriSelec');
+    if (selPac) selPac.value = '';
     const inpPac = document.getElementById('inputPacienteNutri');
     if (inpPac) {
         inpPac.disabled = false;
         inpPac.value = '';
     }
+    const montoEl = document.getElementById('montoTurnoNutri');
+    if (montoEl) montoEl.value = '';
+    const horaEl = document.getElementById('horaTurnoNutri');
+    if (horaEl) horaEl.value = '';
     const btn = document.getElementById('btnGuardarTurnoNutri');
     if (btn) {
         btn.disabled = false;
         btn.innerText = 'Agendar Turno';
     }
+    const tit = document.getElementById('tituloModalTurnoNutri');
+    if (tit) tit.innerText = 'Nuevo Turno - Nutrición';
 }
 
 async function guardarTurnoNutri() {
   const btn = document.getElementById('btnGuardarTurnoNutri');
-  const textoOriginalBtn = btn ? btn.innerText : 'Agendar Turno';
+  const editTurnoIdRaw = document.getElementById('turnoIdNutriEdit')?.value;
+  const editTurnoId = editTurnoIdRaw ? String(editTurnoIdRaw).trim() : '';
+  const textoOriginalBtn = btn ? btn.innerText : (editTurnoId ? 'Guardar Cambios' : 'Agendar Turno');
+  
   try {
-    const editTurnoId = document.getElementById('turnoIdNutriEdit')?.value;
-    const nombreInput = document.getElementById('inputPacienteNutri').value.trim();
-    const fechaVal = document.getElementById('fechaTurnoNutri').value;
-    const horaVal = document.getElementById('horaTurnoNutri').value;
-    const monto = parseFloat(document.getElementById('montoTurnoNutri').value) || 0;
-    const nutriNombre = document.getElementById('selectNutricionistaTurno').value;
+    const nombreInput = (document.getElementById('inputPacienteNutri')?.value || '').trim();
+    const fechaVal = document.getElementById('fechaTurnoNutri')?.value || '';
+    const horaVal = document.getElementById('horaTurnoNutri')?.value || '';
+    const montoRaw = document.getElementById('montoTurnoNutri')?.value || 0;
+    const monto = !isNaN(parseFloat(montoRaw)) ? parseFloat(montoRaw) : 0;
+    const nutriNombre = document.getElementById('selectNutricionistaTurno')?.value || '';
 
     if(!nombreInput) {
         alert('Por favor completá el nombre del paciente.');
@@ -5749,7 +5774,7 @@ async function guardarTurnoNutri() {
     }
 
     const horaClean = horaVal.length === 5 ? horaVal : horaVal.substring(0, 5);
-    const fechaHora = fechaVal + 'T' + horaClean;
+    const fechaHora = `${fechaVal}T${horaClean}:00`;
 
     if(btn) {
         btn.disabled = true;
@@ -5759,53 +5784,82 @@ async function guardarTurnoNutri() {
     // 1. Obtener o crear paciente con normalización de caracteres
     let pacienteId = null;
     const nombreClean = formatearTitulo(nombreInput);
+    
+    // Buscar primero en memoria
     let paciente = nutriPacientesData.find(p => normalizarTextoNutri(p?.nombre) === normalizarTextoNutri(nombreClean));
     
-    if(paciente) {
-        pacienteId = paciente.id;
-    } else {
-        const alumnoGym = alumnosData.find(a => normalizarTextoNutri(a?.nombre) === normalizarTextoNutri(nombreClean));
-        const gymId = alumnoGym ? alumnoGym.id : null;
-        
-        const { data: newPac, error: errPac } = await _supabase.from('nutricion_pacientes').insert([{
-            nombre: nombreClean,
-            alumno_id: gymId
-        }]).select();
-        
-        if(errPac) { 
-            if(btn) { btn.disabled = false; btn.innerText = textoOriginalBtn; }
-            alert('Error creando paciente en la base de datos: ' + errPac.message); 
-            return; 
-        }
-
-        if (newPac && newPac.length > 0) {
-            pacienteId = newPac[0].id;
-            nutriPacientesData.push(newPac[0]);
-        } else {
-            const { data: refetchPac } = await _supabase.from('nutricion_pacientes')
-                .select('*')
-                .eq('nombre', nombreClean)
-                .order('created_at', { ascending: false })
-                .limit(1);
-            if (refetchPac && refetchPac.length > 0) {
-                pacienteId = refetchPac[0].id;
-                nutriPacientesData.push(refetchPac[0]);
-            } else {
-                if(btn) { btn.disabled = false; btn.innerText = textoOriginalBtn; }
-                alert('No se pudo verificar el registro del paciente en la base de datos.');
-                return;
+    // Si no está en memoria, buscar en la base de datos por nombre
+    if (!paciente) {
+        const { data: dbPac } = await _supabase.from('nutricion_pacientes')
+            .select('*')
+            .ilike('nombre', nombreClean)
+            .limit(1);
+        if (dbPac && dbPac.length > 0) {
+            paciente = dbPac[0];
+            if (!nutriPacientesData.some(p => String(p.id) === String(paciente.id))) {
+                nutriPacientesData.push(paciente);
             }
         }
     }
 
+    if (paciente) {
+        pacienteId = paciente.id;
+    } else {
+        // Alumno nuevo para nutrición
+        const alumnoGym = alumnosData.find(a => normalizarTextoNutri(a?.nombre) === normalizarTextoNutri(nombreClean));
+        const gymId = alumnoGym && !isNaN(parseInt(alumnoGym.id, 10)) ? parseInt(alumnoGym.id, 10) : null;
+        
+        let insertData = { nombre: nombreClean };
+        if (gymId) insertData.alumno_id = gymId;
+        
+        let nuevoPac = null;
+        const resIns = await _supabase.from('nutricion_pacientes').insert([insertData]).select();
+        if (resIns.data && resIns.data.length > 0) {
+            nuevoPac = resIns.data[0];
+        } else if (!resIns.error) {
+            const { data: refetch } = await _supabase.from('nutricion_pacientes')
+                .select('*')
+                .eq('nombre', nombreClean)
+                .order('id', { ascending: false })
+                .limit(1);
+            if (refetch && refetch.length > 0) nuevoPac = refetch[0];
+        } else {
+            const resFallback = await _supabase.from('nutricion_pacientes').insert([insertData]);
+            if (!resFallback.error) {
+                const { data: refetch } = await _supabase.from('nutricion_pacientes')
+                    .select('*')
+                    .eq('nombre', nombreClean)
+                    .order('id', { ascending: false })
+                    .limit(1);
+                if (refetch && refetch.length > 0) nuevoPac = refetch[0];
+            } else {
+                if(btn) { btn.disabled = false; btn.innerText = textoOriginalBtn; }
+                alert('Error creando paciente en la base de datos: ' + (resIns.error?.message || resFallback.error?.message));
+                return;
+            }
+        }
+        
+        if (nuevoPac) {
+            pacienteId = nuevoPac.id;
+            nutriPacientesData.push(nuevoPac);
+        } else {
+            if(btn) { btn.disabled = false; btn.innerText = textoOriginalBtn; }
+            alert('No se pudo registrar el nuevo paciente. Por favor intentá nuevamente.');
+            return;
+        }
+    }
+
     // 2. Validación de superposición horaria no destructiva
-    // Conflicto con el mismo profesional
-    const conflictoNutri = nutriTurnosData.find(t => 
-        esMismoProfesionalNutri(t.nutricionista_nombre, nutriNombre) &&
-        sonMismoHorarioNutri(t.fecha_hora, fechaHora) && 
-        (!t.estado || !t.estado.toLowerCase().startsWith('cancel')) &&
-        (!editTurnoId || String(t.id) !== String(editTurnoId))
-    );
+    const idPacNum = !isNaN(parseInt(pacienteId, 10)) ? parseInt(pacienteId, 10) : pacienteId;
+    const cleanEditTurnoId = editTurnoId ? String(editTurnoId).trim() : null;
+
+    // Superposición con el profesional
+    const conflictoNutri = nutriTurnosData.find(t => {
+        if (!esMismoProfesionalNutri(t.nutricionista_nombre, nutriNombre)) return false;
+        if (t.estado && t.estado.toLowerCase().startsWith('cancel')) return false;
+        if (cleanEditTurnoId && (String(t.id) === cleanEditTurnoId || parseInt(t.id, 10) === parseInt(cleanEditTurnoId, 10))) return false;
+        return sonMismoHorarioNutri(t.fecha_hora, fechaHora);
+    });
 
     if (conflictoNutri) {
         if(btn) { btn.disabled = false; btn.innerText = textoOriginalBtn; }
@@ -5815,13 +5869,14 @@ async function guardarTurnoNutri() {
         return;
     }
 
-    // Conflicto con el mismo paciente
-    const conflictoPac = nutriTurnosData.find(t => 
-        String(t.paciente_id) === String(pacienteId) &&
-        sonMismoHorarioNutri(t.fecha_hora, fechaHora) && 
-        (!t.estado || !t.estado.toLowerCase().startsWith('cancel')) &&
-        (!editTurnoId || String(t.id) !== String(editTurnoId))
-    );
+    // Superposición con el mismo paciente
+    const conflictoPac = nutriTurnosData.find(t => {
+        if (!idPacNum || !t.paciente_id) return false;
+        if (String(t.paciente_id) !== String(idPacNum) && parseInt(t.paciente_id, 10) !== parseInt(idPacNum, 10)) return false;
+        if (t.estado && t.estado.toLowerCase().startsWith('cancel')) return false;
+        if (cleanEditTurnoId && (String(t.id) === cleanEditTurnoId || parseInt(t.id, 10) === parseInt(cleanEditTurnoId, 10))) return false;
+        return sonMismoHorarioNutri(t.fecha_hora, fechaHora);
+    });
 
     if (conflictoPac) {
         if(btn) { btn.disabled = false; btn.innerText = textoOriginalBtn; }
@@ -5830,13 +5885,19 @@ async function guardarTurnoNutri() {
     }
 
     // 3. Inserción o actualización en Supabase
-    if (editTurnoId) {
-        const { error: errUpdate } = await _supabase.from('nutricion_turnos').update({
-            paciente_id: pacienteId,
+    if (cleanEditTurnoId) {
+        const idTurnoNum = !isNaN(parseInt(cleanEditTurnoId, 10)) ? parseInt(cleanEditTurnoId, 10) : cleanEditTurnoId;
+        const updatePayload = {
+            paciente_id: idPacNum,
             nutricionista_nombre: nutriNombre,
             fecha_hora: fechaHora,
             monto: monto
-        }).eq('id', editTurnoId);
+        };
+
+        const { error: errUpdate } = await _supabase
+            .from('nutricion_turnos')
+            .update(updatePayload)
+            .eq('id', idTurnoNum);
 
         if (errUpdate) {
             if(btn) { btn.disabled = false; btn.innerText = textoOriginalBtn; }
@@ -5844,22 +5905,34 @@ async function guardarTurnoNutri() {
             return;
         }
 
-        const idx = nutriTurnosData.findIndex(t => String(t.id) === String(editTurnoId));
+        const idx = nutriTurnosData.findIndex(t => String(t.id) === String(cleanEditTurnoId) || parseInt(t.id, 10) === parseInt(cleanEditTurnoId, 10));
         if (idx !== -1) {
-            nutriTurnosData[idx].paciente_id = pacienteId;
+            nutriTurnosData[idx].paciente_id = idPacNum;
             nutriTurnosData[idx].nutricionista_nombre = nutriNombre;
             nutriTurnosData[idx].fecha_hora = fechaHora;
             nutriTurnosData[idx].monto = monto;
         }
         alert('Turno modificado con éxito');
     } else {
-        const { data: newTurno, error: errTurno } = await _supabase.from('nutricion_turnos').insert([{
-            paciente_id: pacienteId,
+        const insertPayload = {
+            paciente_id: idPacNum,
             nutricionista_nombre: nutriNombre,
             fecha_hora: fechaHora,
             monto: monto,
             estado: 'pendiente'
-        }]).select();
+        };
+
+        let errTurno = null;
+        let createdTurno = null;
+        const resIns = await _supabase.from('nutricion_turnos').insert([insertPayload]).select();
+        if (resIns.data && resIns.data.length > 0) {
+            createdTurno = resIns.data[0];
+        } else if (resIns.error) {
+            const resFallback = await _supabase.from('nutricion_turnos').insert([insertPayload]);
+            if (resFallback.error) {
+                errTurno = resFallback.error;
+            }
+        }
 
         if (errTurno) {
             if(btn) { btn.disabled = false; btn.innerText = textoOriginalBtn; }
@@ -5867,8 +5940,8 @@ async function guardarTurnoNutri() {
             return;
         }
 
-        if (newTurno && newTurno.length > 0) {
-            nutriTurnosData.push(newTurno[0]);
+        if (createdTurno) {
+            nutriTurnosData.push(createdTurno);
         }
         alert('¡Turno agendado con éxito!');
     }
@@ -5881,6 +5954,8 @@ async function guardarTurnoNutri() {
     }
 
     cerrarModalNuevoTurnoNutri();
+    renderizarAgendaNutri();
+    renderizarRendicionNutri();
     await cargarDatosNutricion();
   } catch(e) {
       alert('ERROR AL REGISTRAR TURNO: ' + e.message);
@@ -5899,7 +5974,8 @@ async function actualizarEstadoTurnoNutri(turnoId, estadoNuevo) {
     renderizarAgendaNutri();
     renderizarRendicionNutri();
 
-    const { error } = await _supabase.from('nutricion_turnos').update({ estado: estadoNuevo }).eq('id', turnoId);
+    const idTurnoNum = !isNaN(parseInt(turnoId, 10)) ? parseInt(turnoId, 10) : turnoId;
+    const { error } = await _supabase.from('nutricion_turnos').update({ estado: estadoNuevo }).eq('id', idTurnoNum);
     if(error) {
         if(t && estadoPrevio) t.estado = estadoPrevio;
         renderizarAgendaNutri();
@@ -5988,13 +6064,15 @@ function renderizarAgendaNutri() {
             const f = parsearFechaHoraNutri(t.fecha_hora);
             if (!f || f < ahora) return false;
             if (esMesActual) return true;
-            return String(t.fecha_hora).startsWith(mesFiltro);
+            const mesT = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}`;
+            return mesT === mesFiltro;
         });
 
         const turnosPasados = turnosProf.filter(t => {
             const f = parsearFechaHoraNutri(t.fecha_hora);
             if (!f || f >= ahora) return false;
-            return String(t.fecha_hora).startsWith(mesFiltro);
+            const mesT = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}`;
+            return mesT === mesFiltro;
         });
         
         if (turnosFuturos.length === 0 && turnosPasados.length === 0) {
@@ -6315,11 +6393,12 @@ async function guardarMedicionNutri() {
 
 async function borrarTurnoNutri(id) {
     if(confirm('¿Seguro que querés eliminar este turno?')) {
-        const { error } = await _supabase.from('nutricion_turnos').delete().eq('id', id);
+        const idTurnoNum = !isNaN(parseInt(id, 10)) ? parseInt(id, 10) : id;
+        const { error } = await _supabase.from('nutricion_turnos').delete().eq('id', idTurnoNum);
         if(error) {
             alert('Error borrando el turno: ' + error.message);
         } else {
-            nutriTurnosData = nutriTurnosData.filter(t => String(t.id) !== String(id));
+            nutriTurnosData = nutriTurnosData.filter(t => String(t.id) !== String(id) && parseInt(t.id, 10) !== parseInt(id, 10));
             renderizarAgendaNutri();
             renderizarRendicionNutri();
             await cargarDatosNutricion();
@@ -6328,9 +6407,13 @@ async function borrarTurnoNutri(id) {
 }
 
 function editarTurnoNutri(id) {
-    const t = nutriTurnosData.find(x => String(x.id) === String(id));
+    const t = nutriTurnosData.find(x => String(x.id) === String(id) || parseInt(x.id, 10) === parseInt(id, 10));
     if(!t) return;
-    const pac = nutriPacientesData.find(p => String(p.id) === String(t.paciente_id));
+    
+    const tit = document.getElementById('tituloModalTurnoNutri');
+    if (tit) tit.innerText = 'Modificar Turno - Nutrición';
+
+    const pac = nutriPacientesData.find(p => String(p.id) === String(t.paciente_id) || parseInt(p.id, 10) === parseInt(t.paciente_id, 10));
     
     const inpPac = document.getElementById('inputPacienteNutri');
     if (inpPac) {
@@ -6338,19 +6421,26 @@ function editarTurnoNutri(id) {
         inpPac.disabled = false;
     }
     
-    const fhNorm = String(t.fecha_hora || '').replace(' ', 'T');
-    if (fhNorm.includes('T')) {
-        const parts = fhNorm.split('T');
-        document.getElementById('fechaTurnoNutri').value = parts[0];
-        document.getElementById('horaTurnoNutri').value = parts[1].substring(0, 5);
+    const selPac = document.getElementById('pacienteIdNutriSelec');
+    if (selPac) selPac.value = t.paciente_id || '';
+    
+    // Parseo robusto de fecha y hora local
+    const d = parsearFechaHoraNutri(t.fecha_hora);
+    if (d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dia = String(d.getDate()).padStart(2, '0');
+        const h = String(d.getHours()).padStart(2, '0');
+        const min = String(d.getMinutes()).padStart(2, '0');
+        document.getElementById('fechaTurnoNutri').value = `${y}-${m}-${dia}`;
+        document.getElementById('horaTurnoNutri').value = `${h}:${min}`;
     } else {
-        const d = parsearFechaHoraNutri(fhNorm);
-        if (d) {
-            document.getElementById('fechaTurnoNutri').value = d.toISOString().substring(0, 10);
-            document.getElementById('horaTurnoNutri').value = d.toTimeString().substring(0, 5);
-        }
+        const parts = String(t.fecha_hora || '').replace(' ', 'T').split('T');
+        if (parts[0]) document.getElementById('fechaTurnoNutri').value = parts[0];
+        if (parts[1]) document.getElementById('horaTurnoNutri').value = parts[1].substring(0, 5);
     }
-    document.getElementById('montoTurnoNutri').value = t.monto !== undefined && t.monto !== null ? t.monto : '';
+    
+    document.getElementById('montoTurnoNutri').value = (t.monto !== undefined && t.monto !== null) ? t.monto : '';
     
     const selectNutri = document.getElementById('selectNutricionistaTurno');
     const profesionales = obtenerProfesionalesNutricion();
@@ -6365,9 +6455,15 @@ function editarTurnoNutri(id) {
         hiddenId.id = 'turnoIdNutriEdit';
         document.getElementById('modalNuevoTurnoNutri').appendChild(hiddenId);
     }
-    hiddenId.value = id;
+    hiddenId.value = String(id);
     
-    document.getElementById('btnGuardarTurnoNutri').innerText = 'Guardar Cambios';
+    const btn = document.getElementById('btnGuardarTurnoNutri');
+    if (btn) {
+        btn.innerText = 'Guardar Cambios';
+        btn.disabled = false;
+    }
+    
+    actualizarDatalistPacientes();
     document.getElementById('modalNuevoTurnoNutri').style.display = 'flex';
 }
 
@@ -6743,7 +6839,13 @@ function renderizarRendicionNutri() {
     if(!cont) return;
 
     const mesFiltro = document.getElementById('mesFiltroNutricion')?.value || new Date().toISOString().substring(0, 7);
-    const turnosPagados = nutriTurnosData.filter(t => t.estado === 'asistio' && String(t.fecha_hora || '').startsWith(mesFiltro));
+    const turnosPagados = nutriTurnosData.filter(t => {
+        if (t.estado !== 'asistio') return false;
+        const f = parsearFechaHoraNutri(t.fecha_hora);
+        if (!f) return String(t.fecha_hora || '').startsWith(mesFiltro);
+        const mesT = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}`;
+        return mesT === mesFiltro;
+    });
     
     let resumen = {};
     const profesionales = obtenerProfesionalesNutricion();
