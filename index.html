@@ -1858,6 +1858,8 @@
         </div>
       </div>
     </div>
+  </div>
+
   <!-- MODAL NUEVO TURNO NUTRICIÓN -->
   <div id="modalNuevoTurnoNutri" class="modal-overlay">
     <div class="modal-content" style="max-width: 400px;">
@@ -6334,8 +6336,12 @@ function renderizarAgendaNutri() {
         `;
 
         const renderCard = (t) => {
-            const pac = nutriPacientesData.find(p => String(p.id) === String(t.paciente_id));
+            let pac = nutriPacientesData.find(p => String(p.id) === String(t.paciente_id) || parseInt(p.id, 10) === parseInt(t.paciente_id, 10));
+            if (!pac && alumnosData) {
+                pac = alumnosData.find(a => String(a.id) === String(t.paciente_id));
+            }
             const pacNombre = pac?.nombre || 'Desconocido';
+            const pacIdParam = pac?.id || t.paciente_id || '';
             const fecha = parsearFechaHoraNutri(t.fecha_hora);
             const strFecha = fecha 
                 ? fecha.toLocaleString('es-AR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit', hour12: false})
@@ -6369,7 +6375,7 @@ function renderizarAgendaNutri() {
                         </select>
                         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                             <a href="https://wa.me/?text=${msgWpp}" target="_blank" class="btn btn-outline" style="flex: 1; padding: 5px 0; font-size: 0.85rem; text-align: center; color: #25D366; border-color: #25D366;">📱 Wpp</a>
-                            <button class="btn btn-outline" style="flex: 1; padding: 5px 0; font-size: 0.85rem;" onclick="abrirFichaPacienteNutri('${t.paciente_id}')">📋 Ficha</button>
+                            <button class="btn btn-outline" style="flex: 1; padding: 5px 0; font-size: 0.85rem;" onclick="abrirFichaPacienteNutri('${pacIdParam}')">📋 Ficha</button>
                             <button class="btn btn-outline" style="padding: 5px 10px; font-size: 0.85rem;" onclick="editarTurnoNutri('${t.id}')">✏️</button>
                             <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.85rem;" onclick="borrarTurnoNutri('${t.id}')">🗑️</button>
                         </div>
@@ -6726,13 +6732,19 @@ async function borrarTurnoNutri(id) {
 }
 
 function editarTurnoNutri(id) {
-    const t = nutriTurnosData.find(x => String(x.id) === String(id) || parseInt(x.id, 10) === parseInt(id, 10));
-    if(!t) return;
+    const t = (nutriTurnosData || []).find(x => String(x.id) === String(id) || parseInt(x.id, 10) === parseInt(id, 10));
+    if(!t) {
+        alert("No se encontró el turno seleccionado.");
+        return;
+    }
     
     const tit = document.getElementById('tituloModalTurnoNutri');
     if (tit) tit.innerText = 'Modificar Turno - Nutrición';
 
-    const pac = nutriPacientesData.find(p => String(p.id) === String(t.paciente_id) || parseInt(p.id, 10) === parseInt(t.paciente_id, 10));
+    let pac = (nutriPacientesData || []).find(p => String(p.id) === String(t.paciente_id) || parseInt(p.id, 10) === parseInt(t.paciente_id, 10));
+    if (!pac && alumnosData) {
+        pac = alumnosData.find(a => String(a.id) === String(t.paciente_id));
+    }
     
     const inpPac = document.getElementById('inputPacienteNutri');
     if (inpPac) {
@@ -6741,7 +6753,7 @@ function editarTurnoNutri(id) {
     }
     
     const selPac = document.getElementById('pacienteIdNutriSelec');
-    if (selPac) selPac.value = t.paciente_id || '';
+    if (selPac) selPac.value = pac ? pac.id : (t.paciente_id || '');
     
     // Parseo robusto de fecha y hora local
     const d = parsearFechaHoraNutri(t.fecha_hora);
@@ -6888,10 +6900,25 @@ async function guardarPerfilBasePacienteNutri() {
 }
 
 function abrirFichaPacienteNutri(pacienteId) {
-    fichaActualPacienteId = pacienteId;
-    evoPacienteActualId = pacienteId; // para reusar las funciones de evolucion
-    const pac = nutriPacientesData.find(p => String(p.id) === String(pacienteId));
-    if(!pac) return;
+    if (!pacienteId || pacienteId === 'null' || pacienteId === 'undefined') {
+        alert("El turno no tiene un paciente vinculado para ver su ficha.");
+        return;
+    }
+
+    let pac = (nutriPacientesData || []).find(p => String(p.id) === String(pacienteId) || parseInt(p.id, 10) === parseInt(pacienteId, 10));
+    if (!pac && alumnosData) {
+        const alumno = alumnosData.find(a => String(a.id) === String(pacienteId));
+        if (alumno) {
+            pac = (nutriPacientesData || []).find(p => normalizarTextoNutri(p.nombre) === normalizarTextoNutri(alumno.nombre));
+        }
+    }
+    if (!pac) {
+        alert("No se encontró la ficha del paciente seleccionado en el sistema.");
+        return;
+    }
+
+    fichaActualPacienteId = pac.id;
+    evoPacienteActualId = pac.id; // para reusar las funciones de evolucion
     
     // Mostrar modal inmediatamente para que no se quede trabado
     const modalEl = document.getElementById('modalFichaPacienteNutri');
