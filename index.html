@@ -2665,6 +2665,7 @@
 
       if (idSeccion === 'libroDiarioSection') {
         renderizarLibroDiario();
+        cargarLibroDiario();
       } else if (idSeccion === 'cierreMensualSection') {
         cargarAuditoriaCierreMensual();
       } else if (idSeccion === 'asistenciasSection') {
@@ -3130,20 +3131,35 @@
       }
 
       if (estado && cliente) {
-        const { error: errCaja } = await _supabase.from('caja_diaria').insert([{
+        const nuevoAsiento = {
           fecha: fechaPagoSeleccionada,
           tipo: 'ingreso',
-          
           detalle: `Cobro Cuota Mensual - ${cliente.nombre}`,
           categoria: 'Cuota',
           cobrador: cobrador,
           monto: monto
-        }]);
+        };
 
-        if (errCaja) alert('Error al registrar en Libro Diario: ' + errCaja.message);
+        const { data: dataCaja, error: errCaja } = await _supabase
+          .from('caja_diaria')
+          .insert([nuevoAsiento])
+          .select();
+
+        if (errCaja) {
+          alert('Error al registrar en Libro Diario: ' + errCaja.message);
+        } else if (dataCaja && dataCaja.length > 0) {
+          cajaData.unshift(dataCaja[0]);
+          renderizarLibroDiario();
+        } else {
+          cajaData.unshift(nuevoAsiento);
+          renderizarLibroDiario();
+        }
       }
 
-      cargarDatosAlumnos();
+      await Promise.all([
+        cargarDatosAlumnos(),
+        cargarLibroDiario()
+      ]);
     }
 
     function filtrarAlumnos() {
@@ -4449,7 +4465,7 @@
       } else {
         document.getElementById('resultadoLiquidacion').innerText = `¡Pago registrado con éxito por $${montoTotal.toLocaleString('es-AR')}!`;
         cargarHistorialLiquidaciones();
-        renderizarLibroDiario();
+        cargarLibroDiario();
         cargarAuditoriaCierreMensual();
       }
     }
