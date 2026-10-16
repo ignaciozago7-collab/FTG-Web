@@ -852,6 +852,8 @@
             <!-- FILTRO ESTADO DE ASISTENCIA -->
             <select id="filtroEstadoAsistencia" onchange="filtrarAsistencias()" style="padding: 7px 10px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
               <option value="todos">Todos los estados</option>
+              <option value="cronograma">📅 Según Cronograma del día</option>
+              <option value="cronograma_pendientes">⏳ Turnos del día (Faltan llegar)</option>
               <option value="presentes">🟢 Solo Presentes hoy</option>
               <option value="pendientes">⚪ Solo No registrados</option>
               <option value="inactivos">🌴 Solo Inactivos</option>
@@ -1547,7 +1549,11 @@
       </p>
       
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
-        <input type="text" id="buscadorMasivoAsistencia" placeholder="🔍 Filtrar alumnos por nombre..." oninput="filtrarListaMasivaAsistenciaDebounced()" style="flex: 1; min-width: 220px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+        <input type="text" id="buscadorMasivoAsistencia" placeholder="🔍 Filtrar alumnos por nombre..." oninput="filtrarListaMasivaAsistenciaDebounced()" style="flex: 1; min-width: 200px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--neon-green); background: rgba(149, 255, 83, 0.08); border: 1px solid rgba(149, 255, 83, 0.3); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+          <input type="checkbox" id="chkSoloCronoMasivo" onchange="renderizarListaMasivaAsistencia()" style="cursor: pointer;">
+          <span>📅 Solo turnos del día</span>
+        </label>
         <div style="display: flex; gap: 8px;">
           <button type="button" class="btn btn-outline" style="padding: 6px 10px; font-size: 0.8rem;" onclick="seleccionarTodosMasivo(true)">Marcar Todos</button>
           <button type="button" class="btn btn-outline" style="padding: 6px 10px; font-size: 0.8rem;" onclick="seleccionarTodosMasivo(false)">Desmarcar</button>
@@ -3660,6 +3666,11 @@
       const elBadgeHoy = document.getElementById('cantPresentesHoy');
       if (elBadgeHoy) elBadgeHoy.innerText = cantPresentes;
 
+      // Asignar horarios del cronograma de este día a cada alumno
+      alumnosPadron.forEach(a => {
+        a._horariosHoy = esDomingo ? [] : obtenerHorariosAlumnoEnDia(a.nombre, diaSelNombre);
+      });
+
       // Filtrar alumnos para la tabla
       const filtrados = alumnosPadron.filter(a => {
         // Filtro texto
@@ -3669,6 +3680,9 @@
         // Filtro estado
         if (estadoFiltro !== 'todos') {
           const tienePresente = asistenciasMesData.some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === String(fechaSel));
+          const tieneTurnoHoy = a._horariosHoy && a._horariosHoy.length > 0;
+          if (estadoFiltro === 'cronograma' && (a.inactivo || !tieneTurnoHoy)) return false;
+          if (estadoFiltro === 'cronograma_pendientes' && (tienePresente || a.inactivo || !tieneTurnoHoy)) return false;
           if (estadoFiltro === 'presentes' && !tienePresente) return false;
           if (estadoFiltro === 'pendientes' && (tienePresente || a.inactivo)) return false;
           if (estadoFiltro === 'inactivos' && !a.inactivo) return false;
@@ -3676,7 +3690,34 @@
         return true;
       });
 
-      renderizarTablaAsistencias(filtrados);
+      renderizarTablaAsistencias(filtrados, diaSelNombre, cantEsperadosDia);
+    }
+
+    function obtenerHorariosAlumnoEnDia(nombreAlumno, diaNombre) {
+      if (!nombreAlumno || !diaNombre || !cronogramaData || !cronogramaData.turnos) return [];
+      const nomBuscado = nombreAlumno.trim().toLowerCase();
+      const horarios = [];
+      Object.keys(cronogramaData.turnos).forEach(k => {
+        if (k.startsWith(diaNombre + '-')) {
+          const hora = k.split('-')[1];
+          const arr = cronogramaData.turnos[k] || [];
+          if (arr.some(r => r && r.nombre_alumno && r.nombre_alumno.trim().toLowerCase() === nomBuscado)) {
+            if (hora && !horarios.includes(hora)) horarios.push(hora);
+          }
+        }
+      });
+      return horarios.sort();
+    }
+
+    function alternarFiltroCronogramaAsistencias() {
+      const sel = document.getElementById('filtroEstadoAsistencia');
+      if (!sel) return;
+      if (sel.value === 'cronograma' || sel.value === 'cronograma_pendientes') {
+        sel.value = 'todos';
+      } else {
+        sel.value = 'cronograma';
+      }
+      filtrarAsistencias();
     }
 
     function limpiarBuscadorAsistencias() {
@@ -3692,7 +3733,7 @@
       }
     }
 
-    function renderizarTablaAsistencias(items) {
+    function renderizarTablaAsistencias(items, diaSelNombre = '', cantEsperadosDia = 0) {
       const tbody = document.getElementById('tbodyAsistencias');
       if (!tbody) return;
       tbody.innerHTML = '';
@@ -3700,9 +3741,19 @@
       const contenedorResumen = document.getElementById('resumenProfesores');
       const selectProf = document.getElementById('filtroProfesorAsistencia');
       const profActivo = selectProf ? selectProf.value : '';
+      const estadoFiltro = document.getElementById('filtroEstadoAsistencia')
+        ? document.getElementById('filtroEstadoAsistencia').value
+        : 'todos';
+      const esModoCrono = (estadoFiltro === 'cronograma' || estadoFiltro === 'cronograma_pendientes');
 
       if (contenedorResumen && staffData && alumnosData) {
+        const labelDiaBtn = diaSelNombre && diaSelNombre !== 'Domingo' ? `Turnos ${diaSelNombre}` : 'Turnos del día';
         let resumenHTML = `
+          <button type="button" class="btn btn-outline" onclick="alternarFiltroCronogramaAsistencias()" style="padding: 4px 12px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px; ${esModoCrono ? 'background: rgba(149, 255, 83, 0.18); color: var(--neon-green); font-weight: 800; border-color: var(--neon-green); box-shadow: 0 0 10px rgba(149, 255, 83, 0.2);' : 'border-color: rgba(149, 255, 83, 0.4); color: var(--neon-green);'}" title="Mostrar solo los alumnos anotados en el Cronograma de este día, ordenados por horario">
+            <span>📅 ${labelDiaBtn}</span>
+            <span style="background: rgba(149, 255, 83, 0.2); padding: 1px 6px; border-radius: 10px; font-size: 0.72rem; color: #fff;">${cantEsperadosDia}</span>
+          </button>
+          <span style="width: 1px; height: 22px; background: rgba(255,255,255,0.1); margin: 0 2px; align-self: center;"></span>
           <button type="button" class="btn btn-outline" onclick="filtrarAsistencias('')" style="padding: 4px 10px; font-size: 0.8rem; ${!profActivo ? 'background: var(--neon-green); color: #000; font-weight: bold; border-color: var(--neon-green);' : ''}">
             Todos (${alumnosData.length})
           </button>
@@ -3724,14 +3775,52 @@
       const fechaSel = document.getElementById('fechaAsistencia') ? document.getElementById('fechaAsistencia').value : '';
 
       if (!items || items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-dim); padding: 20px;">No se encontraron alumnos con los filtros seleccionados.</td></tr>';
+        const msgVacio = esModoCrono
+          ? `No hay alumnos anotados en el Cronograma para este día (${diaSelNombre || 'fecha seleccionada'}) con los filtros actuales.`
+          : 'No se encontraron alumnos con los filtros seleccionados.';
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-dim); padding: 20px;">${msgVacio}</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = items.map(a => {
+      let listaParaRender = [...items];
+      if (esModoCrono) {
+        listaParaRender.sort((a, b) => {
+          const hA = (a._horariosHoy && a._horariosHoy[0]) || '99:99';
+          const hB = (b._horariosHoy && b._horariosHoy[0]) || '99:99';
+          if (hA !== hB) return hA.localeCompare(hB);
+          return (a.nombre || '').localeCompare(b.nombre || '', 'es');
+        });
+      }
+
+      let horaGrupoActual = null;
+      let filasHTML = '';
+
+      listaParaRender.forEach(a => {
         const diasSemana = a.dias_semana || 3;
         const idAlumnoStr = String(a.id);
         const profActual = a.profesor_cargo || '';
+        const horariosHoy = a._horariosHoy || [];
+
+        if (esModoCrono) {
+          const horaPpal = horariosHoy[0] || 'Sin horario';
+          if (horaPpal !== horaGrupoActual) {
+            horaGrupoActual = horaPpal;
+            const alumnosDelTurno = listaParaRender.filter(al => ((al._horariosHoy && al._horariosHoy[0]) || 'Sin horario') === horaPpal);
+            const presDelTurno = alumnosDelTurno.filter(al =>
+              asistenciasMesData.some(ast => String(ast.alumno_id) === String(al.id) && String(ast.fecha) === String(fechaSel))
+            ).length;
+            filasHTML += `
+              <tr style="background: rgba(149, 255, 83, 0.06); border-top: 1px solid rgba(149, 255, 83, 0.22); border-bottom: 1px solid rgba(149, 255, 83, 0.14);">
+                <td colspan="7" style="padding: 7px 14px; font-weight: 800; color: var(--neon-green); font-size: 0.84rem; letter-spacing: 0.4px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>🕒 Turno ${horaPpal} hs</span>
+                    <span style="font-size: 0.76rem; color: var(--text-dim); font-weight: 600;">${presDelTurno} de ${alumnosDelTurno.length} presentes</span>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }
+        }
 
         const asistenciasAlumnoMes = asistenciasMesData.filter(ast => String(ast.alumno_id) === idAlumnoStr);
         const presentesCantidad = asistenciasAlumnoMes.length;
@@ -3741,11 +3830,16 @@
           `<option value="${s.nombre}" ${s.nombre === profActual ? 'selected' : ''}>${s.nombre}</option>`
         ).join('');
 
-        return `
+        const badgeHorario = horariosHoy.length > 0
+          ? `<span style="font-size: 0.7rem; color: var(--neon-green); background: rgba(149, 255, 83, 0.1); border: 1px solid rgba(149, 255, 83, 0.3); padding: 1px 6px; border-radius: 4px; font-weight: 700;" title="Horario en Cronograma (${diaSelNombre})">🕒 ${horariosHoy.join(' / ')} hs</span>`
+          : '';
+
+        filasHTML += `
           <tr style="transition: background 0.15s;">
             <td>
               <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                 <strong style="font-size: 0.95rem; color: #fff;">${a.nombre}</strong>
+                ${badgeHorario}
                 ${a.inactivo ? `<span style="font-size: 0.7rem; color: #38bdf8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.4); padding: 1px 6px; border-radius: 4px; font-weight: 700;" title="Inactivo temporal: ${escHtmlEstado(a.inactivo_motivo || 'Vacaciones')}">🌴 Inactivo</span>` : ''}
               </div>
             </td>
@@ -3789,7 +3883,9 @@
             </td>
           </tr>
         `;
-      }).join('');
+      });
+
+      tbody.innerHTML = filasHTML;
     }
 
     function abrirModalAsistenciaMasiva() {
@@ -3815,9 +3911,30 @@
     function renderizarListaMasivaAsistencia() {
       const contenedor = document.getElementById('listaAsistenciaMasiva');
       const fechaSel = document.getElementById('fechaAsistencia').value;
+      const soloCrono = document.getElementById('chkSoloCronoMasivo') && document.getElementById('chkSoloCronoMasivo').checked;
+
+      const dSel = fechaSel ? new Date(fechaSel + 'T12:00:00') : new Date();
+      const nombresDias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+      const diaSelNombre = nombresDias[dSel.getDay()];
+      const esDomingo = (dSel.getDay() === 0);
       
       let html = '';
-      const activos = (alumnosData || []).filter(a => a.activo !== false);
+      let activos = (alumnosData || []).filter(a => a.activo !== false);
+      activos.forEach(a => {
+        a._horariosHoyMasivo = esDomingo ? [] : obtenerHorariosAlumnoEnDia(a.nombre, diaSelNombre);
+      });
+
+      if (soloCrono) {
+        activos = activos
+          .filter(a => !a.inactivo && a._horariosHoyMasivo && a._horariosHoyMasivo.length > 0)
+          .sort((a, b) => {
+            const hA = a._horariosHoyMasivo[0] || '99:99';
+            const hB = b._horariosHoyMasivo[0] || '99:99';
+            if (hA !== hB) return hA.localeCompare(hB);
+            return (a.nombre || '').localeCompare(b.nombre || '', 'es');
+          });
+      }
+
       let cantidadRenderizados = 0;
       
       activos.forEach(a => {
@@ -3825,19 +3942,24 @@
         if (yaTiene) return;
         
         cantidadRenderizados++;
+        const badgeHora = (a._horariosHoyMasivo && a._horariosHoyMasivo.length > 0)
+          ? `<span style="font-size: 0.7rem; color: var(--neon-green); background: rgba(149, 255, 83, 0.1); padding: 1px 5px; border-radius: 4px; margin-left: auto; font-weight: 700;">${a._horariosHoyMasivo[0]} hs</span>`
+          : '';
         html += `
           <label class="item-masivo-asistencia" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 7px 10px; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); transition: background 0.15s;" data-nombre="${a.nombre.toLowerCase()}">
             <input type="checkbox" class="chk-masivo-asistencia" value="${a.id}" onchange="actualizarContadorMasivo()" style="cursor: pointer;">
             <span style="font-size: 0.9rem;">${a.nombre}</span>
+            ${badgeHora}
           </label>
         `;
       });
       
       if (cantidadRenderizados === 0) {
-        html = '<div style="color: var(--text-dim); grid-column: 1/-1; text-align: center; padding: 20px;">Todos los alumnos activos ya tienen presente registrado para esta fecha.</div>';
+        html = `<div style="color: var(--text-dim); grid-column: 1/-1; text-align: center; padding: 20px;">${soloCrono ? 'No quedan alumnos pendientes con turno en el Cronograma para esta fecha.' : 'Todos los alumnos activos ya tienen presente registrado para esta fecha.'}</div>`;
       }
       contenedor.innerHTML = html;
       filtrarListaMasivaAsistencia();
+      actualizarContadorMasivo();
     }
 
     function filtrarListaMasivaAsistencia() {
@@ -5544,6 +5666,23 @@ function renderizarLibroDiario(esCargarMas) {
       renderizarCronogramaDinamico();
     }
 
+    function obtenerCupoEfectivoTurno(key) {
+      const [dia, hora] = (key || '').split('-');
+      const maxCap = (hora === "08:00" || hora === "14:00") ? 8 : 7;
+      const inscriptos = (cronogramaData && cronogramaData.turnos && cronogramaData.turnos[key]) ? cronogramaData.turnos[key] : [];
+      let cantInactivos = 0;
+      inscriptos.forEach(r => {
+        const alumnoObj = (alumnosData || []).find(a => (a.nombre || '').trim().toLowerCase() === (r.nombre_alumno || '').trim().toLowerCase());
+        if (alumnoObj && alumnoObj.inactivo) {
+          cantInactivos++;
+        }
+      });
+      const cantTotal = inscriptos.length;
+      const cantActivos = Math.max(0, cantTotal - cantInactivos);
+      const cuposDisponibles = Math.max(0, maxCap - cantActivos);
+      return { maxCap, inscriptos, cantTotal, cantActivos, cantInactivos, cuposDisponibles };
+    }
+
     function renderizarCronogramaDinamico() {
       const container = document.getElementById('cronogramaGridContainer');
       if (!container) return;
@@ -5591,11 +5730,9 @@ function renderizarLibroDiario(esCargarMas) {
         cronogramaData.dias.forEach(dia => {
           if (dia === "Sábado" && !["09:00", "09:30", "10:00", "10:30"].includes(hora)) return;
           const key = `${dia}-${hora}`;
-          const inscriptos = cronogramaData.turnos[key] || [];
-          const cant = inscriptos.length;
-          let maxCap = (hora === "08:00" || hora === "14:00") ? 8 : 7;
-          totalInscriptos += cant;
-          if (cant >= maxCap) {
+          const { maxCap, cantActivos } = obtenerCupoEfectivoTurno(key);
+          totalInscriptos += cantActivos;
+          if (cantActivos >= maxCap) {
             turnosLlenos++;
           } else {
             turnosConCupo++;
@@ -5642,23 +5779,25 @@ function renderizarLibroDiario(esCargarMas) {
           }
 
           const key = `${dia}-${hora}`;
-          const inscriptos = cronogramaData.turnos[key] || [];
-          const cant = inscriptos.length;
-          let maxCap = (hora === "08:00" || hora === "14:00") ? 8 : 7;
-          let pct = Math.min(100, Math.round((cant / maxCap) * 100));
+          const { maxCap, inscriptos, cantTotal, cantActivos, cantInactivos } = obtenerCupoEfectivoTurno(key);
+          let pct = Math.min(100, Math.round((cantActivos / maxCap) * 100));
+          const sufijoInactivos = cantInactivos > 0 ? ` (+${cantInactivos} 🌴)` : '';
+          const tooltipCupo = cantInactivos > 0 
+            ? `${cantActivos} activo(s) ocupando lugar físico + ${cantInactivos} inactivo(s) temporal(es) que liberan su cupo` 
+            : `${cantActivos} de ${maxCap} cupos ocupados`;
 
           let badgeClase = 'cupo-disponible';
           let badgeColor = 'var(--neon-green)';
-          let badgeTexto = `${cant} / ${maxCap}`;
+          let badgeTexto = `${cantActivos} / ${maxCap}${sufijoInactivos}`;
 
-          if (cant >= maxCap) {
+          if (cantActivos >= maxCap) {
             badgeClase = 'cupo-lleno';
             badgeColor = 'var(--danger-red)';
-            badgeTexto = `${cant} / ${maxCap} (Lleno)`;
-          } else if (cant >= maxCap - 1) {
+            badgeTexto = `${cantActivos} / ${maxCap}${sufijoInactivos} (Lleno)`;
+          } else if (cantActivos >= maxCap - 1) {
             badgeClase = 'cupo-alerta';
             badgeColor = '#ffea00';
-            badgeTexto = `${cant} / ${maxCap} (Último)`;
+            badgeTexto = `${cantActivos} / ${maxCap}${sufijoInactivos} (Último)`;
           }
 
           const avisosCelda = (cronogramaData.avisos || []).filter(a => a.dia === dia && a.hora === hora);
@@ -5674,7 +5813,7 @@ function renderizarLibroDiario(esCargarMas) {
             <div class="crono-cell" data-key="${key}" style="position: relative;">
               <!-- Cabecera del turno con cupo y acceso a avisos -->
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <span class="cupo-tag ${badgeClase}">
+                <span class="cupo-tag ${badgeClase}" title="${tooltipCupo}">
                   ${badgeTexto}
                 </span>
                 <button title="Registrar aviso en este turno" onclick="abrirModalAvisoCronoRapido('${dia}', '${hora}')" style="background: transparent; border: none; cursor: pointer; font-size: 0.75rem; opacity: 0.45; padding: 0 2px; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.45'">
@@ -5698,7 +5837,7 @@ function renderizarLibroDiario(esCargarMas) {
                   const motivoInactivo = esInactivo ? (alumnoObj.inactivo_motivo || 'Vacaciones') : '';
 
                   return `
-                    <div class="crono-alumno-chip" data-nombre="${r.nombre_alumno || ''}" style="${esInactivo ? 'background: rgba(56, 189, 248, 0.12); border-left: 2px solid #38bdf8;' : ''}" title="${esInactivo ? `Inactivo temporal (${motivoInactivo})` : ''}">
+                    <div class="crono-alumno-chip" data-nombre="${r.nombre_alumno || ''}" style="${esInactivo ? 'background: rgba(56, 189, 248, 0.12); border-left: 2px solid #38bdf8;' : ''}" title="${esInactivo ? `Inactivo temporal (${motivoInactivo}) — No ocupa cupo físico` : ''}">
                       <span style="word-break: break-word; line-height: 1.2; flex: 1; padding-right: 4px;">
                         ${esInactivo ? '<span style="font-size: 0.75rem; margin-right: 2px;" title="Inactivo por vacaciones/viaje">🌴</span>' : ''}${r.nombre_alumno}
                       </span>
@@ -5709,8 +5848,10 @@ function renderizarLibroDiario(esCargarMas) {
               </div>
 
               <!-- Botón de agregar alumno o estado lleno -->
-              ${cant < maxCap ? `
-                <button class="crono-btn-agregar" onclick="inscribirAlumnoTurno('${key}')" title="Agregar alumno">+ Agregar</button>
+              ${cantActivos < maxCap ? `
+                <button class="crono-btn-agregar" onclick="inscribirAlumnoTurno('${key}')" title="${cantInactivos > 0 && cantTotal >= maxCap ? 'Lugar disponible temporalmente por alumno inactivo (🌴)' : 'Agregar alumno'}">
+                  + Agregar${cantInactivos > 0 && cantTotal >= maxCap ? ' (cupo 🌴)' : ''}
+                </button>
               ` : `
                 <div style="text-align: center; font-size: 0.68rem; color: var(--danger-red); padding: 3px 0; font-weight: 800; letter-spacing: 0.5px; opacity: 0.85;">COMPLETO</div>
               `}
@@ -5841,12 +5982,10 @@ function renderizarLibroDiario(esCargarMas) {
       window.cronoClaveActual = key;
       document.getElementById('modalInscribirTitulo').innerText = `Agregar a ${key.replace('-', ' ')} hs`;
       
-      const [dia, hora] = key.split('-');
-      let maxCap = (hora === "08:00" || hora === "14:00") ? 8 : 7;
-      const inscriptosActuales = cronogramaData.turnos[key] || [];
-      const cuposDisponibles = maxCap - inscriptosActuales.length;
+      const { inscriptos: inscriptosActuales, cantInactivos, cuposDisponibles } = obtenerCupoEfectivoTurno(key);
+      const notaInactivos = cantInactivos > 0 ? ` — incluye ${cantInactivos} liberado${cantInactivos > 1 ? 's' : ''} por 🌴 inactivo` : '';
       
-      document.getElementById('modalInscribirSubtitulo').innerText = `Seleccioná o escribí alumnos (cupos disponibles: ${cuposDisponibles}):`;
+      document.getElementById('modalInscribirSubtitulo').innerText = `Seleccioná o escribí alumnos (cupos disponibles: ${cuposDisponibles}${notaInactivos}):`;
       
       alternarTabInscripcion('lista');
       const inputManual = document.getElementById('cronoInputNombreManual');
@@ -5867,7 +6006,7 @@ function renderizarLibroDiario(esCargarMas) {
             listaDiv.innerHTML = alumnosNoInscriptos.map(a => `
               <label class="crono-checkbox-item" style="display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 4px; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
                 <input type="checkbox" name="alumnosCronoSel" value="${a.nombre}" onchange="validarCuposCrono(${cuposDisponibles}, this)" style="cursor: pointer;">
-                <span style="font-size: 0.9rem;">${a.nombre}</span>
+                <span style="font-size: 0.9rem;">${a.nombre} ${a.inactivo ? '<span style="font-size: 0.75rem; color: #38bdf8;">(🌴 Inactivo)</span>' : ''}</span>
               </label>
             `).join('');
           }
@@ -5934,12 +6073,10 @@ function renderizarLibroDiario(esCargarMas) {
 
       const [dia, hora] = key.split('-');
       let claseId = cronogramaData.clasesMap[key];
-      let maxCap = (hora === "08:00" || hora === "14:00") ? 8 : 7;
-      const inscriptosActuales = cronogramaData.turnos[key] || [];
-      const cuposDisponibles = maxCap - inscriptosActuales.length;
+      const { maxCap, cuposDisponibles } = obtenerCupoEfectivoTurno(key);
 
       if (nombresAInscribir.length > cuposDisponibles) {
-        alert(`No hay suficientes cupos. Intentas agregar ${nombresAInscribir.length} pero quedan ${cuposDisponibles}.`);
+        alert(`No hay suficientes cupos disponibles. Intentás agregar ${nombresAInscribir.length} pero quedan ${cuposDisponibles}.`);
         return;
       }
 
