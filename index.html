@@ -1602,7 +1602,7 @@
 
 
   <div id="modalEditCliente" class="modal-overlay">
-    <div class="modal-content" style="max-width: 460px; width: 95%;">
+    <div class="modal-content" style="max-width: 460px; width: 95%; max-height: 92vh; overflow-y: auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 12px;">
         <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">📋 Ficha del Cliente</h3>
         <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.9rem;" onclick="cerrarModalEditCliente()">✕</button>
@@ -1635,6 +1635,53 @@
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <label style="font-size: 0.8rem; color: var(--text-dim);">📝 Notas / Observaciones:</label>
         <input type="text" id="editClienteNotas" placeholder="Ej: Debe mes pasado, horario especial...">
+      </div>
+
+      <!-- ESTADO DEL CLIENTE: INACTIVO TEMPORAL / BONIFICADO -->
+      <div style="border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; background: rgba(255,255,255,0.02);">
+        <span style="font-size: 0.85rem; font-weight: 700; color: #fff;">🚦 Estado del cliente</span>
+
+        <div style="display: flex; gap: 18px; flex-wrap: wrap;">
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; color: #38bdf8;">
+            <input type="checkbox" id="editClienteInactivo" onchange="actualizarCamposEstadoFicha()" style="width: auto; margin: 0;"> 🌴 Inactivo temporal
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; color: #c084fc;">
+            <input type="checkbox" id="editClienteBonificado" onchange="actualizarCamposEstadoFicha()" style="width: auto; margin: 0;"> 🎁 Bonificado
+          </label>
+        </div>
+
+        <div id="bloqueInactivoFicha" style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 0.78rem; color: var(--text-dim);">Inactivo desde:</label>
+            <input type="date" id="editClienteInactivoDesde">
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 0.78rem; color: var(--text-dim);">Motivo:</label>
+            <select id="editClienteInactivoMotivo">
+              <option value="Vacaciones">Vacaciones</option>
+              <option value="Viaje">Viaje</option>
+              <option value="Lesión / Salud">Lesión / Salud</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px; grid-column: 1 / -1;">
+            <label style="font-size: 0.78rem; color: var(--text-dim);">Cuota mientras esté inactivo:</label>
+            <select id="editClientePausaCuota">
+              <option value="mantiene">Mantiene la cuota (sigue pagando)</option>
+              <option value="pausa">Pausa la cuota (no paga mientras esté inactivo)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="bloqueBonificadoFicha" style="display: none; flex-direction: column; gap: 4px;">
+          <label style="font-size: 0.78rem; color: var(--text-dim);">Motivo de la bonificación (opcional):</label>
+          <input type="text" id="editClienteBonificadoMotivo" placeholder="Ej: Staff, canje, familiar...">
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 0.78rem; color: var(--text-dim);">📜 Historial de estados:</span>
+          <div id="historialEstadosFicha" style="max-height: 110px; overflow-y: auto;"></div>
+        </div>
       </div>
 
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);">
@@ -3028,6 +3075,9 @@
           const montoNum = parseFloat(a.monto) || 0;
           const tieneNotas = a.notas && String(a.notas).trim() !== '';
           const tieneProfe = a.profesor_cargo && String(a.profesor_cargo).trim() !== '';
+          const diasInactivo = (a.inactivo && a.inactivo_desde)
+            ? Math.max(0, Math.floor((new Date(hoy + 'T12:00:00') - new Date(a.inactivo_desde + 'T12:00:00')) / 86400000))
+            : null;
   
           return `
             <li style="padding: 12px 16px; background: rgba(255,255,255,0.015); border-radius: 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--border-color); border-left: 3px solid ${estaPagado ? 'var(--neon-green)' : 'var(--danger-red)'};">
@@ -3042,6 +3092,8 @@
                       : `<span style="color: var(--danger-red); border: 1px solid var(--danger-red); background-color: rgba(255, 83, 83, 0.1); font-size: 0.73rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">⏳ Pendiente</span>`
                     }
                     <span style="font-size: 0.85rem; font-weight: 700; color: ${estaPagado ? 'var(--neon-green)' : '#fff'}; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 6px;">$${montoNum.toLocaleString('es-AR')}</span>
+                    ${a.inactivo ? `<span onclick="abrirModalEditCliente('${a.id}')" style="cursor: pointer; color: #38bdf8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.4); font-size: 0.73rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;" title="${a.inactivo_motivo ? escHtmlEstado(a.inactivo_motivo) : 'Inactivo temporal'} — clic para abrir la ficha">🌴 Inactivo${diasInactivo !== null ? ` hace ${diasInactivo} d` : ''}${a.inactivo_pausa_cuota ? ' · cuota pausada' : ''}</span>` : ''}
+                    ${a.bonificado ? `<span onclick="abrirModalEditCliente('${a.id}')" style="cursor: pointer; color: #c084fc; background: rgba(192, 132, 252, 0.12); border: 1px solid rgba(192, 132, 252, 0.4); font-size: 0.73rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;" title="${a.bonificado_motivo ? escHtmlEstado(a.bonificado_motivo) : 'Bonificado'} — clic para abrir la ficha">🎁 Bonificado</span>` : ''}
                   </div>
                   
                   <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px; font-size: 0.8rem; color: var(--text-dim);">
@@ -5972,6 +6024,16 @@ function renderizarLibroDiario(esCargarMas) {
             opciones += `<option value="${nombreProf}" ${isSel ? 'selected' : ''}>${nombreProf}</option>`;
         });
         selectProfesor.innerHTML = opciones;
+
+        // Estado del cliente (inactivo temporal / bonificado)
+        document.getElementById('editClienteInactivo').checked = !!cliente.inactivo;
+        document.getElementById('editClienteInactivoDesde').value = cliente.inactivo_desde || hoyLocalISO();
+        document.getElementById('editClienteInactivoMotivo').value = cliente.inactivo_motivo || 'Vacaciones';
+        document.getElementById('editClientePausaCuota').value = cliente.inactivo_pausa_cuota ? 'pausa' : 'mantiene';
+        document.getElementById('editClienteBonificado').checked = !!cliente.bonificado;
+        document.getElementById('editClienteBonificadoMotivo').value = cliente.bonificado_motivo || '';
+        actualizarCamposEstadoFicha();
+        cargarHistorialEstadosFicha(cliente.id);
         
         document.getElementById('modalEditCliente').style.display = 'flex';
     }
@@ -5994,6 +6056,130 @@ function renderizarLibroDiario(esCargarMas) {
         borrarCliente(id);
     }
 
+    function hoyLocalISO() {
+        const f = new Date();
+        f.setMinutes(f.getMinutes() - f.getTimezoneOffset());
+        return f.toISOString().split('T')[0];
+    }
+
+    function escHtmlEstado(texto) {
+        return String(texto == null ? '' : texto)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function actualizarCamposEstadoFicha() {
+        const inactivo = document.getElementById('editClienteInactivo')?.checked;
+        const bonificado = document.getElementById('editClienteBonificado')?.checked;
+        const bloqueIna = document.getElementById('bloqueInactivoFicha');
+        const bloqueBon = document.getElementById('bloqueBonificadoFicha');
+        if (bloqueIna) bloqueIna.style.display = inactivo ? 'grid' : 'none';
+        if (bloqueBon) bloqueBon.style.display = bonificado ? 'flex' : 'none';
+    }
+
+    async function cargarHistorialEstadosFicha(id) {
+        const cont = document.getElementById('historialEstadosFicha');
+        if (!cont) return;
+        cont.innerHTML = '<span style="color: var(--text-dim); font-size: 0.78rem;">Cargando historial...</span>';
+
+        const { data, error } = await _supabase
+            .from('alumno_estado_historial')
+            .select('*')
+            .eq('alumno_id', String(id))
+            .order('fecha_desde', { ascending: false })
+            .order('id', { ascending: false });
+
+        // Evita pisar el contenido si el usuario abrió la ficha de otro cliente mientras cargaba
+        if (String(document.getElementById('editClienteId')?.value) !== String(id)) return;
+
+        if (error) {
+            cont.innerHTML = '<span style="color: var(--text-dim); font-size: 0.78rem;">No se pudo cargar el historial.</span>';
+            return;
+        }
+        if (!data || data.length === 0) {
+            cont.innerHTML = '<span style="color: var(--text-dim); font-size: 0.78rem;">Sin períodos registrados.</span>';
+            return;
+        }
+
+        const fmt = (f) => f ? new Date(f + 'T12:00:00').toLocaleDateString('es-AR') : '';
+        cont.innerHTML = data.map(h => {
+            const esIna = h.tipo === 'inactivo';
+            const icono = esIna ? '🌴' : '🎁';
+            const etiqueta = esIna ? 'Inactivo' : 'Bonificado';
+            const rango = h.fecha_hasta
+                ? `${fmt(h.fecha_desde)} → ${fmt(h.fecha_hasta)}`
+                : `${fmt(h.fecha_desde)} → <strong style="color: var(--neon-green);">en curso</strong>`;
+            const extra = [
+                h.motivo ? escHtmlEstado(h.motivo) : '',
+                esIna && h.pausa_cuota ? 'cuota pausada' : ''
+            ].filter(Boolean).join(' · ');
+            return `<div style="font-size: 0.78rem; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: #cbd5e1;">
+                ${icono} <strong>${etiqueta}</strong> · ${rango}${extra ? ` <span style="color: var(--text-dim);">(${extra})</span>` : ''}
+            </div>`;
+        }).join('');
+    }
+
+    // Abre/cierra/actualiza períodos del historial según cómo cambió el estado del cliente
+    async function sincronizarHistorialEstados(id, nombre, antes, ahora) {
+        const hoy = hoyLocalISO();
+        const usuario = document.getElementById('loggedUserEmail')?.innerText || null;
+        const idTxt = String(id);
+        const fallos = [];
+
+        const abrirPeriodo = async (tipo, motivo, pausa, desde) => {
+            const { error } = await _supabase.from('alumno_estado_historial').insert([{
+                alumno_id: idTxt, alumno_nombre: nombre, tipo, motivo: motivo || null,
+                pausa_cuota: !!pausa, fecha_desde: desde || hoy, registrado_por: usuario
+            }]);
+            if (error) fallos.push(error.message);
+        };
+        const cerrarPeriodo = async (tipo) => {
+            const { error } = await _supabase.from('alumno_estado_historial')
+                .update({ fecha_hasta: hoy })
+                .eq('alumno_id', idTxt).eq('tipo', tipo).is('fecha_hasta', null);
+            if (error) fallos.push(error.message);
+        };
+        const actualizarPeriodoAbierto = async (tipo, campos) => {
+            const { error } = await _supabase.from('alumno_estado_historial')
+                .update(campos)
+                .eq('alumno_id', idTxt).eq('tipo', tipo).is('fecha_hasta', null);
+            if (error) fallos.push(error.message);
+        };
+
+        // Inactivo temporal
+        if (!antes.inactivo && ahora.inactivo) {
+            await abrirPeriodo('inactivo', ahora.inactivo_motivo, ahora.inactivo_pausa_cuota, ahora.inactivo_desde);
+        } else if (antes.inactivo && !ahora.inactivo) {
+            await cerrarPeriodo('inactivo');
+        } else if (antes.inactivo && ahora.inactivo) {
+            const cambio = (antes.inactivo_motivo || '') !== (ahora.inactivo_motivo || '')
+                || !!antes.inactivo_pausa_cuota !== !!ahora.inactivo_pausa_cuota
+                || (antes.inactivo_desde || '') !== (ahora.inactivo_desde || '');
+            if (cambio) {
+                await actualizarPeriodoAbierto('inactivo', {
+                    motivo: ahora.inactivo_motivo || null,
+                    pausa_cuota: !!ahora.inactivo_pausa_cuota,
+                    fecha_desde: ahora.inactivo_desde || hoy
+                });
+            }
+        }
+
+        // Bonificado
+        if (!antes.bonificado && ahora.bonificado) {
+            await abrirPeriodo('bonificado', ahora.bonificado_motivo, false, hoy);
+        } else if (antes.bonificado && !ahora.bonificado) {
+            await cerrarPeriodo('bonificado');
+        } else if (antes.bonificado && ahora.bonificado
+                   && (antes.bonificado_motivo || '') !== (ahora.bonificado_motivo || '')) {
+            await actualizarPeriodoAbierto('bonificado', { motivo: ahora.bonificado_motivo || null });
+        }
+
+        if (fallos.length > 0) {
+            console.error('Error al sincronizar historial de estados:', fallos);
+            alert('El cliente se guardó, pero no se pudo registrar el historial de estados: ' + fallos[0]);
+        }
+    }
+
     async function guardarEdicionCliente() {
         const id = document.getElementById('editClienteId').value;
         const nombre = document.getElementById('editClienteNombre').value.trim();
@@ -6007,11 +6193,33 @@ function renderizarLibroDiario(esCargarMas) {
             return;
         }
 
+        // Estado del cliente (inactivo temporal / bonificado)
+        const clienteAnterior = alumnosData.find(a => String(a.id) === String(id)) || {};
+        const estadoAntes = {
+            inactivo: !!clienteAnterior.inactivo,
+            inactivo_desde: clienteAnterior.inactivo_desde || null,
+            inactivo_motivo: clienteAnterior.inactivo_motivo || null,
+            inactivo_pausa_cuota: !!clienteAnterior.inactivo_pausa_cuota,
+            bonificado: !!clienteAnterior.bonificado,
+            bonificado_motivo: clienteAnterior.bonificado_motivo || null
+        };
+        const esInactivo = !!document.getElementById('editClienteInactivo')?.checked;
+        const esBonificado = !!document.getElementById('editClienteBonificado')?.checked;
+        const estadoAhora = {
+            inactivo: esInactivo,
+            inactivo_desde: esInactivo ? (document.getElementById('editClienteInactivoDesde')?.value || hoyLocalISO()) : null,
+            inactivo_motivo: esInactivo ? (document.getElementById('editClienteInactivoMotivo')?.value || null) : null,
+            inactivo_pausa_cuota: esInactivo ? document.getElementById('editClientePausaCuota')?.value === 'pausa' : false,
+            bonificado: esBonificado,
+            bonificado_motivo: esBonificado ? ((document.getElementById('editClienteBonificadoMotivo')?.value || '').trim() || null) : null
+        };
+
         const payload = { 
             nombre: formatearTitulo(nombre),
             monto: monto,
             dias_semana: parseInt(dias) || 3,
-            profesor_cargo: profesor
+            profesor_cargo: profesor,
+            ...estadoAhora
         };
         if (notas !== undefined) {
             payload.notas = notas;
@@ -6037,10 +6245,12 @@ function renderizarLibroDiario(esCargarMas) {
                 alumnosData[idx].dias_semana = parseInt(dias) || 3;
                 alumnosData[idx].profesor_cargo = profesor;
                 alumnosData[idx].notas = notas;
+                Object.assign(alumnosData[idx], estadoAhora);
                 actualizarFiltroProfesoresAlumnos();
                 actualizarMetricasAlumnos();
                 filtrarAlumnos();
             }
+            await sincronizarHistorialEstados(id, formatearTitulo(nombre), estadoAntes, estadoAhora);
             alert("Cliente actualizado con éxito");
         }
     }
