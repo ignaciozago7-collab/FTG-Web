@@ -691,8 +691,24 @@
 
       <div class="metrics-grid">
         <div class="metric-card">
-          <h4>Total Registrados</h4>
-          <div class="val" id="metricaTotal">0</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <h4 style="margin: 0;">Total Registrados</h4>
+            <span id="metricaTotalBadge" style="font-size: 0.75rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; color: #fff; font-weight: 700;">
+              0 total
+            </span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+            <div>
+              <div class="val" id="metricaPagan" style="color: #fff; font-size: 1.6rem; line-height: 1.1;">0</div>
+              <span style="font-size: 0.74rem; color: var(--text-dim);">💳 Pagan cuota</span>
+            </div>
+            <div style="width: 1px; height: 35px; background: var(--border-color); margin: 0 10px;"></div>
+            <div style="text-align: right;">
+              <div class="val" id="metricaBonificados" style="color: #c084fc; font-size: 1.6rem; line-height: 1.1;">0</div>
+              <span style="font-size: 0.74rem; color: #c084fc;">🎁 Bonificados</span>
+            </div>
+          </div>
+          <span id="metricaTotal" style="display: none;">0</span>
         </div>
         <div class="metric-card">
           <h4>Cuotas Pagadas</h4>
@@ -3065,6 +3081,7 @@
     function actualizarMetricasAlumnos() {
       const total = alumnosData.length;
       const bonificados = alumnosData.filter(a => a.bonificado).length;
+      const pagantes = total - bonificados;
       const cuotaPausada = alumnosData.filter(a => a.inactivo && a.inactivo_pausa_cuota).length;
 
       const aCobrar = alumnosData.filter(a => !estaExentoDeCuota(a));
@@ -3073,9 +3090,19 @@
       const pendientes = totalACobrar - pagados;
       const pctPagados = totalACobrar > 0 ? Math.round((pagados / totalACobrar) * 100) : 0;
 
-      document.getElementById('metricaTotal').innerText = total;
-      document.getElementById('metricaPagados').innerText = pagados;
-      document.getElementById('metricaPendientes').innerText = pendientes;
+      const elTotal = document.getElementById('metricaTotal');
+      if (elTotal) elTotal.innerText = total;
+      const elBadgeTotal = document.getElementById('metricaTotalBadge');
+      if (elBadgeTotal) elBadgeTotal.innerText = `${total} total`;
+      const elPagan = document.getElementById('metricaPagan');
+      if (elPagan) elPagan.innerText = pagantes;
+      const elBonif = document.getElementById('metricaBonificados');
+      if (elBonif) elBonif.innerText = bonificados;
+
+      const elPagados = document.getElementById('metricaPagados');
+      if (elPagados) elPagados.innerText = pagados;
+      const elPendientes = document.getElementById('metricaPendientes');
+      if (elPendientes) elPendientes.innerText = pendientes;
       const elPct = document.getElementById('metricaPorcentajePagados');
       if (elPct) {
         let detalleExentos = [];
