@@ -716,6 +716,12 @@
             <input type="date" id="filtroFechaAlumnos" onchange="filtrarAlumnos()">
             <select id="filtroProfesorAlumnos" onchange="filtrarAlumnos()"><option value="">Todos los Profesores</option></select>
             <select id="filtroCobradorAlumnos" onchange="filtrarAlumnos()"></select>
+            <select id="filtroEstadoCliente" onchange="filtrarAlumnos()" style="padding: 7px 10px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-dark); color: #fff;">
+              <option value="">Todos los Estados</option>
+              <option value="activos">Solo Activos</option>
+              <option value="inactivos">🌴 Inactivos</option>
+              <option value="bonificados">🎁 Bonificados</option>
+            </select>
             <input type="number" id="filtroMontoAlumnos" placeholder="Valor $" oninput="filtrarAlumnosDebounced()" style="width: 100px;">
           </div>
         </div>
@@ -3048,17 +3054,36 @@
       }
     }
 
+    function estaExentoDeCuota(a) {
+      if (!a) return false;
+      if (a.bonificado) return true;
+      if (a.inactivo && a.inactivo_pausa_cuota) return true;
+      return false;
+    }
+
     function actualizarMetricasAlumnos() {
       const total = alumnosData.length;
-      const pagados = alumnosData.filter(a => a.pago_confirmado).length;
-      const pendientes = total - pagados;
-      const pctPagados = total > 0 ? Math.round((pagados / total) * 100) : 0;
+      const bonificados = alumnosData.filter(a => a.bonificado).length;
+      const cuotaPausada = alumnosData.filter(a => a.inactivo && a.inactivo_pausa_cuota).length;
+
+      const aCobrar = alumnosData.filter(a => !estaExentoDeCuota(a));
+      const totalACobrar = aCobrar.length;
+      const pagados = aCobrar.filter(a => a.pago_confirmado).length;
+      const pendientes = totalACobrar - pagados;
+      const pctPagados = totalACobrar > 0 ? Math.round((pagados / totalACobrar) * 100) : 0;
 
       document.getElementById('metricaTotal').innerText = total;
       document.getElementById('metricaPagados').innerText = pagados;
       document.getElementById('metricaPendientes').innerText = pendientes;
       const elPct = document.getElementById('metricaPorcentajePagados');
-      if (elPct) elPct.innerText = `${pctPagados}%`;
+      if (elPct) {
+        let detalleExentos = [];
+        if (bonificados > 0) detalleExentos.push(`${bonificados} bonif.`);
+        if (cuotaPausada > 0) detalleExentos.push(`${cuotaPausada} pausados`);
+
+        const subtexto = detalleExentos.length > 0 ? ` · ${detalleExentos.join(' · ')}` : '';
+        elPct.innerHTML = `${pctPagados}% <span style="font-size: 0.72rem; color: var(--text-dim); font-weight: normal;">(${pagados}/${totalACobrar}${subtexto})</span>`;
+      }
     }
 
     function renderizarListaAlumnosHTML(items) {
@@ -3078,22 +3103,52 @@
           const diasInactivo = (a.inactivo && a.inactivo_desde)
             ? Math.max(0, Math.floor((new Date(hoy + 'T12:00:00') - new Date(a.inactivo_desde + 'T12:00:00')) / 86400000))
             : null;
-  
+
+          const esBonif = !!a.bonificado;
+          const esPausado = !!(a.inactivo && a.inactivo_pausa_cuota);
+          const esExento = esBonif || esPausado;
+
+          let colorBorde = 'var(--danger-red)';
+          if (esBonif) colorBorde = '#c084fc';
+          else if (esPausado) colorBorde = '#38bdf8';
+          else if (estaPagado) colorBorde = 'var(--neon-green)';
+
+          let tagEstado = '';
+          if (esBonif) {
+            tagEstado = `<span style="color: #c084fc; background: rgba(192, 132, 252, 0.15); border: 1px solid rgba(192, 132, 252, 0.5); font-size: 0.73rem; font-weight: 800; padding: 2px 8px; border-radius: 6px;">🎁 Bonificado</span>`;
+          } else if (esPausado) {
+            tagEstado = `<span style="color: #38bdf8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.5); font-size: 0.73rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">⏸️ Cuota Pausada</span>`;
+          } else if (estaPagado) {
+            tagEstado = `<span style="color: var(--bg-dark); background-color: var(--neon-green); font-size: 0.73rem; font-weight: 800; padding: 2px 8px; border-radius: 6px;">✔ Pagado</span>`;
+          } else {
+            tagEstado = `<span style="color: var(--danger-red); border: 1px solid var(--danger-red); background-color: rgba(255, 83, 83, 0.1); font-size: 0.73rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">⏳ Pendiente</span>`;
+          }
+
+          let botonesAccion = '';
+          if (esExento) {
+            // Bonificados y pausados no tienen cobro pendiente ni reclamo WSP
+          } else if (estaPagado) {
+            botonesAccion += `<button class="btn btn-outline" style="padding: 6px 11px; border-radius: 8px; font-size: 0.8rem;" onclick="actualizarPago(${a.id}, false)">↩ Pasar a Pendiente</button>`;
+          } else {
+            botonesAccion += `
+              <button class="btn" style="padding: 6px 14px; border-radius: 8px; font-size: 0.83rem; font-weight: 700; box-shadow: 0 2px 8px rgba(149, 255, 83, 0.2);" onclick="togglePanelCobroAlumno('${a.id}')">💳 Cobrar</button>
+              <a href="https://wa.me/?text=${encodeURIComponent(`Hola ${a.nombre}, buenos dias 😊\nTe escribimos para consultarte ¿por casualidad realizaste el pago del mes? Puede que se nos haya pasado anotarlo o simplemente no tengamos el registro aún.\nNo hay ningún apuro, es solo para confirmar y organizar los controles. 🙌\n\n¡Muchas gracias y saludos! ✨`)}" target="_blank" class="btn" style="background: #25D366; color: #000; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 8px; font-size: 0.82rem;" title="Reclamar Pago por WhatsApp">💬 WSP</a>
+            `;
+          }
+
           return `
-            <li style="padding: 12px 16px; background: rgba(255,255,255,0.015); border-radius: 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--border-color); border-left: 3px solid ${estaPagado ? 'var(--neon-green)' : 'var(--danger-red)'};">
+            <li style="padding: 12px 16px; background: rgba(255,255,255,0.015); border-radius: 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--border-color); border-left: 3px solid ${colorBorde};">
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; width: 100%;">
                 
                 <div class="info-cliente" style="flex: 1; min-width: 240px;">
                   <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
                     <strong style="font-size: 1.05rem; color: #fff; cursor: pointer;" onclick="abrirModalEditCliente('${a.id}')" title="Ver o editar ficha del cliente">${a.nombre}</strong> 
                     <span style="font-size: 0.78rem; color: var(--text-dim); background: rgba(255,255,255,0.06); padding: 2px 7px; border-radius: 6px;">${a.dias_semana || 3} días/sem</span>
-                    ${estaPagado 
-                      ? `<span style="color: var(--bg-dark); background-color: var(--neon-green); font-size: 0.73rem; font-weight: 800; padding: 2px 8px; border-radius: 6px;">✔ Pagado</span>` 
-                      : `<span style="color: var(--danger-red); border: 1px solid var(--danger-red); background-color: rgba(255, 83, 83, 0.1); font-size: 0.73rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">⏳ Pendiente</span>`
-                    }
-                    <span style="font-size: 0.85rem; font-weight: 700; color: ${estaPagado ? 'var(--neon-green)' : '#fff'}; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 6px;">$${montoNum.toLocaleString('es-AR')}</span>
-                    ${a.inactivo ? `<span onclick="abrirModalEditCliente('${a.id}')" style="cursor: pointer; color: #38bdf8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.4); font-size: 0.73rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;" title="${a.inactivo_motivo ? escHtmlEstado(a.inactivo_motivo) : 'Inactivo temporal'} — clic para abrir la ficha">🌴 Inactivo${diasInactivo !== null ? ` hace ${diasInactivo} d` : ''}${a.inactivo_pausa_cuota ? ' · cuota pausada' : ''}</span>` : ''}
-                    ${a.bonificado ? `<span onclick="abrirModalEditCliente('${a.id}')" style="cursor: pointer; color: #c084fc; background: rgba(192, 132, 252, 0.12); border: 1px solid rgba(192, 132, 252, 0.4); font-size: 0.73rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;" title="${a.bonificado_motivo ? escHtmlEstado(a.bonificado_motivo) : 'Bonificado'} — clic para abrir la ficha">🎁 Bonificado</span>` : ''}
+                    ${tagEstado}
+                    <span style="font-size: 0.85rem; font-weight: 700; color: ${esBonif ? '#c084fc' : (estaPagado ? 'var(--neon-green)' : '#fff')}; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 6px;">
+                      ${esBonif ? 'Bonificado' : `$${montoNum.toLocaleString('es-AR')}`}
+                    </span>
+                    ${a.inactivo ? `<span onclick="abrirModalEditCliente('${a.id}')" style="cursor: pointer; color: #38bdf8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.4); font-size: 0.73rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;" title="${a.inactivo_motivo ? escHtmlEstado(a.inactivo_motivo) : 'Inactivo temporal'} — clic para abrir la ficha">🌴 Inactivo${diasInactivo !== null ? ` hace ${diasInactivo} d` : ''}</span>` : ''}
                   </div>
                   
                   <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px; font-size: 0.8rem; color: var(--text-dim);">
@@ -3105,7 +3160,12 @@
                         📝 ${a.notas}
                       </span>
                     ` : ''}
-                    ${estaPagado ? `
+                    ${esBonif && a.bonificado_motivo ? `
+                      <span onclick="abrirModalEditCliente('${a.id}')" style="cursor: pointer; background: rgba(192, 132, 252, 0.12); border: 1px solid rgba(192, 132, 252, 0.35); color: #c084fc; padding: 2px 8px; border-radius: 6px;" title="Motivo de bonificación">
+                        🎁 Motivo: ${escHtmlEstado(a.bonificado_motivo)}
+                      </span>
+                    ` : ''}
+                    ${estaPagado && !esExento ? `
                       <span style="color: var(--text-dim);">
                         📅 Pagó: <strong style="color: var(--neon-green);">${fechaFormateada}</strong> · 👤 Cobró: <strong style="color: var(--neon-green);">${a.ultimo_cobrador || 'No especificado'}</strong>
                       </span>
@@ -3114,18 +3174,13 @@
                 </div>
                 
                 <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
-                  ${estaPagado ? `
-                    <button class="btn btn-outline" style="padding: 6px 11px; border-radius: 8px; font-size: 0.8rem;" onclick="actualizarPago(${a.id}, false)">↩ Pasar a Pendiente</button>
-                  ` : `
-                    <button class="btn" style="padding: 6px 14px; border-radius: 8px; font-size: 0.83rem; font-weight: 700; box-shadow: 0 2px 8px rgba(149, 255, 83, 0.2);" onclick="togglePanelCobroAlumno('${a.id}')">💳 Cobrar</button>
-                    <a href="https://wa.me/?text=${encodeURIComponent(`Hola ${a.nombre}, buenos dias 😊\nTe escribimos para consultarte ¿por casualidad realizaste el pago del mes? Puede que se nos haya pasado anotarlo o simplemente no tengamos el registro aún.\nNo hay ningún apuro, es solo para confirmar y organizar los controles. 🙌\n\n¡Muchas gracias y saludos! ✨`)}" target="_blank" class="btn" style="background: #25D366; color: #000; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 8px; font-size: 0.82rem;" title="Reclamar Pago por WhatsApp">💬 WSP</a>
-                  `}
+                  ${botonesAccion}
                   <button class="btn btn-outline" style="padding: 6px 10px; font-size: 0.82rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;" onclick="abrirHistorialPagosAlumno('${a.id}', '${encodeURIComponent(a.nombre)}')" title="Historial de Cuotas">📜 Historial</button>
                   <button class="btn btn-outline" style="padding: 6px 10px; font-size: 0.82rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;" onclick="abrirModalEditCliente('${a.id}')" title="Ficha del Cliente (Profe, Notas, Cuota, Borrar)">📋 Ficha</button>
                 </div>
               </div>
 
-              ${!estaPagado ? `
+              ${(!estaPagado && !esExento) ? `
                 <div id="panel-cobro-${a.id}" style="display: none; width: 100%; background: rgba(149, 255, 83, 0.05); border: 1px solid rgba(149, 255, 83, 0.25); border-radius: 10px; padding: 10px 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                   <span style="font-size: 0.82rem; color: var(--neon-green); font-weight: 700;">💳 Registrar cobro de cuota:</span>
                   <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
@@ -3150,8 +3205,8 @@
       const listaPendientes = document.getElementById('listaAlumnosPendientes');
       const listaPagados = document.getElementById('listaAlumnosPagados');
 
-      const pendientes = items.filter(a => !a.pago_confirmado);
-      const pagados = items.filter(a => a.pago_confirmado);
+      const pendientes = items.filter(a => !estaExentoDeCuota(a) && !a.pago_confirmado);
+      const pagados = items.filter(a => !estaExentoDeCuota(a) && a.pago_confirmado);
 
       if (listaTodos) {
           let html = renderizarListaAlumnosHTML(items.slice(0, limiteAlumnos));
@@ -3210,7 +3265,8 @@
         return;
       }
 
-      if (estado && cliente) {
+      // Un cobro de $0 no genera asiento en el Libro Diario (no hubo ingreso real)
+      if (estado && cliente && monto > 0) {
         const nuevoAsiento = {
           fecha: fechaPagoSeleccionada,
           tipo: 'ingreso',
@@ -3249,6 +3305,7 @@
       const profFiltro = document.getElementById('filtroProfesorAlumnos')?.value || '';
       const cobradorFiltro = document.getElementById('filtroCobradorAlumnos')?.value || '';
       const montoFiltro = parseFloat(document.getElementById('filtroMontoAlumnos')?.value) || 0;
+      const estadoFiltro = document.getElementById('filtroEstadoCliente')?.value || '';
 
       alumnosFiltradosCache = alumnosData.filter(a => {
         let ok = true;
@@ -3261,6 +3318,9 @@
         }
         if (cobradorFiltro && a.ultimo_cobrador !== cobradorFiltro) ok = false;
         if (montoFiltro > 0 && parseFloat(a.monto) !== montoFiltro) ok = false;
+        if (estadoFiltro === 'activos' && a.inactivo) ok = false;
+        if (estadoFiltro === 'inactivos' && !a.inactivo) ok = false;
+        if (estadoFiltro === 'bonificados' && !a.bonificado) ok = false;
         return ok;
       });
       renderizarListaAlumnos(alumnosFiltradosCache);
@@ -4872,7 +4932,7 @@ function renderizarLibroDiario(esCargarMas) {
       const elBalance = document.getElementById('metricaBalanceNeto');
 
       if (elRecaudacion) {
-        const recEst = (alumnosData || []).reduce((acc, a) => acc + (parseFloat(a.monto) || 0), 0);
+        const recEst = (alumnosData || []).filter(a => !estaExentoDeCuota(a)).reduce((acc, a) => acc + (parseFloat(a.monto) || 0), 0);
         elRecaudacion.innerText = `$${recEst.toLocaleString('es-AR')}`;
       }
       if (elIngresos) elIngresos.innerText = `$${totalIngresos.toLocaleString('es-AR')}`;
@@ -4904,6 +4964,8 @@ function renderizarLibroDiario(esCargarMas) {
         const det = (c.detalle || c.descripcion || '').toLowerCase();
         const esCuota = cat.includes('cuota') || det.includes('cuota') || det.includes('cobro cuota');
         if (!esCuota) return false;
+        // Los cobros de $0 (bonificados cargados como "pagó $0") no son cuotas cobradas reales
+        if ((parseFloat(c.monto) || 0) <= 0) return false;
         if (filtroMesCaja && c.fecha && !c.fecha.startsWith(filtroMesCaja)) return false;
         return true;
       });
