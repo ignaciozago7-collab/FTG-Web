@@ -838,6 +838,7 @@
               <option value="todos">Todos los estados</option>
               <option value="presentes">🟢 Solo Presentes hoy</option>
               <option value="pendientes">⚪ Solo No registrados</option>
+              <option value="inactivos">🌴 Solo Inactivos</option>
             </select>
 
             <!-- FILTRO POR PROFESOR -->
@@ -3423,7 +3424,10 @@
             const arr = cronogramaData.turnos[k] || [];
             arr.forEach(r => {
               if (r && r.nombre_alumno && r.nombre_alumno.trim()) {
-                setNombres.add(r.nombre_alumno.trim().toLowerCase());
+                const nomLower = r.nombre_alumno.trim().toLowerCase();
+                const alumnoObj = (alumnosData || []).find(a => (a.nombre || '').trim().toLowerCase() === nomLower);
+                if (alumnoObj && alumnoObj.inactivo) return; // Inactivos por vacaciones/viaje no se esperan
+                setNombres.add(nomLower);
               }
             });
           }
@@ -3432,11 +3436,11 @@
       return setNombres;
     }
 
-    function obtenerCantidadEsperadosDia(diaNombre, totalActivos) {
+    function obtenerCantidadEsperadosDia(diaNombre, totalDisponibles) {
       if (diaNombre === "Domingo") return 0;
       const setNombres = obtenerAlumnosEsperadosDia(diaNombre);
       if (setNombres.size > 0) return setNombres.size;
-      return Math.max(1, Math.round(((totalActivos || 10) * 3) / 6));
+      return Math.max(1, Math.round(((totalDisponibles || 10) * 3) / 6));
     }
 
     function filtrarAsistencias(profesorFiltroClick) {
@@ -3457,9 +3461,11 @@
 
       const fechaSel = document.getElementById('fechaAsistencia') ? document.getElementById('fechaAsistencia').value : '';
 
-      // Alumnos activos base
-      const alumnosActivos = (alumnosData || []).filter(a => a.activo !== false);
-      const totalActivos = alumnosActivos.length;
+      // Alumnos activos base (no eliminados)
+      const alumnosPadron = (alumnosData || []).filter(a => a.activo !== false);
+      // Alumnos disponibles para concurrencia (excluye inactivos por vacaciones/viaje)
+      const alumnosDisponibles = alumnosPadron.filter(a => !a.inactivo);
+      const totalDisponibles = alumnosDisponibles.length;
 
       const dSel = new Date(fechaSel + 'T12:00:00');
       const nombresDias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
@@ -3467,19 +3473,19 @@
       const esDomingo = (dSel.getDay() === 0);
 
       // Presentes del día seleccionado
-      const presentesHoy = alumnosActivos.filter(a => 
+      const presentesHoy = alumnosPadron.filter(a => 
         asistenciasMesData.some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === String(fechaSel))
       );
       const cantPresentes = presentesHoy.length;
 
-      // 1. Asistencia Día (en base al cronograma)
+      // 1. Asistencia Día (en base al cronograma, sin inactivos)
       let cantEsperadosDia = 0;
       let pctDia = 0;
       if (esDomingo) {
         cantEsperadosDia = 0;
         pctDia = 0;
       } else {
-        cantEsperadosDia = obtenerCantidadEsperadosDia(diaSelNombre, totalActivos);
+        cantEsperadosDia = obtenerCantidadEsperadosDia(diaSelNombre, totalDisponibles);
         pctDia = cantEsperadosDia > 0 ? Math.round((cantPresentes / cantEsperadosDia) * 100) : 0;
       }
 
@@ -3524,7 +3530,7 @@
           }
         });
 
-        const espDia = obtenerCantidadEsperadosDia(diaNom, totalActivos);
+        const espDia = obtenerCantidadEsperadosDia(diaNom, totalDisponibles);
         totalPresSemana += setPres.size;
         totalEspSemana += espDia;
         diasComputadosSemana++;
@@ -3568,7 +3574,7 @@
             }
           });
 
-          const espDia = obtenerCantidadEsperadosDia(diaNom, totalActivos);
+          const espDia = obtenerCantidadEsperadosDia(diaNom, totalDisponibles);
           totalPresMes += setPres.size;
           totalEspMes += espDia;
           diasComputadosMes++;
@@ -3579,14 +3585,16 @@
 
       // Actualizar tarjetas de métricas
       const elTotal = document.getElementById('asistMetricaTotalSocios');
-      if (elTotal) elTotal.innerText = totalActivos;
+      if (elTotal) elTotal.innerText = alumnosPadron.length;
 
       const elPres = document.getElementById('asistMetricaPresentes');
       if (elPres) elPres.innerText = cantPresentes;
       const elSubPres = document.getElementById('asistSubPresentes');
       if (elSubPres) {
-        const pctPadron = totalActivos > 0 ? Math.round((cantPresentes / totalActivos) * 100) : 0;
-        elSubPres.innerText = `${pctPadron}% del padrón (${cantPresentes} de ${totalActivos})`;
+        const cantInactivos = alumnosPadron.length - totalDisponibles;
+        const textoInactivos = cantInactivos > 0 ? ` · ${cantInactivos} inactivos` : '';
+        const pctPadron = totalDisponibles > 0 ? Math.round((cantPresentes / totalDisponibles) * 100) : 0;
+        elSubPres.innerText = `${pctPadron}% de activos (${cantPresentes} de ${totalDisponibles}${textoInactivos})`;
       }
 
       const elPctDia = document.getElementById('asistMetricaPorcentaje');
@@ -3626,7 +3634,7 @@
       if (elBadgeHoy) elBadgeHoy.innerText = cantPresentes;
 
       // Filtrar alumnos para la tabla
-      const filtrados = alumnosActivos.filter(a => {
+      const filtrados = alumnosPadron.filter(a => {
         // Filtro texto
         if (texto && !(a.nombre && a.nombre.toLowerCase().includes(texto))) return false;
         // Filtro profesor
@@ -3635,7 +3643,8 @@
         if (estadoFiltro !== 'todos') {
           const tienePresente = asistenciasMesData.some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === String(fechaSel));
           if (estadoFiltro === 'presentes' && !tienePresente) return false;
-          if (estadoFiltro === 'pendientes' && tienePresente) return false;
+          if (estadoFiltro === 'pendientes' && (tienePresente || a.inactivo)) return false;
+          if (estadoFiltro === 'inactivos' && !a.inactivo) return false;
         }
         return true;
       });
@@ -3708,7 +3717,10 @@
         return `
           <tr style="transition: background 0.15s;">
             <td>
-              <strong style="font-size: 0.95rem; color: #fff;">${a.nombre}</strong>
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <strong style="font-size: 0.95rem; color: #fff;">${a.nombre}</strong>
+                ${a.inactivo ? `<span style="font-size: 0.7rem; color: #38bdf8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.4); padding: 1px 6px; border-radius: 4px; font-weight: 700;" title="Inactivo temporal: ${escHtmlEstado(a.inactivo_motivo || 'Vacaciones')}">🌴 Inactivo</span>` : ''}
+              </div>
             </td>
             <td>
               <select onchange="actualizarProfesorCargo(${a.id}, this.value)" style="padding: 5px 8px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
@@ -3732,7 +3744,10 @@
             <td>
               ${yaVinoHoy 
                 ? `<span class="badge-presente" style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.82rem;">✓ Presente hoy</span>` 
-                : `<span style="color: var(--text-dim); font-size: 0.85rem; padding: 4px 6px;">— Pendiente</span>`}
+                : (a.inactivo 
+                    ? `<span style="color: #38bdf8; font-size: 0.82rem; padding: 4px 6px; font-weight: 600;">🌴 Inactivo</span>` 
+                    : `<span style="color: var(--text-dim); font-size: 0.85rem; padding: 4px 6px;">— Pendiente</span>`
+                  )}
             </td>
             <td style="text-align: center;">
               ${yaVinoHoy 
@@ -3949,6 +3964,38 @@
     async function marcarAsistenciaFecha(alumnoId) {
       const fechaSel = document.getElementById('fechaAsistencia').value;
       if (!fechaSel) return alert('Seleccioná una fecha válida.');
+
+      const alumno = alumnosData.find(a => String(a.id) === String(alumnoId));
+      if (alumno && alumno.inactivo) {
+        const motivo = alumno.inactivo_motivo ? ` (${alumno.inactivo_motivo})` : '';
+        const confirmar = await confirmAsync(
+          `El cliente "${alumno.nombre}" figura actualmente como INACTIVO${motivo}.\n\n¿Deseas reactivarlo como cliente activo a partir de hoy?`
+        );
+        if (confirmar) {
+          const hoy = hoyLocalISO();
+          const idTxt = String(alumno.id);
+          await _supabase.from('alumnos').update({
+            inactivo: false,
+            inactivo_desde: null,
+            inactivo_motivo: null,
+            inactivo_pausa_cuota: false
+          }).eq('id', alumno.id);
+
+          await _supabase.from('alumno_estado_historial')
+            .update({ fecha_hasta: hoy })
+            .eq('alumno_id', idTxt)
+            .eq('tipo', 'inactivo')
+            .is('fecha_hasta', null);
+
+          alumno.inactivo = false;
+          alumno.inactivo_desde = null;
+          alumno.inactivo_motivo = null;
+          alumno.inactivo_pausa_cuota = false;
+
+          actualizarMetricasAlumnos();
+          filtrarAlumnos();
+        }
+      }
 
       // Actualización optimista en memoria para respuesta instantánea
       const nuevoRegistro = { alumno_id: alumnoId, fecha: fechaSel };
@@ -5618,12 +5665,20 @@ function renderizarLibroDiario(esCargarMas) {
 
               <!-- Lista de Alumnos Inscriptos -->
               <div style="display: flex; flex-direction: column; gap: 3px; flex: 1;">
-                ${inscriptos.map(r => `
-                  <div class="crono-alumno-chip" data-nombre="${r.nombre_alumno || ''}">
-                    <span style="word-break: break-word; line-height: 1.2; flex: 1; padding-right: 4px;">${r.nombre_alumno}</span>
-                    <span style="cursor: pointer; color: var(--danger-red); opacity: 0.5; padding: 0 2px; font-size: 0.75rem; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'" onclick="quitarAlumnoTurno('${r.id}', '${encodeURIComponent(r.nombre_alumno || '')}')" title="Quitar alumno">✕</span>
-                  </div>
-                `).join('')}
+                ${inscriptos.map(r => {
+                  const alumnoObj = (alumnosData || []).find(a => (a.nombre || '').trim().toLowerCase() === (r.nombre_alumno || '').trim().toLowerCase());
+                  const esInactivo = alumnoObj && alumnoObj.inactivo;
+                  const motivoInactivo = esInactivo ? (alumnoObj.inactivo_motivo || 'Vacaciones') : '';
+
+                  return `
+                    <div class="crono-alumno-chip" data-nombre="${r.nombre_alumno || ''}" style="${esInactivo ? 'background: rgba(56, 189, 248, 0.12); border-left: 2px solid #38bdf8;' : ''}" title="${esInactivo ? `Inactivo temporal (${motivoInactivo})` : ''}">
+                      <span style="word-break: break-word; line-height: 1.2; flex: 1; padding-right: 4px;">
+                        ${esInactivo ? '<span style="font-size: 0.75rem; margin-right: 2px;" title="Inactivo por vacaciones/viaje">🌴</span>' : ''}${r.nombre_alumno}
+                      </span>
+                      <span style="cursor: pointer; color: var(--danger-red); opacity: 0.5; padding: 0 2px; font-size: 0.75rem; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'" onclick="quitarAlumnoTurno('${r.id}', '${encodeURIComponent(r.nombre_alumno || '')}')" title="Quitar alumno">✕</span>
+                    </div>
+                  `;
+                }).join('')}
               </div>
 
               <!-- Botón de agregar alumno o estado lleno -->
