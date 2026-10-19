@@ -1297,7 +1297,7 @@
     <div id="planesSection" class="section-page">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h1 style="margin: 0;">Renovación y Planificación de Planes</h1>
-          <button class="btn" style="padding: 10px 16px; font-weight: bold;" onclick="document.getElementById('modalAltaPlan').style.display='flex'">+ Asignar Plan</button>
+          <button class="btn" style="padding: 10px 16px; font-weight: bold;" onclick="abrirModalAltaPlan()">+ Asignar Plan</button>
         </div>
 
       <div class="card">
@@ -1306,7 +1306,7 @@
           <select id="planProfesor" style="flex: 1.5;" onchange="filtrarAlumnosPorProfesor()" required>
             <option value="">Seleccionar Profesor...</option>
           </select>
-          <input type="text" id="planSemana" placeholder="Semana (ej: 21/9)" style="flex: 1;" required>
+          <input type="date" id="planSemana" style="flex: 1; cursor: pointer;" title="Seleccioná la fecha/semana para cuando necesita el plan" required>
           <input type="text" id="planAlumno" list="listaAlumnosProfesor" placeholder="Nombre del Alumno" style="flex: 1.5;" required>
           <datalist id="listaAlumnosProfesor"></datalist>
           <select id="planDias" style="flex: 1;">
@@ -1862,7 +1862,10 @@
         <select id="modalPlanProfesor" onchange="filtrarAlumnosPorProfesor(true)" required>
           <option value="">Seleccionar Profesor...</option>
         </select>
-        <input type="text" id="modalPlanSemana" placeholder="Semana (ej: 21/9)" required>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <label style="font-size: 0.8rem; color: var(--text-dim);">📅 Fecha / Semana para cuando necesita el plan:</label>
+          <input type="date" id="modalPlanSemana" style="cursor: pointer; width: 100%;" required>
+        </div>
         <input type="text" id="modalPlanAlumno" list="listaAlumnosProfesor" placeholder="Nombre del Alumno" required>
         <select id="modalPlanDias">
           <option value="1">1 Día</option>
@@ -2803,7 +2806,8 @@
       } else if (idSeccion === 'asistenciasSection') {
         cargarAsistencias();
       } else if (idSeccion === 'planesSection') {
-          poblarSelectsProfesorPlanes();
+        inicializarFechasPlanes();
+        poblarSelectsProfesorPlanes();
         if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
       } else if (idSeccion === 'cronogramaSection') {
         cargarTurnosSupabase();
@@ -6025,7 +6029,38 @@ function renderizarLibroDiario(esCargarMas) {
       }
     }
 
+    function formatearFechaPlanSemana(val) {
+      const str = String(val || '').trim();
+      if (!str) return '';
+      const mIso = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (mIso) {
+        const dia = parseInt(mIso[3], 10);
+        const mes = parseInt(mIso[2], 10);
+        return `${dia}/${mes}`;
+      }
+      const mSlash = str.match(/^(\d{1,2})\/(\d{1,2})(?:\/\d{2,4})?$/);
+      if (mSlash) {
+        return `${parseInt(mSlash[1], 10)}/${parseInt(mSlash[2], 10)}`;
+      }
+      return str;
+    }
+
+    function inicializarFechasPlanes() {
+      const hoy = typeof hoyLocalISO === 'function' ? hoyLocalISO() : new Date().toISOString().split('T')[0];
+      const inpSem = document.getElementById('planSemana');
+      if (inpSem && !inpSem.value) inpSem.value = hoy;
+      const inpModalSem = document.getElementById('modalPlanSemana');
+      if (inpModalSem && !inpModalSem.value) inpModalSem.value = hoy;
+    }
+
+    function abrirModalAltaPlan() {
+      inicializarFechasPlanes();
+      const modal = document.getElementById('modalAltaPlan');
+      if (modal) modal.style.display = 'flex';
+    }
+
     async function cargarPlanesRenovacion() {
+      inicializarFechasPlanes();
       const { data, error } = await _supabase.from('planes').select('*').order('id', { ascending: false });
       if (error) {
         console.error('Error al cargar planes:', error.message);
@@ -6043,13 +6078,14 @@ function renderizarLibroDiario(esCargarMas) {
       const idDet = esModal ? 'modalPlanDetalles' : 'planDetalles';
 
       const profesor = document.getElementById(idProf)?.value || '';
-      const semana = (document.getElementById(idSem)?.value || '').trim();
+      const rawSemana = (document.getElementById(idSem)?.value || '').trim();
+      const semana = formatearFechaPlanSemana(rawSemana);
       const alumno = formatearTitulo((document.getElementById(idAlum)?.value || '').trim());
       const dias = parseInt(document.getElementById(idDias)?.value, 10) || 3;
       const detalles = (document.getElementById(idDet)?.value || '').trim();
 
       if (!profesor || !semana || !alumno) {
-        alert('Por favor completá los campos obligatorios (Profesor, Semana y Alumno).');
+        alert('Por favor completá los campos obligatorios (Profesor, Fecha/Semana y Alumno).');
         return;
       }
 
@@ -6060,10 +6096,8 @@ function renderizarLibroDiario(esCargarMas) {
       if (error) {
         alert('Error al guardar el plan: ' + error.message);
       } else {
-        const elSem = document.getElementById(idSem);
         const elAlum = document.getElementById(idAlum);
         const elDet = document.getElementById(idDet);
-        if (elSem) elSem.value = '';
         if (elAlum) elAlum.value = '';
         if (elDet) elDet.value = '';
         if (esModal) {
@@ -6076,11 +6110,18 @@ function renderizarLibroDiario(esCargarMas) {
 
     function parsearFechaSemana(str) {
       if (!str) return 0;
-      const match = str.match(/(\d{1,2})\/(\d{1,2})/);
+      const s = String(str).trim();
+      const mIso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (mIso) {
+        return new Date(parseInt(mIso[1], 10), parseInt(mIso[2], 10) - 1, parseInt(mIso[3], 10)).getTime();
+      }
+      const match = s.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
       if (match) {
         const d = parseInt(match[1], 10);
         const m = parseInt(match[2], 10);
-        const date = new Date(new Date().getFullYear(), m - 1, d);
+        let y = match[3] ? parseInt(match[3], 10) : new Date().getFullYear();
+        if (y < 100) y += 2000;
+        const date = new Date(y, m - 1, d);
         return date.getTime();
       }
       return 0;
@@ -6108,10 +6149,12 @@ function renderizarLibroDiario(esCargarMas) {
         const estado = p.estado || 'Sin hacer';
         if (estado === 'Hecho') return false; 
         
+        const semFmt = formatearFechaPlanSemana(p.semana).toLowerCase();
         const coincideProf = !profFiltro || p.profesor === profFiltro;
         const coincideTexto = !textoBuscador || 
           (p.alumno && p.alumno.toLowerCase().includes(textoBuscador)) || 
-          (p.semana && p.semana.toLowerCase().includes(textoBuscador));
+          (p.semana && p.semana.toLowerCase().includes(textoBuscador)) ||
+          semFmt.includes(textoBuscador);
         return coincideProf && coincideTexto;
       });
 
@@ -6130,9 +6173,10 @@ function renderizarLibroDiario(esCargarMas) {
 
       const agrupados = {};
       filtrados.forEach(p => {
+        const semKey = formatearFechaPlanSemana(p.semana) || p.semana || 'Sin fecha';
         if (!agrupados[p.profesor]) agrupados[p.profesor] = {};
-        if (!agrupados[p.profesor][p.semana]) agrupados[p.profesor][p.semana] = [];
-        agrupados[p.profesor][p.semana].push(p);
+        if (!agrupados[p.profesor][semKey]) agrupados[p.profesor][semKey] = [];
+        agrupados[p.profesor][semKey].push(p);
       });
 
       let htmlContent = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; align-items: start;">';
@@ -6143,7 +6187,7 @@ function renderizarLibroDiario(esCargarMas) {
         
         for (const sem in agrupados[prof]) {
            htmlContent += `<div style="margin-bottom: 16px;">`;
-           htmlContent += `<h5 style="color: #fff; margin-bottom: 10px; font-size: 1rem; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px; display: inline-block;">Semana: ${sem}</h5>`;
+           htmlContent += `<h5 style="color: #fff; margin-bottom: 10px; font-size: 1rem; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px; display: inline-block;">📅 Semana: ${sem}</h5>`;
            
            agrupados[prof][sem].forEach(p => {
              const estado = p.estado || 'Sin hacer';
