@@ -1806,16 +1806,16 @@
     <div class="modal-content" style="max-width: 500px;">
       <h3>Alta de Profesor / Profesional</h3>
       <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-        <input type="text" id="nombreStaff" placeholder="Nombre completo">
-        <select id="rolStaff" onchange="toggleCamposRol()">
+        <input type="text" id="modalNombreStaff" placeholder="Nombre completo">
+        <select id="modalRolStaff" onchange="toggleCamposRol(true)">
           <option value="profesor">Profesor (Por hora)</option>
           <option value="profesional">Profesional (Porcentaje %)</option>
         </select>
-        <input type="number" id="tarifaHoraStaff" placeholder="Tarifa por Hora ($)">
-        <input type="number" id="porcentajeStaff" placeholder="Porcentaje (%)" style="display: none;">
+        <input type="number" id="modalTarifaHoraStaff" placeholder="Tarifa por Hora ($)">
+        <input type="number" id="modalPorcentajeStaff" placeholder="Porcentaje (%)" style="display: none;">
         <div style="display: flex; gap: 8px; margin-top: 10px;">
           <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('modalAltaStaff').style.display='none'">Cancelar</button>
-          <button class="btn" style="flex: 1;" onclick="guardarStaff(); document.getElementById('modalAltaStaff').style.display='none';">Guardar Staff</button>
+          <button class="btn" style="flex: 1;" onclick="guardarStaff(true)">Guardar Staff</button>
         </div>
       </div>
     </div>
@@ -1859,15 +1859,22 @@
     <div class="modal-content" style="max-width: 500px;">
       <h3>Asignar / Agregar Plan</h3>
       <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-        <select id="planProfesor" onchange="filtrarAlumnosPorProfesor()" required>
+        <select id="modalPlanProfesor" onchange="filtrarAlumnosPorProfesor(true)" required>
           <option value="">Seleccionar Profesor...</option>
         </select>
-        <input type="text" id="planSemana" placeholder="Semana (ej: 21/9)" required>
-        <input type="text" id="planAlumno" list="listaAlumnosProfesor" placeholder="Nombre del Alumno" required>
-        <input type="text" id="planDetalles" placeholder="📝 Detalles a tener en cuenta">
+        <input type="text" id="modalPlanSemana" placeholder="Semana (ej: 21/9)" required>
+        <input type="text" id="modalPlanAlumno" list="listaAlumnosProfesor" placeholder="Nombre del Alumno" required>
+        <select id="modalPlanDias">
+          <option value="1">1 Día</option>
+          <option value="2">2 Días</option>
+          <option value="3" selected>3 Días</option>
+          <option value="4">4 Días</option>
+          <option value="5">5 Días</option>
+        </select>
+        <input type="text" id="modalPlanDetalles" placeholder="📝 Detalles a tener en cuenta">
         <div style="display: flex; gap: 8px; margin-top: 10px;">
           <button class="btn btn-outline" style="flex: 1;" onclick="document.getElementById('modalAltaPlan').style.display='none'">Cancelar</button>
-          <button class="btn" style="flex: 1;" onclick="guardarPlanRenovacion(); document.getElementById('modalAltaPlan').style.display='none';">Agregar Plan</button>
+          <button class="btn" style="flex: 1;" onclick="guardarPlanRenovacion(true)">Agregar Plan</button>
         </div>
       </div>
     </div>
@@ -2334,13 +2341,6 @@
       const elMesCaja = document.getElementById('filtroMesCaja');
       if (elMesCaja && !elMesCaja.value) elMesCaja.value = mesActual;
 
-      // Load from Supabase DB configuracion table
-      const { data: cfgData } = await _supabase.from('configuracion').select('*').eq('id', 1).maybeSingle();
-      if (cfgData) {
-          if (document.getElementById('reservaARS')) document.getElementById('reservaARS').value = cfgData.reserva_ars || 0;
-          if (document.getElementById('reservaUSD')) document.getElementById('reservaUSD').value = cfgData.reserva_usd || 0;
-      }
-
       const btnLogin = document.getElementById('btnLogin');
       if (btnLogin) btnLogin.addEventListener('click', iniciarSesion);
 
@@ -2349,6 +2349,15 @@
 
       verificarSesionActiva();
     });
+
+    async function cargarConfiguracionReservas() {
+      if (!window.esSuperAdminGlobal) return;
+      const { data: cfgData } = await _supabase.from('configuracion').select('*').eq('id', 1).maybeSingle();
+      if (cfgData) {
+        if (document.getElementById('reservaARS')) document.getElementById('reservaARS').value = cfgData.reserva_ars || 0;
+        if (document.getElementById('reservaUSD')) document.getElementById('reservaUSD').value = cfgData.reserva_usd || 0;
+      }
+    }
 
     async function verificarSesionActiva() {
       const { data: { session } } = await _supabase.auth.getSession();
@@ -2490,14 +2499,18 @@
             cambiarSeccion('alumnosSection', document.querySelector('button[onclick*="alumnosSection"]'));
         }
 
-      Promise.allSettled([
+      const promesasInicio = [
         cargarStaff(),
-        cargarDatosAlumnos(),
-        cargarLibroDiario(),
-        cargarHistorialLiquidaciones(),
-        cargarTurnosSupabase(),
-        cargarDatosNutricion()
-      ]).then(() => {
+        cargarDatosAlumnos()
+      ];
+      if (!esNutri || esSuperAdmin) {
+        promesasInicio.push(cargarLibroDiario(), cargarTurnosSupabase());
+      }
+      if (esSuperAdmin) {
+        promesasInicio.push(cargarHistorialLiquidaciones(), cargarConfiguracionReservas(), cargarDatosNutricion());
+      }
+
+      Promise.allSettled(promesasInicio).then(() => {
         activarTiempoReal();
       }).catch(err => console.error("Error al inicializar datos:", err));
     }
@@ -2936,17 +2949,21 @@
 
         let htmlRiesgo = '';
 
-        const alumnosRiesgo = alumnosData.map(a => {
-            const ultimaFechaStr = ultimasAsistencias[a.id];
-            let diasAusente = 999;
-            if (ultimaFechaStr) {
-                const ultimaFecha = new Date(ultimaFechaStr + 'T12:00:00');
-                ultimaFecha.setHours(0,0,0,0);
-                const diffTime = Math.abs(hoy - ultimaFecha);
-                diasAusente = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            }
-            return { ...a, diasAusente, ultimaFechaStr };
-        }).filter(a => a.diasAusente >= 7).sort((a, b) => b.diasAusente - a.diasAusente);
+        const alumnosRiesgo = alumnosData
+            .filter(a => !a.inactivo)
+            .map(a => {
+              const ultimaFechaStr = ultimasAsistencias[a.id];
+              let diasAusente = 999;
+              if (ultimaFechaStr) {
+                  const ultimaFecha = new Date(ultimaFechaStr + 'T12:00:00');
+                  ultimaFecha.setHours(0,0,0,0);
+                  const diffTime = Math.abs(hoy - ultimaFecha);
+                  diasAusente = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              }
+              return { ...a, diasAusente, ultimaFechaStr };
+            })
+            .filter(a => a.diasAusente >= 7)
+            .sort((a, b) => b.diasAusente - a.diasAusente);
 
         if (alumnosRiesgo.length === 0) {
             listaRiesgo.innerHTML = '<div style="text-align: center; color: var(--text-dim); padding: 15px;">¡Excelente! No hay alumnos en riesgo (inactivos +7 días).</div>';
@@ -2984,6 +3001,26 @@
 
         listaRiesgo.innerHTML = htmlRiesgo;
       }
+
+      let alumnosPorNombreMap = new Map();
+      function reconstruirMapaAlumnos() {
+        alumnosPorNombreMap = new Map();
+        (alumnosData || []).forEach(a => {
+          if (a && a.nombre) {
+            alumnosPorNombreMap.set(a.nombre.trim().toLowerCase(), a);
+          }
+        });
+      }
+
+      function obtenerAlumnoPorNombre(nombre) {
+        if (!nombre) return undefined;
+        const key = String(nombre).trim().toLowerCase();
+        if (alumnosPorNombreMap && alumnosPorNombreMap.size === (alumnosData ? alumnosData.length : 0)) {
+          return alumnosPorNombreMap.get(key);
+        }
+        reconstruirMapaAlumnos();
+        return alumnosPorNombreMap.get(key);
+      }
       
       async function cargarDatosAlumnos() {
       const { data: alumnos, error } = await _supabase.from('alumnos').select('*').eq('activo', true).order('nombre', { ascending: true });
@@ -2993,10 +3030,14 @@
         if (a.profesor_cargo) a.profesor_cargo = formatearTitulo(a.profesor_cargo.trim());
         return a;
       });
+      reconstruirMapaAlumnos();
       actualizarFiltroProfesoresAlumnos();
       actualizarMetricasAlumnos();
       filtrarAlumnos();
       cargarAsistencias();
+      if (typeof renderizarCronogramaDinamico === 'function' && cronogramaData && cronogramaData.turnos && Object.keys(cronogramaData.turnos).length > 0) {
+        renderizarCronogramaDinamico();
+      }
       if (typeof renderizarLibroDiario === 'function' && Array.isArray(cajaData) && cajaData.length > 0) {
         renderizarLibroDiario();
       }
@@ -3148,12 +3189,17 @@
     async function borrarCliente(id) {
       try {
         if (!id) throw new Error("ID inválido");
+        const cliente = (alumnosData || []).find(a => String(a.id) === String(id));
 
         if (await confirmAsync("¿Estás seguro de eliminar este cliente?")) {
           const { error } = await _supabase.from('alumnos').update({ activo: false }).eq('id', id);
           if (error) {
             alert('Error al borrar cliente: ' + error.message);
           } else {
+            if (cliente && cliente.nombre) {
+              await _supabase.from('reservas_clases').delete().ilike('nombre_alumno', cliente.nombre.trim());
+              if (typeof cargarTurnosSupabase === 'function') cargarTurnosSupabase();
+            }
             await cargarDatosAlumnos();
           }
         }
@@ -3561,7 +3607,7 @@
             arr.forEach(r => {
               if (r && r.nombre_alumno && r.nombre_alumno.trim()) {
                 const nomLower = r.nombre_alumno.trim().toLowerCase();
-                const alumnoObj = (alumnosData || []).find(a => (a.nombre || '').trim().toLowerCase() === nomLower);
+                const alumnoObj = obtenerAlumnoPorNombre(nomLower);
                 if (alumnoObj && alumnoObj.inactivo) return; // Inactivos por vacaciones/viaje no se esperan
                 setNombres.add(nomLower);
               }
@@ -4618,19 +4664,31 @@
           }
       }
 
-      function toggleCamposRol() {
-      const rol = document.getElementById('rolStaff').value;
-      document.getElementById('tarifaHoraStaff').style.display = rol === 'profesor' ? 'block' : 'none';
-      document.getElementById('porcentajeStaff').style.display = rol === 'profesional' ? 'block' : 'none';
-    }
+      function toggleCamposRol(esModal) {
+        const idRol = esModal ? 'modalRolStaff' : 'rolStaff';
+        const idTarifa = esModal ? 'modalTarifaHoraStaff' : 'tarifaHoraStaff';
+        const idPct = esModal ? 'modalPorcentajeStaff' : 'porcentajeStaff';
+        const rolEl = document.getElementById(idRol);
+        if (!rolEl) return;
+        const rol = rolEl.value;
+        const tarifaEl = document.getElementById(idTarifa);
+        const pctEl = document.getElementById(idPct);
+        if (tarifaEl) tarifaEl.style.display = rol === 'profesor' ? 'block' : 'none';
+        if (pctEl) pctEl.style.display = rol === 'profesional' ? 'block' : 'none';
+      }
 
-    async function guardarStaff() {
-      const nombreInput = document.getElementById('nombreStaff').value;
-      const rol = document.getElementById('rolStaff').value;
-      const tarifa = parseFloat(document.getElementById('tarifaHoraStaff').value) || 0;
-      const porcentaje = parseFloat(document.getElementById('porcentajeStaff').value) || 0;
+    async function guardarStaff(esModal) {
+      const idNombre = esModal ? 'modalNombreStaff' : 'nombreStaff';
+      const idRol = esModal ? 'modalRolStaff' : 'rolStaff';
+      const idTarifa = esModal ? 'modalTarifaHoraStaff' : 'tarifaHoraStaff';
+      const idPct = esModal ? 'modalPorcentajeStaff' : 'porcentajeStaff';
 
-      const nombre = formatearTitulo(nombreInput);
+      const nombreInput = document.getElementById(idNombre)?.value || '';
+      const rol = document.getElementById(idRol)?.value || 'profesor';
+      const tarifa = parseFloat(document.getElementById(idTarifa)?.value) || 0;
+      const porcentaje = parseFloat(document.getElementById(idPct)?.value) || 0;
+
+      const nombre = formatearTitulo(nombreInput.trim());
       if (!nombre) return alert('Ingresá el nombre');
 
       await _supabase.from('staff').insert([{
@@ -4640,7 +4698,12 @@
         porcentaje: rol === 'profesional' ? porcentaje : 0
       }]);
 
-      document.getElementById('nombreStaff').value = '';
+      const elNom = document.getElementById(idNombre);
+      if (elNom) elNom.value = '';
+      if (esModal) {
+        const modal = document.getElementById('modalAltaStaff');
+        if (modal) modal.style.display = 'none';
+      }
       cargarStaff();
     }
 
@@ -4762,6 +4825,7 @@
 
     function poblarSelectsProfesorPlanes() {
       const selectAgregar = document.getElementById('planProfesor');
+      const selectModalAgregar = document.getElementById('modalPlanProfesor');
       const selectFiltro = document.getElementById('filtroProfesorPlan');
       
       let opciones = '<option value="">Seleccionar Profesor...</option>';
@@ -4775,11 +4839,13 @@
       });
 
       if (selectAgregar) selectAgregar.innerHTML = opciones;
+      if (selectModalAgregar) selectModalAgregar.innerHTML = opciones;
       if (selectFiltro) selectFiltro.innerHTML = opcionesFiltro;
     }
 
-    function filtrarAlumnosPorProfesor() {
-      const profesorSeleccionado = document.getElementById('planProfesor').value;
+    function filtrarAlumnosPorProfesor(esModal) {
+      const idProf = esModal ? 'modalPlanProfesor' : 'planProfesor';
+      const profesorSeleccionado = document.getElementById(idProf)?.value || '';
       const datalist = document.getElementById('listaAlumnosProfesor');
       if (!datalist) return;
       
@@ -5036,7 +5102,7 @@
           .eq('id', liq.id);
       if (errLiq) return alert('Error al actualizar: ' + errLiq.message);
 
-      // Actualizar tambiÃ©n en caja_diaria
+      // Actualizar también en caja_diaria
       if (liq.caja_id) {
           await _supabase.from('caja_diaria')
             .update({ monto: nuevoMonto, detalle: nuevoDetalle })
@@ -5056,7 +5122,7 @@
       if (!(await confirmAsync('Seguro que deseas eliminar esta liquidacion?'))) return;
       const liq = liquidacionesData.find(x => String(x.id) === String(id));
       if (liq) {
-         // Borrar tambiÃ©n de caja_diaria
+         // Borrar también de caja_diaria
          await _supabase.from('caja_diaria').delete().match({ fecha: liq.fecha, monto: liq.monto, detalle: liq.detalle });
       }
       const { error } = await _supabase.from('liquidaciones').delete().eq('id', id);
@@ -5299,7 +5365,7 @@ function renderizarLibroDiario(esCargarMas) {
         cuotasCajaMes.forEach(c => {
           const nombreEnCaja = (c.detalle || '').replace(/^Cobro Cuota Mensual\s*-\s*/i, '').trim();
           const nomLower = nombreEnCaja.toLowerCase();
-          const al = alumnosData.find(a => (a.nombre || '').trim().toLowerCase() === nomLower);
+          const al = obtenerAlumnoPorNombre(nomLower);
           const montoCaja = parseFloat(c.monto) || 0;
 
           if (!al) {
@@ -5676,12 +5742,18 @@ function renderizarLibroDiario(esCargarMas) {
       filtrarPlanes();
     }
 
-    async function guardarPlanRenovacion() {
-      const profesor = document.getElementById('planProfesor').value;
-      const semana = document.getElementById('planSemana').value.trim();
-      const alumno = document.getElementById('planAlumno').value.trim();
-      const dias = parseInt(document.getElementById('planDias').value, 10) || 3;
-      const detalles = document.getElementById('planDetalles').value.trim();
+    async function guardarPlanRenovacion(esModal) {
+      const idProf = esModal ? 'modalPlanProfesor' : 'planProfesor';
+      const idSem = esModal ? 'modalPlanSemana' : 'planSemana';
+      const idAlum = esModal ? 'modalPlanAlumno' : 'planAlumno';
+      const idDias = esModal ? 'modalPlanDias' : 'planDias';
+      const idDet = esModal ? 'modalPlanDetalles' : 'planDetalles';
+
+      const profesor = document.getElementById(idProf)?.value || '';
+      const semana = (document.getElementById(idSem)?.value || '').trim();
+      const alumno = formatearTitulo((document.getElementById(idAlum)?.value || '').trim());
+      const dias = parseInt(document.getElementById(idDias)?.value, 10) || 3;
+      const detalles = (document.getElementById(idDet)?.value || '').trim();
 
       if (!profesor || !semana || !alumno) {
         alert('Por favor completá los campos obligatorios (Profesor, Semana y Alumno).');
@@ -5695,10 +5767,17 @@ function renderizarLibroDiario(esCargarMas) {
       if (error) {
         alert('Error al guardar el plan: ' + error.message);
       } else {
-        document.getElementById('planSemana').value = '';
-        document.getElementById('planAlumno').value = '';
-        document.getElementById('planDetalles').value = '';
-        if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
+        const elSem = document.getElementById(idSem);
+        const elAlum = document.getElementById(idAlum);
+        const elDet = document.getElementById(idDet);
+        if (elSem) elSem.value = '';
+        if (elAlum) elAlum.value = '';
+        if (elDet) elDet.value = '';
+        if (esModal) {
+          const modal = document.getElementById('modalAltaPlan');
+          if (modal) modal.style.display = 'none';
+        }
+        await cargarPlanesRenovacion();
       }
     }
 
@@ -5820,8 +5899,12 @@ function renderizarLibroDiario(esCargarMas) {
     async function borrarPlan(id) {
       if (!(await confirmAsync('Seguro que deseas eliminar esta planificacion?'))) return;
       const { error } = await _supabase.from('planes').delete().eq('id', id);
-      if (error) alert('Error al borrar plan: ' + error.message);
-      else if (planesData.length === 0) { cargarPlanesRenovacion(); } else { filtrarPlanes(); }
+      if (error) {
+        alert('Error al borrar plan: ' + error.message);
+      } else {
+        planesData = (planesData || []).filter(p => String(p.id) !== String(id));
+        filtrarPlanes();
+      }
     }
 
 
@@ -5963,7 +6046,7 @@ function renderizarLibroDiario(esCargarMas) {
       const inscriptos = (cronogramaData && cronogramaData.turnos && cronogramaData.turnos[key]) ? cronogramaData.turnos[key] : [];
       let cantInactivos = 0;
       inscriptos.forEach(r => {
-        const alumnoObj = (alumnosData || []).find(a => (a.nombre || '').trim().toLowerCase() === (r.nombre_alumno || '').trim().toLowerCase());
+        const alumnoObj = obtenerAlumnoPorNombre(r.nombre_alumno);
         if (alumnoObj && alumnoObj.inactivo) {
           cantInactivos++;
         }
@@ -6123,7 +6206,7 @@ function renderizarLibroDiario(esCargarMas) {
               <!-- Lista de Alumnos Inscriptos -->
               <div style="display: flex; flex-direction: column; gap: 3px; flex: 1;">
                 ${inscriptos.map(r => {
-                  const alumnoObj = (alumnosData || []).find(a => (a.nombre || '').trim().toLowerCase() === (r.nombre_alumno || '').trim().toLowerCase());
+                  const alumnoObj = obtenerAlumnoPorNombre(r.nombre_alumno);
                   const esInactivo = alumnoObj && alumnoObj.inactivo;
                   const motivoInactivo = esInactivo ? (alumnoObj.inactivo_motivo || 'Vacaciones') : '';
 
@@ -6810,19 +6893,31 @@ function renderizarLibroDiario(esCargarMas) {
             alert("Error al actualizar cliente: " + error.message);
         } else {
             cerrarModalEditCliente();
+            const nombreNuevo = formatearTitulo(nombre);
+            const nombreAnt = (clienteAnterior.nombre || '').trim();
             const idx = alumnosData.findIndex(a => String(a.id) === String(id));
             if (idx !== -1) {
-                alumnosData[idx].nombre = formatearTitulo(nombre);
+                alumnosData[idx].nombre = nombreNuevo;
                 alumnosData[idx].monto = monto;
                 alumnosData[idx].dias_semana = parseInt(dias) || 3;
                 alumnosData[idx].profesor_cargo = profesor;
                 alumnosData[idx].notas = notas;
                 Object.assign(alumnosData[idx], estadoAhora);
+                reconstruirMapaAlumnos();
                 actualizarFiltroProfesoresAlumnos();
                 actualizarMetricasAlumnos();
                 filtrarAlumnos();
             }
-            await sincronizarHistorialEstados(id, formatearTitulo(nombre), estadoAntes, estadoAhora);
+            if (nombreAnt && nombreAnt.toLowerCase() !== nombreNuevo.toLowerCase()) {
+                await _supabase.from('reservas_clases').update({ nombre_alumno: nombreNuevo }).ilike('nombre_alumno', nombreAnt);
+                if (typeof cargarTurnosSupabase === 'function') cargarTurnosSupabase();
+            } else if (typeof renderizarCronogramaDinamico === 'function' && cronogramaData && cronogramaData.turnos) {
+                renderizarCronogramaDinamico();
+            }
+            if (typeof renderizarLibroDiario === 'function' && Array.isArray(cajaData) && cajaData.length > 0) {
+                renderizarLibroDiario();
+            }
+            await sincronizarHistorialEstados(id, nombreNuevo, estadoAntes, estadoAhora);
             alert("Cliente actualizado con éxito");
         }
     }
@@ -7925,6 +8020,7 @@ function abrirFichaPacienteNutri(pacienteId) {
         historialCont.innerHTML = historialTotal.map((t, idx) => {
             const f = new Date(t.fecha_hora).toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year:'numeric'});
             const isMan = t.esManual;
+            const domKey = (isMan ? 'man-' : 'tur-') + t.id;
             const btnSave = `<button class="btn" style="padding: 3px 10px; font-size: 0.75rem; background: var(--neon-green); color: #000; font-weight: bold;" onclick="guardarFichaConsultaNutri('${t.id}', ${isMan ? 'true' : 'false'})">Guardar Cambios</button>`;
             const btnDel = isMan ? `<button class="btn" style="background: var(--danger-red); padding: 3px 8px; font-size: 0.75rem; border:none;" onclick="borrarMedicionNutri('${t.id}')">🗑️ Borrar</button>` : '';
 
@@ -7943,19 +8039,19 @@ function abrirFichaPacienteNutri(pacienteId) {
                         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                             <div>
                                 <label style="font-size: 0.75rem; color: var(--text-dim);">Peso (kg):</label>
-                                <input type="number" step="0.1" id="peso-${t.id}" value="${t.peso || ''}" style="width: 100%; padding: 6px; border-radius: 6px; background: #14141D; border: 1px solid var(--border-color); color: #fff; font-size: 1rem; font-weight: bold;">
+                                <input type="number" step="0.1" id="peso-${domKey}" value="${t.peso || ''}" style="width: 100%; padding: 6px; border-radius: 6px; background: #14141D; border: 1px solid var(--border-color); color: #fff; font-size: 1rem; font-weight: bold;">
                             </div>
                             <div>
                                 <label style="font-size: 0.75rem; color: var(--neon-green);">Masa Muscular (kg):</label>
-                                <input type="number" step="0.1" id="musculo-${t.id}" value="${t.masa_muscular || ''}" style="width: 100%; padding: 6px; border-radius: 6px; background: #14141D; border: 1px solid var(--neon-green); color: var(--neon-green); font-size: 1rem; font-weight: bold;">
+                                <input type="number" step="0.1" id="musculo-${domKey}" value="${t.masa_muscular || ''}" style="width: 100%; padding: 6px; border-radius: 6px; background: #14141D; border: 1px solid var(--neon-green); color: var(--neon-green); font-size: 1rem; font-weight: bold;">
                             </div>
                             <div>
-                                <label style="font-size: 0.75rem; color: #f59e0b);">Masa Adiposa (kg):</label>
-                                <input type="number" step="0.1" id="grasa-${t.id}" value="${t.porcentaje_grasa || ''}" style="width: 100%; padding: 6px; border-radius: 6px; background: #14141D; border: 1px solid #f59e0b; color: #f59e0b; font-size: 1rem; font-weight: bold;">
+                                <label style="font-size: 0.75rem; color: #f59e0b;">Masa Adiposa (kg):</label>
+                                <input type="number" step="0.1" id="grasa-${domKey}" value="${t.porcentaje_grasa || ''}" style="width: 100%; padding: 6px; border-radius: 6px; background: #14141D; border: 1px solid #f59e0b; color: #f59e0b; font-size: 1rem; font-weight: bold;">
                             </div>
                         </div>
                         <label style="font-size: 0.75rem; color: var(--text-dim);">Notas / Plan de alimentación de esta consulta:</label>
-                        <textarea id="notas-${t.id}" style="width: 100%; padding: 8px; border-radius: 6px; background: #14141D; color: #fff; border: 1px solid var(--border-color); min-height: 65px; margin-top: 3px;">${t.notas || ''}</textarea>
+                        <textarea id="notas-${domKey}" style="width: 100%; padding: 8px; border-radius: 6px; background: #14141D; color: #fff; border: 1px solid var(--border-color); min-height: 65px; margin-top: 3px;">${t.notas || ''}</textarea>
                     </div>
                 `;
             }
@@ -7970,18 +8066,18 @@ function abrirFichaPacienteNutri(pacienteId) {
             return `
                 <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; transition: border-color 0.2s;">
                     <!-- Cabecera de la consulta anterior (Clickeable) -->
-                    <div onclick="toggleDetalleConsulta('${t.id}')" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; cursor: pointer; background: rgba(255,255,255,0.025); user-select: none;">
+                    <div onclick="toggleDetalleConsulta('${domKey}')" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; cursor: pointer; background: rgba(255,255,255,0.025); user-select: none;">
                         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                             <span style="color: #fff; font-weight: 600; font-size: 0.85rem;">Consulta anterior - ${f}</span>
                             ${resumenChip ? `<span style="color: var(--text-dim); font-size: 0.78rem; background: rgba(255,255,255,0.04); padding: 2px 8px; border-radius: 4px;">${resumenChip}</span>` : ''}
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <span id="arrow-consulta-${t.id}" style="color: var(--neon-green); font-size: 0.75rem; font-weight: bold; background: rgba(149,255,83,0.1); padding: 2px 8px; border-radius: 4px;">Ver detalles ▼</span>
+                            <span id="arrow-consulta-${domKey}" style="color: var(--neon-green); font-size: 0.75rem; font-weight: bold; background: rgba(149,255,83,0.1); padding: 2px 8px; border-radius: 4px;">Ver detalles ▼</span>
                         </div>
                     </div>
 
                     <!-- Cuerpo colapsable (Oculto por defecto) -->
-                    <div id="detalle-consulta-${t.id}" style="display: none; padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.25);">
+                    <div id="detalle-consulta-${domKey}" style="display: none; padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.25);">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                             <span style="color: var(--text-dim); font-size: 0.75rem;">Modalidad: ${isMan ? 'Carga manual' : 'Turno (' + t.estado + ')'}</span>
                             <div style="display:flex; gap:6px;">${btnSave}${btnDel}</div>
@@ -7989,19 +8085,19 @@ function abrirFichaPacienteNutri(pacienteId) {
                         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                             <div>
                                 <label style="font-size: 0.75rem; color: var(--text-dim);">Peso (kg):</label>
-                                <input type="number" step="0.1" id="peso-${t.id}" value="${t.peso || ''}" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: #14141D; border: 1px solid var(--border-color); color: #fff;">
+                                <input type="number" step="0.1" id="peso-${domKey}" value="${t.peso || ''}" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: #14141D; border: 1px solid var(--border-color); color: #fff;">
                             </div>
                             <div>
                                 <label style="font-size: 0.75rem; color: var(--text-dim);">Masa Muscular (kg):</label>
-                                <input type="number" step="0.1" id="musculo-${t.id}" value="${t.masa_muscular || ''}" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: #14141D; border: 1px solid var(--border-color); color: #fff;">
+                                <input type="number" step="0.1" id="musculo-${domKey}" value="${t.masa_muscular || ''}" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: #14141D; border: 1px solid var(--border-color); color: #fff;">
                             </div>
                             <div>
                                 <label style="font-size: 0.75rem; color: var(--text-dim);">Masa Adiposa (kg):</label>
-                                <input type="number" step="0.1" id="grasa-${t.id}" value="${t.porcentaje_grasa || ''}" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: #14141D; border: 1px solid var(--border-color); color: #fff;">
+                                <input type="number" step="0.1" id="grasa-${domKey}" value="${t.porcentaje_grasa || ''}" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: #14141D; border: 1px solid var(--border-color); color: #fff;">
                             </div>
                         </div>
                         <label style="font-size: 0.75rem; color: var(--text-dim);">Notas / Plan de alimentación:</label>
-                        <textarea id="notas-${t.id}" style="width: 100%; padding: 8px; border-radius: 6px; background: #14141D; color: #fff; border: 1px solid var(--border-color); min-height: 55px; margin-top: 3px;">${t.notas || ''}</textarea>
+                        <textarea id="notas-${domKey}" style="width: 100%; padding: 8px; border-radius: 6px; background: #14141D; color: #fff; border: 1px solid var(--border-color); min-height: 55px; margin-top: 3px;">${t.notas || ''}</textarea>
                     </div>
                 </div>
             `;
@@ -8112,10 +8208,11 @@ function abrirFichaPacienteNutri(pacienteId) {
 }
 
 async function guardarFichaConsultaNutri(turnoId, esManual = false) {
-    const peso = parseFloat(document.getElementById(`peso-${turnoId}`)?.value) || null;
-    const grasa = parseFloat(document.getElementById(`grasa-${turnoId}`)?.value) || null;
-    const musculo = parseFloat(document.getElementById(`musculo-${turnoId}`)?.value) || null;
-    const notas = document.getElementById(`notas-${turnoId}`)?.value || '';
+    const domKey = (esManual ? 'man-' : 'tur-') + turnoId;
+    const peso = parseFloat((document.getElementById(`peso-${domKey}`) || document.getElementById(`peso-${turnoId}`))?.value) || null;
+    const grasa = parseFloat((document.getElementById(`grasa-${domKey}`) || document.getElementById(`grasa-${turnoId}`))?.value) || null;
+    const musculo = parseFloat((document.getElementById(`musculo-${domKey}`) || document.getElementById(`musculo-${turnoId}`))?.value) || null;
+    const notas = (document.getElementById(`notas-${domKey}`) || document.getElementById(`notas-${turnoId}`))?.value || '';
     
     let error = null;
     if (esManual) {
