@@ -1230,6 +1230,9 @@
         </div>
       </div>
 
+      <!-- AUDITORÍA VISUAL DE DIFERENCIAS ENTRE CAJA Y PADRÓN (SOLO LECTURA) -->
+      <div id="alertaAuditoriaCaja" style="display: none; margin-bottom: 20px;"></div>
+
       <!-- REPARTO / ESTADÍSTICAS DE COBRO POR OPERADOR (CUOTAS) -->
       <div class="card" style="margin-bottom: 20px; padding: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
@@ -2994,6 +2997,9 @@
       actualizarMetricasAlumnos();
       filtrarAlumnos();
       cargarAsistencias();
+      if (typeof renderizarLibroDiario === 'function' && Array.isArray(cajaData) && cajaData.length > 0) {
+        renderizarLibroDiario();
+      }
     }
 
     function actualizarFiltroProfesoresAlumnos() {
@@ -3366,6 +3372,8 @@
         return;
       }
 
+      const fechaPagoPrevia = cliente ? cliente.fecha_pago : null;
+
       const { error: errAlumno } = await _supabase.from('alumnos').update({ 
         monto: monto, 
         pago_confirmado: estado,
@@ -3376,6 +3384,20 @@
       if (errAlumno) {
         alert('Error al actualizar cliente: ' + errAlumno.message);
         return;
+      }
+
+      // Si se pasa a Pendiente (estado = false), eliminar el cobro de cuota de ese mes en Libro Diario para que no sume de más
+      if (!estado && cliente) {
+        const mesRef = (fechaPagoPrevia || new Date().toISOString().split('T')[0]).slice(0, 7);
+        const detalleBuscado = `cobro cuota mensual - ${(cliente.nombre || '').trim().toLowerCase()}`;
+        const asientoMatch = (cajaData || []).find(c =>
+          c.tipo === 'ingreso' &&
+          (c.detalle || '').trim().toLowerCase() === detalleBuscado &&
+          (fechaPagoPrevia ? c.fecha === fechaPagoPrevia : (c.fecha || '').startsWith(mesRef))
+        );
+        if (asientoMatch && asientoMatch.id) {
+          await _supabase.from('caja_diaria').delete().eq('id', asientoMatch.id);
+        }
       }
 
       // Un cobro de $0 no genera asiento en el Libro Diario (no hubo ingreso real)
@@ -5220,6 +5242,194 @@ function renderizarLibroDiario(esCargarMas) {
       }
 
       actualizarEstadisticasCobradoresLibroDiario();
+      actualizarAuditoriaCajaVsPadron();
+    }
+
+    function actualizarAuditoriaCajaVsPadron() {
+      const cont = document.getElementById('alertaAuditoriaCaja');
+      if (!cont) return;
+
+      const filtroMesCaja = document.getElementById('filtroMesCaja')?.value || '';
+      const hoyISO = typeof hoyLocalISO === 'function' ? hoyLocalISO() : new Date().toISOString().split('T')[0];
+      const mesActualISO = hoyISO.slice(0, 7);
+
+      let bloquesHTML = '';
+
+      // 1. Aviso si está viendo TODOS los meses juntos (sin filtro de mes)
+      if (!filtroMesCaja && Array.isArray(cajaData) && cajaData.length > 0) {
+        const mesesDistintos = new Set(cajaData.map(c => (c.fecha || '').slice(0, 7)).filter(Boolean));
+        if (mesesDistintos.size > 1) {
+          bloquesHTML += `
+            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+              <div style="color: #fbbf24; font-size: 0.88rem;">
+                ⚠️ <strong>Atención:</strong> El filtro de mes está en <strong>"Todos"</strong>, por lo que las tarjetas de arriba están sumando <strong>todos los meses históricos juntos</strong> (${Array.from(mesesDistintos).sort().join(' + ')}).
+              </div>
+              <button class="btn" style="background: #f59e0b; color: #000; font-weight: 700; padding: 6px 14px; font-size: 0.82rem;" onclick="document.getElementById('filtroMesCaja').value='${mesActualISO}'; document.getElementById('filtroMesCaja').dispatchEvent(new Event('change')); renderizarLibroDiario();">
+                📅 Filtrar solo ${mesActualISO}
+              </button>
+            </div>
+          `;
+        }
+      }
+
+      // 2. Cruce en modo lectura entre cuotas del mes actual en Caja vs Padrón de Clientes
+      const mesAuditado = filtroMesCaja || mesActualISO;
+      if (mesAuditado === mesActualISO && Array.isArray(alumnosData) && alumnosData.length > 0 && Array.isArray(cajaData)) {
+        const cuotasCajaMes = cajaData.filter(c => {
+          if (c.tipo !== 'ingreso') return false;
+          if (!c.fecha || !c.fecha.startsWith(mesActualISO)) return false;
+          const cat = (c.categoria || '').toLowerCase();
+          const det = (c.detalle || c.descripcion || '').toLowerCase();
+          const esCuota = cat.includes('cuota') || det.includes('cuota') || det.includes('cobro cuota');
+          return esCuota && (parseFloat(c.monto) || 0) > 0;
+        });
+
+        const pagadosPadron = alumnosData.filter(a => !estaExentoDeCuota(a) && a.pago_confirmado && (parseFloat(a.monto) || 0) > 0);
+        const sumaCuotasCaja = cuotasCajaMes.reduce((acc, c) => acc + (parseFloat(c.monto) || 0), 0);
+        const sumaPagadosPadron = pagadosPadron.reduce((acc, a) => acc + (parseFloat(a.monto) || 0), 0);
+
+        const conteoNombresCaja = {};
+        cuotasCajaMes.forEach(c => {
+          const nom = (c.detalle || '').replace(/^Cobro Cuota Mensual\s*-\s*/i, '').trim().toLowerCase();
+          if (nom) conteoNombresCaja[nom] = (conteoNombresCaja[nom] || 0) + 1;
+        });
+
+        const asientosConDiferencia = [];
+
+        cuotasCajaMes.forEach(c => {
+          const nombreEnCaja = (c.detalle || '').replace(/^Cobro Cuota Mensual\s*-\s*/i, '').trim();
+          const nomLower = nombreEnCaja.toLowerCase();
+          const al = alumnosData.find(a => (a.nombre || '').trim().toLowerCase() === nomLower);
+          const montoCaja = parseFloat(c.monto) || 0;
+
+          if (!al) {
+            asientosConDiferencia.push({
+              asiento: c,
+              nombre: nombreEnCaja,
+              tipoAlerta: 'sobrante',
+              motivo: '🗑️ Cliente borrado del padrón (o con nombre modificado), pero su cobro sigue sumando en Caja'
+            });
+          } else if (al.bonificado) {
+            asientosConDiferencia.push({
+              asiento: c,
+              nombre: nombreEnCaja,
+              tipoAlerta: 'sobrante',
+              motivo: '🎁 El cliente figura como Bonificado, pero este cobro sigue sumando en Caja'
+            });
+          } else if (al.inactivo && al.inactivo_pausa_cuota) {
+            asientosConDiferencia.push({
+              asiento: c,
+              nombre: nombreEnCaja,
+              tipoAlerta: 'sobrante',
+              motivo: '⏸️ El cliente está Inactivo con cuota pausada, pero este cobro sigue sumando en Caja'
+            });
+          } else if (!al.pago_confirmado) {
+            asientosConDiferencia.push({
+              asiento: c,
+              nombre: nombreEnCaja,
+              tipoAlerta: 'sobrante',
+              motivo: '⏳ El cliente figura como PENDIENTE en la lista de clientes, pero el cobro quedó cargado en Caja'
+            });
+          } else if (conteoNombresCaja[nomLower] > 1) {
+            asientosConDiferencia.push({
+              asiento: c,
+              nombre: nombreEnCaja,
+              tipoAlerta: 'duplicado',
+              motivo: `⚠️ Cobro de cuota repetido (${conteoNombresCaja[nomLower]} veces en el mismo mes)`
+            });
+          } else if (Math.abs((parseFloat(al.monto) || 0) - montoCaja) > 0.01) {
+            asientosConDiferencia.push({
+              asiento: c,
+              nombre: nombreEnCaja,
+              tipoAlerta: 'diferencia_monto',
+              motivo: `💲 En Caja suma $${montoCaja.toLocaleString('es-AR')}, pero en la ficha del cliente figura $${(parseFloat(al.monto) || 0).toLocaleString('es-AR')}`
+            });
+          }
+        });
+
+        const faltantesEnCaja = [];
+        pagadosPadron.forEach(a => {
+          const nomLower = (a.nombre || '').trim().toLowerCase();
+          if (!conteoNombresCaja[nomLower]) {
+            faltantesEnCaja.push(a);
+          }
+        });
+
+        if (asientosConDiferencia.length > 0 || faltantesEnCaja.length > 0) {
+          const diffMonto = sumaCuotasCaja - sumaPagadosPadron;
+          const textoDiff = diffMonto > 0
+            ? `Caja marca +$${diffMonto.toLocaleString('es-AR')} de más en cuotas`
+            : (diffMonto < 0 ? `Caja marca -$${Math.abs(diffMonto).toLocaleString('es-AR')} menos que el padrón` : 'Diferencia compensada entre registros');
+
+          bloquesHTML += `
+            <div class="card" style="padding: 16px 20px; border: 1px solid rgba(255, 76, 76, 0.45); background: rgba(255, 76, 76, 0.05); margin-bottom: 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                <div>
+                  <h4 style="margin: 0; color: #ff6b6b; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+                    <span>🔍 Auditoría de Caja vs. Lista de Clientes (${mesActualISO})</span>
+                  </h4>
+                  <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: var(--text-dim);">
+                    Cuotas en Libro Diario: <strong style="color:#fff;">${cuotasCajaMes.length} ($${sumaCuotasCaja.toLocaleString('es-AR')})</strong> · 
+                    Marcados "Pagado" en Clientes: <strong style="color:#fff;">${pagadosPadron.length} ($${sumaPagadosPadron.toLocaleString('es-AR')})</strong> · 
+                    <strong style="color: #fbbf24;">${textoDiff}</strong>
+                  </p>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                ${asientosConDiferencia.map(item => {
+                  const c = item.asiento;
+                  const fStr = c.fecha ? new Date(c.fecha + 'T12:00:00').toLocaleDateString('es-AR') : '-';
+                  const montoNum = parseFloat(c.monto) || 0;
+                  return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid var(--danger-red); padding: 10px 14px; border-radius: 8px;">
+                      <div style="flex: 1; min-width: 240px;">
+                        <div style="font-size: 0.92rem; color: #fff; font-weight: 700;">
+                          ${c.detalle} — <span style="color: var(--neon-green);">+$${montoNum.toLocaleString('es-AR')}</span>
+                          <span style="font-size: 0.78rem; color: var(--text-dim); font-weight: normal; margin-left: 6px;">(📅 ${fStr} · Cobró: ${c.cobrador || '-'})</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #fca5a5; margin-top: 3px;">
+                          ${item.motivo}
+                        </div>
+                      </div>
+                      <div style="display: flex; gap: 6px; align-items: center;">
+                        <button class="btn btn-outline" style="padding: 5px 10px; font-size: 0.78rem;" onclick="abrirModalAsiento('${c.id}')">✏️ Editar</button>
+                        <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.78rem; font-weight: 700;" onclick="borrarAsiento('${c.id}')">🗑️ Quitar de Caja</button>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+
+                ${faltantesEnCaja.map(a => {
+                  const montoAl = parseFloat(a.monto) || 0;
+                  const fStr = a.fecha_pago ? new Date(a.fecha_pago + 'T12:00:00').toLocaleDateString('es-AR') : 'Sin fecha';
+                  return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid #fbbf24; padding: 10px 14px; border-radius: 8px;">
+                      <div style="flex: 1; min-width: 240px;">
+                        <div style="font-size: 0.92rem; color: #fff; font-weight: 700;">
+                          ${a.nombre} — <span style="color: #fbbf24;">$${montoAl.toLocaleString('es-AR')}</span>
+                          <span style="font-size: 0.78rem; color: var(--text-dim); font-weight: normal; margin-left: 6px;">(📅 ${fStr} · Cobró: ${a.ultimo_cobrador || '-'})</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #fde68a; margin-top: 3px;">
+                          ❓ Figura como PAGADO en la lista de Clientes, pero no tiene asiento de cuota en el Libro Diario de ${mesActualISO}.
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      if (bloquesHTML) {
+        cont.innerHTML = bloquesHTML;
+        cont.style.display = 'block';
+      } else {
+        cont.innerHTML = '';
+        cont.style.display = 'none';
+      }
     }
 
     function actualizarEstadisticasCobradoresLibroDiario() {
