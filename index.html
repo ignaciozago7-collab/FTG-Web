@@ -1890,25 +1890,25 @@
         <h3 style="margin: 0;">Registrar Aviso en Turno</h3>
         <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.85rem;" onclick="document.getElementById('modalAltaAvisoCrono').style.display='none'">✕</button>
       </div>
-      <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 12px;">Se mostrará en la grilla horaria y en el listado de novedades del día.</p>
+      <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 12px;">Se mostrará en la grilla horaria y ajustará automáticamente los esperados de asistencia por ese día.</p>
 
       <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
         <select id="avisoCronoTipo" onchange="actualizarPlaceholderAvisoCrono()" required>
           <option value="" disabled selected>Tipo de Aviso...</option>
-          <option value="Ausencia">🔴 Ausencia / Falta de alumno</option>
-          <option value="Cambio de horario">🟡 Cambio de horario (temporal)</option>
+          <option value="Ausencia">🔴 Ausencia / Falta con aviso (no cuenta esperado ese día)</option>
+          <option value="Cambio de horario">🟡 Cambio de horario / Recupera (suma esperado ese día)</option>
           <option value="Persona nueva">🟢 Persona nueva / Clase de prueba</option>
           <option value="Aviso General">📢 Aviso General / Otro</option>
         </select>
         
         <div>
           <label style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 4px;">Cliente / Detalle:</label>
-          <input type="text" id="avisoCronoNombre" list="listaAlumnosAvisosAutocomplete" placeholder="Buscar cliente o escribir detalle..." required autocomplete="off" style="width: 100%;">
+          <input type="text" id="avisoCronoNombre" list="listaAlumnosAvisosAutocomplete" placeholder="Buscar cliente o escribir detalle..." required autocomplete="off" style="width: 100%;" oninput="actualizarTurnosOrigenCambio()" onchange="actualizarTurnosOrigenCambio()">
           <datalist id="listaAlumnosAvisosAutocomplete"></datalist>
         </div>
         
         <div style="display: flex; gap: 10px;">
-            <select id="avisoCronoDia" style="flex: 1;" required>
+            <select id="avisoCronoDia" style="flex: 1;" onchange="sincronizarFechaDesdeDiaAviso()" required>
               <option value="" disabled selected>Día...</option>
               <option value="Lunes">Lunes</option>
               <option value="Martes">Martes</option>
@@ -1944,8 +1944,19 @@
         </div>
         
         <div>
-          <label style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 4px;">Fecha del aviso / vigencia:</label>
-          <input type="date" id="avisoCronoFecha" style="width: 100%;" required>
+          <label id="lblAvisoCronoFecha" style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 4px;">Fecha del turno / aviso:</label>
+          <input type="date" id="avisoCronoFecha" style="width: 100%;" onchange="sincronizarDiaDesdeFechaAviso()" required>
+        </div>
+
+        <div id="bloqueCambioAusenciaOrigen" style="display: none; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 10px;">
+          <label style="font-size: 0.78rem; color: #fbbf24; font-weight: 700; display: block; margin-bottom: 6px;">🔄 ¿Reemplaza un turno habitual de esta semana? (Opcional)</label>
+          <select id="avisoCronoOrigenTurno" style="width: 100%; font-size: 0.84rem; padding: 6px 8px;" onchange="alCambiarTurnoOrigenAviso()">
+            <option value="">No descontar otro día (o ya se cargó la ausencia aparte)</option>
+          </select>
+          <div id="bloqueFechaOrigenCambio" style="display: none; margin-top: 8px;">
+            <label style="font-size: 0.75rem; color: var(--text-dim); display: block; margin-bottom: 3px;">Fecha del día que falta por este cambio:</label>
+            <input type="date" id="avisoCronoFechaOrigen" style="width: 100%; font-size: 0.84rem; padding: 5px 8px;">
+          </div>
         </div>
         
         <div style="display: flex; gap: 8px; margin-top: 10px;">
@@ -3598,7 +3609,203 @@
       select.innerHTML = html;
     }
 
-    function obtenerAlumnosEsperadosDia(diaNombre) {
+    function normalizarTextoComparacion(str) {
+      return String(str || '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ');
+    }
+
+    function resolverNombreAlumnoAviso(textoAviso) {
+      const raw = String(textoAviso || '').trim();
+      if (!raw) return '';
+      const directo = obtenerAlumnoPorNombre(raw);
+      if (directo && directo.nombre) return directo.nombre.trim().toLowerCase();
+
+      const normTexto = normalizarTextoComparacion(raw);
+      if (!normTexto) return raw.toLowerCase();
+
+      let mejorMatch = null;
+      let mejorLong = 0;
+      const lista = Array.isArray(alumnosData) ? alumnosData : [];
+
+      for (let i = 0; i < lista.length; i++) {
+        const al = lista[i];
+        if (!al || !al.nombre || al.activo === false) continue;
+        const normAl = normalizarTextoComparacion(al.nombre);
+        if (!normAl) continue;
+
+        if (normAl === normTexto) {
+          return al.nombre.trim().toLowerCase();
+        }
+
+        const idx = normTexto.indexOf(normAl);
+        if (idx !== -1) {
+          const endIdx = idx + normAl.length;
+          const okInicio = (idx === 0 || !/[a-z0-9]/.test(normTexto[idx - 1]));
+          const okFin = (endIdx === normTexto.length || !/[a-z0-9]/.test(normTexto[endIdx]));
+          if (okInicio && okFin && normAl.length > mejorLong) {
+            mejorLong = normAl.length;
+            mejorMatch = al.nombre.trim().toLowerCase();
+          }
+        }
+      }
+
+      return mejorMatch || raw.toLowerCase();
+    }
+
+    function calcularFechaDeDiaSemana(diaNombre, fechaRefISO) {
+      const mapaDias = {
+        'domingo': 0,
+        'lunes': 1,
+        'martes': 2,
+        'miercoles': 3,
+        'miércoles': 3,
+        'jueves': 4,
+        'viernes': 5,
+        'sabado': 6,
+        'sábado': 6
+      };
+      const targetIdx = mapaDias[String(diaNombre || '').trim().toLowerCase()];
+      if (targetIdx === undefined) return fechaRefISO || '';
+
+      let dRef;
+      if (fechaRefISO && /^\d{4}-\d{2}-\d{2}$/.test(fechaRefISO)) {
+        dRef = new Date(fechaRefISO + 'T12:00:00');
+      } else {
+        dRef = new Date();
+        dRef.setHours(12, 0, 0, 0);
+      }
+      if (isNaN(dRef.getTime())) return fechaRefISO || '';
+
+      const currentIdx = dRef.getDay();
+      const offsetToMon = currentIdx === 0 ? -6 : 1 - currentIdx;
+      const dMon = new Date(dRef);
+      dMon.setDate(dRef.getDate() + offsetToMon);
+
+      const dTarget = new Date(dMon);
+      if (targetIdx === 0) {
+        dTarget.setDate(dMon.getDate() + 6);
+      } else {
+        dTarget.setDate(dMon.getDate() + (targetIdx - 1));
+      }
+
+      const y = dTarget.getFullYear();
+      const m = String(dTarget.getMonth() + 1).padStart(2, '0');
+      const d = String(dTarget.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function obtenerFechaEfectivaAviso(a) {
+      if (!a) return '';
+      if (a.fecha && a.dia) {
+        return calcularFechaDeDiaSemana(a.dia, a.fecha);
+      }
+      return a.fecha || '';
+    }
+
+    function obtenerAvisosParaFecha(diaNombre, fechaStr) {
+      if (!cronogramaData) return [];
+      const fuente = Array.isArray(cronogramaData.avisosHistoricos) && cronogramaData.avisosHistoricos.length > 0
+        ? cronogramaData.avisosHistoricos
+        : (Array.isArray(cronogramaData.avisos) ? cronogramaData.avisos : []);
+      if (fuente.length === 0) return [];
+
+      const diaNorm = normalizarTextoComparacion(diaNombre);
+      return fuente.filter(a => {
+        if (!a) return false;
+        const aDiaNorm = normalizarTextoComparacion(a.dia);
+        if (diaNorm && aDiaNorm && aDiaNorm !== diaNorm) return false;
+        if (fechaStr) {
+          const fechaEf = obtenerFechaEfectivaAviso(a);
+          if (fechaEf) return fechaEf === fechaStr;
+        }
+        return aDiaNorm === diaNorm;
+      });
+    }
+
+    function obtenerEstadoAvisosAlumnoEnFecha(nombreAlumno, diaNombre, fechaStr) {
+      const resultado = {
+        horariosHabituales: [],
+        horariosEfectivos: [],
+        tieneAusencia: false,
+        horasAusencia: [],
+        tieneCambio: false,
+        horasCambio: []
+      };
+      if (!nombreAlumno || !diaNombre) return resultado;
+
+      const nomBuscado = nombreAlumno.trim().toLowerCase();
+      if (cronogramaData && cronogramaData.turnos) {
+        Object.keys(cronogramaData.turnos).forEach(k => {
+          if (k.startsWith(diaNombre + '-')) {
+            const hora = k.split('-')[1];
+            const arr = cronogramaData.turnos[k] || [];
+            if (arr.some(r => r && r.nombre_alumno && r.nombre_alumno.trim().toLowerCase() === nomBuscado)) {
+              if (hora && !resultado.horariosHabituales.includes(hora)) {
+                resultado.horariosHabituales.push(hora);
+              }
+            }
+          }
+        });
+      }
+      resultado.horariosHabituales.sort();
+
+      if (!fechaStr) {
+        resultado.horariosEfectivos = [...resultado.horariosHabituales];
+        return resultado;
+      }
+
+      const avisosDia = obtenerAvisosParaFecha(diaNombre, fechaStr);
+      avisosDia.forEach(av => {
+        if (av.tipo !== 'Ausencia' && av.tipo !== 'Cambio de horario') return;
+        const nomResuelto = resolverNombreAlumnoAviso(av.nombre);
+        if (nomResuelto !== nomBuscado) return;
+
+        if (av.tipo === 'Ausencia') {
+          resultado.tieneAusencia = true;
+          if (av.hora && !resultado.horasAusencia.includes(av.hora)) {
+            resultado.horasAusencia.push(av.hora);
+          }
+        } else if (av.tipo === 'Cambio de horario') {
+          resultado.tieneCambio = true;
+          if (av.hora && !resultado.horasCambio.includes(av.hora)) {
+            resultado.horasCambio.push(av.hora);
+          }
+        }
+      });
+
+      let efectivos = [...resultado.horariosHabituales];
+      if (resultado.tieneAusencia) {
+        if (resultado.horasAusencia.length > 0) {
+          efectivos = efectivos.filter(h => !resultado.horasAusencia.includes(h));
+          // Si el aviso de ausencia se cargó en otro horario pero el alumno tenía un único turno habitual ese día, también lo cubre
+          if (efectivos.length === resultado.horariosHabituales.length && resultado.horariosHabituales.length <= 1) {
+            efectivos = [];
+          }
+        } else {
+          efectivos = [];
+        }
+      }
+
+      if (resultado.tieneCambio) {
+        resultado.horasCambio.forEach(h => {
+          if (h && !efectivos.includes(h)) efectivos.push(h);
+        });
+      }
+
+      resultado.horariosEfectivos = efectivos.sort();
+      return resultado;
+    }
+
+    function tieneTurnosCargadosEnCronograma() {
+      if (!cronogramaData || !cronogramaData.turnos) return false;
+      return Object.values(cronogramaData.turnos).some(arr => Array.isArray(arr) && arr.length > 0);
+    }
+
+    function obtenerAlumnosEsperadosDia(diaNombre, fechaStr) {
       const setNombres = new Set();
       if (cronogramaData && cronogramaData.turnos) {
         Object.keys(cronogramaData.turnos).forEach(k => {
@@ -3608,20 +3815,59 @@
               if (r && r.nombre_alumno && r.nombre_alumno.trim()) {
                 const nomLower = r.nombre_alumno.trim().toLowerCase();
                 const alumnoObj = obtenerAlumnoPorNombre(nomLower);
-                if (alumnoObj && alumnoObj.inactivo) return; // Inactivos por vacaciones/viaje no se esperan
+                if (alumnoObj && (alumnoObj.activo === false || alumnoObj.inactivo)) return; // Inactivos por vacaciones/viaje no se esperan
                 setNombres.add(nomLower);
               }
             });
           }
         });
       }
+
+      if (fechaStr) {
+        const avisosDia = obtenerAvisosParaFecha(diaNombre, fechaStr);
+        const nombresConCambio = new Set();
+
+        // 1. Sumar quienes recuperan / cambian de horario a esta fecha específica
+        avisosDia.forEach(av => {
+          if (av.tipo === 'Cambio de horario') {
+            const nomLower = resolverNombreAlumnoAviso(av.nombre);
+            if (!nomLower) return;
+            const alumnoObj = obtenerAlumnoPorNombre(nomLower);
+            if (alumnoObj && (alumnoObj.activo === false || alumnoObj.inactivo)) return;
+            nombresConCambio.add(nomLower);
+            setNombres.add(nomLower);
+          }
+        });
+
+        // 2. Descontar quienes avisaron ausencia para esta fecha específica
+        avisosDia.forEach(av => {
+          if (av.tipo === 'Ausencia') {
+            const nomLower = resolverNombreAlumnoAviso(av.nombre);
+            if (!nomLower) return;
+            // Si en la misma fecha tiene un cambio de horario (ej. cambió de hora en el mismo día), sigue esperado
+            if (nombresConCambio.has(nomLower)) return;
+            // Verificar si le queda algún otro turno activo ese mismo día
+            const estadoAl = obtenerEstadoAvisosAlumnoEnFecha(nomLower, diaNombre, fechaStr);
+            if (estadoAl.horariosEfectivos.length > 0) return;
+
+            // Si a pesar del aviso de ausencia asistió igual ese día, mantenerlo en esperados
+            const alumnoObj = obtenerAlumnoPorNombre(nomLower);
+            if (alumnoObj && Array.isArray(asistenciasMesData)) {
+              const vinoIgual = asistenciasMesData.some(ast => String(ast.alumno_id) === String(alumnoObj.id) && String(ast.fecha) === String(fechaStr));
+              if (vinoIgual) return;
+            }
+            setNombres.delete(nomLower);
+          }
+        });
+      }
+
       return setNombres;
     }
 
-    function obtenerCantidadEsperadosDia(diaNombre, totalDisponibles) {
+    function obtenerCantidadEsperadosDia(diaNombre, totalDisponibles, fechaStr) {
       if (diaNombre === "Domingo") return 0;
-      const setNombres = obtenerAlumnosEsperadosDia(diaNombre);
-      if (setNombres.size > 0) return setNombres.size;
+      const setNombres = obtenerAlumnosEsperadosDia(diaNombre, fechaStr);
+      if (setNombres.size > 0 || tieneTurnosCargadosEnCronograma()) return setNombres.size;
       return Math.max(1, Math.round(((totalDisponibles || 10) * 3) / 6));
     }
 
@@ -3660,15 +3906,32 @@
       );
       const cantPresentes = presentesHoy.length;
 
-      // 1. Asistencia Día (en base al cronograma, sin inactivos)
+      // 1. Asistencia Día (en base al cronograma + avisos de ausencia/recupero de fechaSel)
       let cantEsperadosDia = 0;
       let pctDia = 0;
       if (esDomingo) {
         cantEsperadosDia = 0;
         pctDia = 0;
       } else {
-        cantEsperadosDia = obtenerCantidadEsperadosDia(diaSelNombre, totalDisponibles);
+        cantEsperadosDia = obtenerCantidadEsperadosDia(diaSelNombre, totalDisponibles, fechaSel);
         pctDia = cantEsperadosDia > 0 ? Math.round((cantPresentes / cantEsperadosDia) * 100) : 0;
+      }
+
+      // Contar avisos de ausencia y recupero en la fecha seleccionada para subtítulo informativo
+      let cantAusenciasConAvisoHoy = 0;
+      let cantRecuperosHoy = 0;
+      if (!esDomingo && fechaSel) {
+        const avisosHoy = obtenerAvisosParaFecha(diaSelNombre, fechaSel);
+        const setAus = new Set();
+        const setCam = new Set();
+        avisosHoy.forEach(av => {
+          const nom = resolverNombreAlumnoAviso(av.nombre);
+          if (!nom) return;
+          if (av.tipo === 'Ausencia') setAus.add(nom);
+          if (av.tipo === 'Cambio de horario') setCam.add(nom);
+        });
+        cantAusenciasConAvisoHoy = setAus.size;
+        cantRecuperosHoy = setCam.size;
       }
 
       // 2. Asistencia Semanal (Lunes a Sábado de la semana de fechaSel)
@@ -3712,7 +3975,7 @@
           }
         });
 
-        const espDia = obtenerCantidadEsperadosDia(diaNom, totalDisponibles);
+        const espDia = obtenerCantidadEsperadosDia(diaNom, totalDisponibles, fechaDiaStr);
         totalPresSemana += setPres.size;
         totalEspSemana += espDia;
         diasComputadosSemana++;
@@ -3756,7 +4019,7 @@
             }
           });
 
-          const espDia = obtenerCantidadEsperadosDia(diaNom, totalDisponibles);
+          const espDia = obtenerCantidadEsperadosDia(diaNom, totalDisponibles, fechaDiaStr);
           totalPresMes += setPres.size;
           totalEspMes += espDia;
           diasComputadosMes++;
@@ -3783,7 +4046,15 @@
       if (elPctDia) elPctDia.innerText = `${pctDia}%`;
       const elSubDia = document.getElementById('asistSubDia');
       if (elSubDia) {
-        elSubDia.innerText = esDomingo ? 'Domingo sin actividades' : `${cantPresentes} de ${cantEsperadosDia} esperados hoy`;
+        if (esDomingo) {
+          elSubDia.innerText = 'Domingo sin actividades';
+        } else {
+          const detallesAvisos = [];
+          if (cantAusenciasConAvisoHoy > 0) detallesAvisos.push(`-${cantAusenciasConAvisoHoy} con aviso`);
+          if (cantRecuperosHoy > 0) detallesAvisos.push(`+${cantRecuperosHoy} recupera${cantRecuperosHoy > 1 ? 'n' : ''}`);
+          const sufijoAvisos = detallesAvisos.length > 0 ? ` (${detallesAvisos.join(' · ')})` : '';
+          elSubDia.innerText = `${cantPresentes} de ${cantEsperadosDia} esperados hoy${sufijoAvisos}`;
+        }
       }
 
       const elSemanal = document.getElementById('asistMetricaSemanal');
@@ -3815,9 +4086,16 @@
       const elBadgeHoy = document.getElementById('cantPresentesHoy');
       if (elBadgeHoy) elBadgeHoy.innerText = cantPresentes;
 
-      // Asignar horarios del cronograma de este día a cada alumno
+      // Asignar horarios efectivos y estado de avisos de este día a cada alumno
       alumnosPadron.forEach(a => {
-        a._horariosHoy = esDomingo ? [] : obtenerHorariosAlumnoEnDia(a.nombre, diaSelNombre);
+        if (esDomingo) {
+          a._estadoAvisoHoy = { horariosHabituales: [], horariosEfectivos: [], tieneAusencia: false, horasAusencia: [], tieneCambio: false, horasCambio: [] };
+          a._horariosHoy = [];
+        } else {
+          const est = obtenerEstadoAvisosAlumnoEnFecha(a.nombre, diaSelNombre, fechaSel);
+          a._estadoAvisoHoy = est;
+          a._horariosHoy = est.horariosEfectivos;
+        }
       });
 
       // Filtrar alumnos para la tabla
@@ -3830,10 +4108,11 @@
         if (estadoFiltro !== 'todos') {
           const tienePresente = asistenciasMesData.some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === String(fechaSel));
           const tieneTurnoHoy = a._horariosHoy && a._horariosHoy.length > 0;
+          const faltaConAvisoHoy = Boolean(a._estadoAvisoHoy && a._estadoAvisoHoy.tieneAusencia && !tieneTurnoHoy && !tienePresente);
           if (estadoFiltro === 'cronograma' && (a.inactivo || !tieneTurnoHoy)) return false;
           if (estadoFiltro === 'cronograma_pendientes' && (tienePresente || a.inactivo || !tieneTurnoHoy)) return false;
           if (estadoFiltro === 'presentes' && !tienePresente) return false;
-          if (estadoFiltro === 'pendientes' && (tienePresente || a.inactivo)) return false;
+          if (estadoFiltro === 'pendientes' && (tienePresente || a.inactivo || faltaConAvisoHoy)) return false;
           if (estadoFiltro === 'inactivos' && !a.inactivo) return false;
         }
         return true;
@@ -3842,20 +4121,10 @@
       renderizarTablaAsistencias(filtrados, diaSelNombre, cantEsperadosDia);
     }
 
-    function obtenerHorariosAlumnoEnDia(nombreAlumno, diaNombre) {
-      if (!nombreAlumno || !diaNombre || !cronogramaData || !cronogramaData.turnos) return [];
-      const nomBuscado = nombreAlumno.trim().toLowerCase();
-      const horarios = [];
-      Object.keys(cronogramaData.turnos).forEach(k => {
-        if (k.startsWith(diaNombre + '-')) {
-          const hora = k.split('-')[1];
-          const arr = cronogramaData.turnos[k] || [];
-          if (arr.some(r => r && r.nombre_alumno && r.nombre_alumno.trim().toLowerCase() === nomBuscado)) {
-            if (hora && !horarios.includes(hora)) horarios.push(hora);
-          }
-        }
-      });
-      return horarios.sort();
+    function obtenerHorariosAlumnoEnDia(nombreAlumno, diaNombre, fechaStr) {
+      if (!nombreAlumno || !diaNombre) return [];
+      const est = obtenerEstadoAvisosAlumnoEnFecha(nombreAlumno, diaNombre, fechaStr);
+      return est.horariosEfectivos;
     }
 
     function alternarFiltroCronogramaAsistencias() {
@@ -3898,7 +4167,7 @@
       if (contenedorResumen && staffData && alumnosData) {
         const labelDiaBtn = diaSelNombre && diaSelNombre !== 'Domingo' ? `Turnos ${diaSelNombre}` : 'Turnos del día';
         let resumenHTML = `
-          <button type="button" class="btn btn-outline" onclick="alternarFiltroCronogramaAsistencias()" style="padding: 4px 12px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px; ${esModoCrono ? 'background: rgba(149, 255, 83, 0.18); color: var(--neon-green); font-weight: 800; border-color: var(--neon-green); box-shadow: 0 0 10px rgba(149, 255, 83, 0.2);' : 'border-color: rgba(149, 255, 83, 0.4); color: var(--neon-green);'}" title="Mostrar solo los alumnos anotados en el Cronograma de este día, ordenados por horario">
+          <button type="button" class="btn btn-outline" onclick="alternarFiltroCronogramaAsistencias()" style="padding: 4px 12px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px; ${esModoCrono ? 'background: rgba(149, 255, 83, 0.18); color: var(--neon-green); font-weight: 800; border-color: var(--neon-green); box-shadow: 0 0 10px rgba(149, 255, 83, 0.2);' : 'border-color: rgba(149, 255, 83, 0.4); color: var(--neon-green);'}" title="Mostrar solo los alumnos esperados en el Cronograma de este día (incluye recuperos y descuenta ausencias con aviso)">
             <span>📅 ${labelDiaBtn}</span>
             <span style="background: rgba(149, 255, 83, 0.2); padding: 1px 6px; border-radius: 10px; font-size: 0.72rem; color: #fff;">${cantEsperadosDia}</span>
           </button>
@@ -3925,7 +4194,7 @@
 
       if (!items || items.length === 0) {
         const msgVacio = esModoCrono
-          ? `No hay alumnos anotados en el Cronograma para este día (${diaSelNombre || 'fecha seleccionada'}) con los filtros actuales.`
+          ? `No hay alumnos esperados en el Cronograma para este día (${diaSelNombre || 'fecha seleccionada'}) con los filtros actuales.`
           : 'No se encontraron alumnos con los filtros seleccionados.';
         tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-dim); padding: 20px;">${msgVacio}</td></tr>`;
         return;
@@ -3949,6 +4218,7 @@
         const idAlumnoStr = String(a.id);
         const profActual = a.profesor_cargo || '';
         const horariosHoy = a._horariosHoy || [];
+        const estAviso = a._estadoAvisoHoy || { tieneAusencia: false, horasAusencia: [], tieneCambio: false, horasCambio: [], horariosHabituales: [] };
 
         if (esModoCrono) {
           const horaPpal = horariosHoy[0] || 'Sin horario';
@@ -3979,9 +4249,19 @@
           `<option value="${s.nombre}" ${s.nombre === profActual ? 'selected' : ''}>${s.nombre}</option>`
         ).join('');
 
-        const badgeHorario = horariosHoy.length > 0
-          ? `<span style="font-size: 0.7rem; color: var(--neon-green); background: rgba(149, 255, 83, 0.1); border: 1px solid rgba(149, 255, 83, 0.3); padding: 1px 6px; border-radius: 4px; font-weight: 700;" title="Horario en Cronograma (${diaSelNombre})">🕒 ${horariosHoy.join(' / ')} hs</span>`
-          : '';
+        let badgeHorario = '';
+        if (horariosHoy.length > 0) {
+          if (estAviso.tieneCambio) {
+            badgeHorario = `<span style="font-size: 0.7rem; color: #fbbf24; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.45); padding: 1px 6px; border-radius: 4px; font-weight: 700;" title="Cambio de horario temporal / Recupera hoy (${diaSelNombre})">🟡 Recupera ${horariosHoy.join(' / ')} hs</span>`;
+          } else {
+            badgeHorario = `<span style="font-size: 0.7rem; color: var(--neon-green); background: rgba(149, 255, 83, 0.1); border: 1px solid rgba(149, 255, 83, 0.3); padding: 1px 6px; border-radius: 4px; font-weight: 700;" title="Horario en Cronograma (${diaSelNombre})">🕒 ${horariosHoy.join(' / ')} hs</span>`;
+          }
+        } else if (estAviso.tieneAusencia) {
+          const detalleHoraAus = (estAviso.horariosHabituales && estAviso.horariosHabituales.length > 0)
+            ? ` (${estAviso.horariosHabituales.join('/')} hs)`
+            : (estAviso.horasAusencia.length > 0 ? ` (${estAviso.horasAusencia.join('/')} hs)` : '');
+          badgeHorario = `<span style="font-size: 0.7rem; color: #f87171; background: rgba(239, 68, 68, 0.14); border: 1px solid rgba(239, 68, 68, 0.4); padding: 1px 6px; border-radius: 4px; font-weight: 700;" title="Avisó ausencia para esta fecha (no suma como esperado hoy)">🔴 Avisó falta${detalleHoraAus}</span>`;
+        }
 
         filasHTML += `
           <tr style="transition: background 0.15s;">
@@ -4016,7 +4296,10 @@
                 ? `<span class="badge-presente" style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.82rem;">✓ Presente hoy</span>` 
                 : (a.inactivo 
                     ? `<span style="color: #38bdf8; font-size: 0.82rem; padding: 4px 6px; font-weight: 600;">🌴 Inactivo</span>` 
-                    : `<span style="color: var(--text-dim); font-size: 0.85rem; padding: 4px 6px;">— Pendiente</span>`
+                    : (estAviso.tieneAusencia && horariosHoy.length === 0
+                        ? `<span style="color: #f87171; font-size: 0.82rem; padding: 4px 6px; font-weight: 600;" title="No se contabiliza como falta sin aviso en el esperado del día">🔴 Avisó falta</span>`
+                        : `<span style="color: var(--text-dim); font-size: 0.85rem; padding: 4px 6px;">— Pendiente</span>`
+                      )
                   )}
             </td>
             <td style="text-align: center;">
@@ -4070,7 +4353,14 @@
       let html = '';
       let activos = (alumnosData || []).filter(a => a.activo !== false);
       activos.forEach(a => {
-        a._horariosHoyMasivo = esDomingo ? [] : obtenerHorariosAlumnoEnDia(a.nombre, diaSelNombre);
+        if (esDomingo) {
+          a._estadoAvisoMasivo = { horariosEfectivos: [], tieneCambio: false, tieneAusencia: false };
+          a._horariosHoyMasivo = [];
+        } else {
+          const est = obtenerEstadoAvisosAlumnoEnFecha(a.nombre, diaSelNombre, fechaSel);
+          a._estadoAvisoMasivo = est;
+          a._horariosHoyMasivo = est.horariosEfectivos;
+        }
       });
 
       if (soloCrono) {
@@ -4091,8 +4381,11 @@
         if (yaTiene) return;
         
         cantidadRenderizados++;
+        const esCambio = a._estadoAvisoMasivo && a._estadoAvisoMasivo.tieneCambio;
         const badgeHora = (a._horariosHoyMasivo && a._horariosHoyMasivo.length > 0)
-          ? `<span style="font-size: 0.7rem; color: var(--neon-green); background: rgba(149, 255, 83, 0.1); padding: 1px 5px; border-radius: 4px; margin-left: auto; font-weight: 700;">${a._horariosHoyMasivo[0]} hs</span>`
+          ? (esCambio
+              ? `<span style="font-size: 0.7rem; color: #fbbf24; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); padding: 1px 5px; border-radius: 4px; margin-left: auto; font-weight: 700;">🟡 ${a._horariosHoyMasivo[0]} hs</span>`
+              : `<span style="font-size: 0.7rem; color: var(--neon-green); background: rgba(149, 255, 83, 0.1); padding: 1px 5px; border-radius: 4px; margin-left: auto; font-weight: 700;">${a._horariosHoyMasivo[0]} hs</span>`)
           : '';
         html += `
           <label class="item-masivo-asistencia" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 7px 10px; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); transition: background 0.15s;" data-nombre="${a.nombre.toLowerCase()}">
@@ -5989,22 +6282,37 @@ function renderizarLibroDiario(esCargarMas) {
         if (avisosData) {
           const ahora = new Date();
           const validos = [];
+          const historicos = [];
           for (let a of avisosData) {
-            if (a.fecha) {
-              const [y, m, d] = a.fecha.split('-').map(Number);
-              const limite = new Date(y, m - 1, d, 1, 0, 0); 
-              limite.setDate(limite.getDate() + 1); // Al día siguiente a la 1:00 AM
-              if (ahora > limite) {
-                // Borrar aviso expirado
+            const fechaBase = obtenerFechaEfectivaAviso(a) || a.fecha;
+            if (fechaBase) {
+              const [y, m, d] = fechaBase.split('-').map(Number);
+              // Expiración visual en grilla: al día siguiente del turno a la 1:00 AM
+              const limiteVisual = new Date(y, m - 1, d, 1, 0, 0);
+              limiteVisual.setDate(limiteVisual.getDate() + 1);
+
+              // Purga histórica en base de datos: 65 días después para conservar métricas semanales y mensuales de asistencia
+              const limitePurga = new Date(y, m - 1, d, 1, 0, 0);
+              limitePurga.setDate(limitePurga.getDate() + 65);
+
+              if (ahora > limitePurga) {
                 _supabase.from('avisos_cronograma').delete().eq('id', a.id).then();
                 continue;
               }
+              historicos.push(a);
+              if (ahora <= limiteVisual) {
+                validos.push(a);
+              }
+            } else {
+              historicos.push(a);
+              validos.push(a);
             }
-            validos.push(a);
           }
           cronogramaData.avisos = validos;
+          cronogramaData.avisosHistoricos = historicos;
         } else {
           cronogramaData.avisos = [];
+          cronogramaData.avisosHistoricos = [];
         }
 
         cronogramaData.turnos = {};
@@ -6031,6 +6339,9 @@ function renderizarLibroDiario(esCargarMas) {
         console.error("Error al cargar turnos del cronograma:", err);
       }
       renderizarCronogramaDinamico();
+      if (typeof filtrarAsistencias === 'function' && document.getElementById('tbodyAsistencias')) {
+        filtrarAsistencias();
+      }
     }
 
     function filtrarCronoDia(dia, btn) {
@@ -6176,7 +6487,8 @@ function renderizarLibroDiario(esCargarMas) {
 
           const avisosCelda = (cronogramaData.avisos || []).filter(a => a.dia === dia && a.hora === hora);
           let contenidoAvisos = avisosCelda.map(a => {
-            let colorBase = a.tipo.includes('Persona') ? 'var(--neon-green)' : (a.tipo.includes('Cambio') ? '#ffea00' : '#4cc9f0');
+            const tLow = (a.tipo || '').toLowerCase();
+            let colorBase = tLow.includes('persona') ? 'var(--neon-green)' : (tLow.includes('cambio') ? '#ffea00' : (tLow.includes('ausencia') ? '#ff5353' : '#4cc9f0'));
             return `
               <div style="font-size: 0.68rem; background: rgba(0,0,0,0.4); border-left: 3px solid ${colorBase}; padding: 3px 5px; margin-bottom: 3px; border-radius: 3px; line-height: 1.15;">
                 <strong style="color: ${colorBase};">${a.tipo}</strong>: ${a.nombre}
@@ -6525,11 +6837,12 @@ function renderizarLibroDiario(esCargarMas) {
         else if (tipoNorm.includes('cambio')) { colorBase = '#ffea00'; icono = '🟡'; }
         else if (tipoNorm.includes('persona') || tipoNorm.includes('prueba')) { colorBase = 'var(--neon-green)'; icono = '🟢'; }
 
+        const fechaEf = obtenerFechaEfectivaAviso(a) || a.fecha;
         return `
           <li style="padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
             <div>
               <span style="margin-right: 6px;">${icono}</span><strong style="color: ${colorBase};">${a.tipo}</strong>: <span style="font-weight: 600; color: #fff;">${a.nombre}</span>
-              <span style="font-size: 0.85rem; color: var(--text-dim); margin-left: 8px;">→ ${a.dia} ${a.hora} hs ${a.fecha ? '(' + a.fecha.split('-').reverse().join('/') + ')' : ''}</span>
+              <span style="font-size: 0.85rem; color: var(--text-dim); margin-left: 8px;">→ ${a.dia} ${a.hora} hs ${fechaEf ? '(' + fechaEf.split('-').reverse().join('/') + ')' : ''}</span>
             </div>
             <button class="btn btn-outline" style="padding: 3px 8px; font-size: 0.85rem;" onclick="borrarAviso('${a.id}')" title="Eliminar aviso">🗑️</button>
           </li>
@@ -6537,20 +6850,125 @@ function renderizarLibroDiario(esCargarMas) {
       }).join('');
     }
 
+    function sincronizarFechaDesdeDiaAviso() {
+      const elDia = document.getElementById('avisoCronoDia');
+      const elFecha = document.getElementById('avisoCronoFecha');
+      if (!elDia || !elFecha || !elDia.value) return;
+      const nuevaFecha = calcularFechaDeDiaSemana(elDia.value, elFecha.value);
+      if (nuevaFecha) elFecha.value = nuevaFecha;
+      actualizarTurnosOrigenCambio();
+    }
+
+    function sincronizarDiaDesdeFechaAviso() {
+      const elDia = document.getElementById('avisoCronoDia');
+      const elFecha = document.getElementById('avisoCronoFecha');
+      if (!elDia || !elFecha || !elFecha.value) return;
+      const d = new Date(elFecha.value + 'T12:00:00');
+      if (isNaN(d.getTime())) return;
+      const nombresDias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+      const diaNom = nombresDias[d.getDay()];
+      if (diaNom && diaNom !== "Domingo") {
+        elDia.value = diaNom;
+      }
+      actualizarTurnosOrigenCambio();
+    }
+
+    function actualizarTurnosOrigenCambio() {
+      const tipo = document.getElementById('avisoCronoTipo')?.value;
+      const bloque = document.getElementById('bloqueCambioAusenciaOrigen');
+      const selOrigen = document.getElementById('avisoCronoOrigenTurno');
+      const bloqueFechaOrig = document.getElementById('bloqueFechaOrigenCambio');
+      if (!bloque || !selOrigen) return;
+
+      if (tipo !== 'Cambio de horario') {
+        bloque.style.display = 'none';
+        selOrigen.value = '';
+        if (bloqueFechaOrig) bloqueFechaOrig.style.display = 'none';
+        return;
+      }
+
+      bloque.style.display = 'block';
+      const valorPrevio = selOrigen.value;
+      const textoNombre = document.getElementById('avisoCronoNombre')?.value || '';
+      const nomLower = resolverNombreAlumnoAviso(textoNombre);
+      const diaRecupero = document.getElementById('avisoCronoDia')?.value || '';
+      const fechaRef = document.getElementById('avisoCronoFecha')?.value || '';
+
+      let opcionesHTML = `<option value="">No descontar otro día (o ya se cargó la ausencia aparte)</option>`;
+      const turnosAlumno = [];
+
+      if (nomLower && cronogramaData && cronogramaData.turnos) {
+        Object.keys(cronogramaData.turnos).forEach(k => {
+          const [d, h] = k.split('-');
+          const arr = cronogramaData.turnos[k] || [];
+          if (arr.some(r => r && r.nombre_alumno && r.nombre_alumno.trim().toLowerCase() === nomLower)) {
+            turnosAlumno.push({ dia: d, hora: h });
+          }
+        });
+      }
+
+      if (turnosAlumno.length > 0) {
+        turnosAlumno.forEach(t => {
+          const fechaTurno = calcularFechaDeDiaSemana(t.dia, fechaRef);
+          const fechaFmt = fechaTurno ? fechaTurno.split('-').reverse().join('/') : '';
+          const val = `${t.dia}|${t.hora}`;
+          opcionesHTML += `<option value="${val}">🔴 Falta a su turno habitual: ${t.dia} ${t.hora} hs${fechaFmt ? ' (' + fechaFmt + ')' : ''}</option>`;
+        });
+      } else {
+        const diasHab = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+        diasHab.forEach(d => {
+          if (d === diaRecupero) return;
+          const fechaTurno = calcularFechaDeDiaSemana(d, fechaRef);
+          const fechaFmt = fechaTurno ? fechaTurno.split('-').reverse().join('/') : '';
+          opcionesHTML += `<option value="${d}|08:00">🔴 Descontar asistencia del ${d}${fechaFmt ? ' (' + fechaFmt + ')' : ''}</option>`;
+        });
+      }
+
+      selOrigen.innerHTML = opcionesHTML;
+      if (valorPrevio && Array.from(selOrigen.options).some(o => o.value === valorPrevio)) {
+        selOrigen.value = valorPrevio;
+      }
+      alCambiarTurnoOrigenAviso();
+    }
+
+    function alCambiarTurnoOrigenAviso() {
+      const selOrigen = document.getElementById('avisoCronoOrigenTurno');
+      const bloqueFechaOrig = document.getElementById('bloqueFechaOrigenCambio');
+      const inpFechaOrig = document.getElementById('avisoCronoFechaOrigen');
+      const fechaRef = document.getElementById('avisoCronoFecha')?.value || '';
+      if (!selOrigen || !bloqueFechaOrig || !inpFechaOrig) return;
+
+      if (!selOrigen.value) {
+        bloqueFechaOrig.style.display = 'none';
+        inpFechaOrig.value = '';
+        return;
+      }
+
+      const [diaOrig] = selOrigen.value.split('|');
+      inpFechaOrig.value = calcularFechaDeDiaSemana(diaOrig, fechaRef);
+      bloqueFechaOrig.style.display = 'block';
+    }
+
     function abrirModalAvisoCronoRapido(diaPrefiltrado, horaPrefiltrada) {
       const modal = document.getElementById('modalAltaAvisoCrono');
       if (!modal) return;
 
-      const hoyStr = new Date().toISOString().split('T')[0];
-      const elFecha = document.getElementById('avisoCronoFecha');
-      if (elFecha) elFecha.value = hoyStr;
+      const fechaLocal = new Date();
+      fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
+      const hoyStr = fechaLocal.toISOString().split('T')[0];
 
       const nombresDias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
       const diaHoy = nombresDias[new Date().getDay()];
+      const diaElegido = diaPrefiltrado || (diaHoy === "Domingo" ? "Lunes" : diaHoy);
 
       const elDia = document.getElementById('avisoCronoDia');
       if (elDia) {
-        elDia.value = diaPrefiltrado || (diaHoy === "Domingo" ? "Lunes" : diaHoy);
+        elDia.value = diaElegido;
+      }
+
+      const elFecha = document.getElementById('avisoCronoFecha');
+      if (elFecha) {
+        elFecha.value = calcularFechaDeDiaSemana(diaElegido, hoyStr) || hoyStr;
       }
 
       const elHora = document.getElementById('avisoCronoHora');
@@ -6570,6 +6988,8 @@ function renderizarLibroDiario(esCargarMas) {
           .join('');
       }
 
+      actualizarPlaceholderAvisoCrono();
+
       modal.style.display = 'flex';
       setTimeout(() => {
         if (elNombre) elNombre.focus();
@@ -6579,16 +6999,28 @@ function renderizarLibroDiario(esCargarMas) {
     function actualizarPlaceholderAvisoCrono() {
       const tipo = document.getElementById('avisoCronoTipo')?.value;
       const inp = document.getElementById('avisoCronoNombre');
-      if (!inp) return;
-      if (tipo === 'Ausencia') {
-        inp.placeholder = 'Seleccionar cliente ausente...';
-      } else if (tipo === 'Cambio de horario') {
-        inp.placeholder = 'Cliente que recupera/cambia (ej: Juan Pérez recupera)...';
-      } else if (tipo === 'Persona nueva') {
-        inp.placeholder = 'Nombre de persona nueva o de prueba...';
-      } else {
-        inp.placeholder = 'Buscar cliente o escribir aviso...';
+      const lblFecha = document.getElementById('lblAvisoCronoFecha');
+      if (inp) {
+        if (tipo === 'Ausencia') {
+          inp.placeholder = 'Seleccionar cliente que avisa falta...';
+        } else if (tipo === 'Cambio de horario') {
+          inp.placeholder = 'Cliente que recupera/cambia (ej: Juan Pérez)...';
+        } else if (tipo === 'Persona nueva') {
+          inp.placeholder = 'Nombre de persona nueva o de prueba...';
+        } else {
+          inp.placeholder = 'Buscar cliente o escribir aviso...';
+        }
       }
+      if (lblFecha) {
+        if (tipo === 'Ausencia') {
+          lblFecha.innerText = 'Fecha del día que falta (no contará como esperado ese día):';
+        } else if (tipo === 'Cambio de horario') {
+          lblFecha.innerText = 'Fecha del día en que viene a recuperar (sumará como esperado ese día):';
+        } else {
+          lblFecha.innerText = 'Fecha del turno / aviso:';
+        }
+      }
+      actualizarTurnosOrigenCambio();
     }
 
     async function guardarAvisoCrono() {
@@ -6596,11 +7028,40 @@ function renderizarLibroDiario(esCargarMas) {
       const nombre = document.getElementById('avisoCronoNombre').value.trim();
       const dia = document.getElementById('avisoCronoDia').value;
       const hora = document.getElementById('avisoCronoHora').value;
-      const fecha = document.getElementById('avisoCronoFecha').value;
+      const fechaInput = document.getElementById('avisoCronoFecha').value;
       
-      if (!tipo || !nombre || !dia || !hora || !fecha) {
+      if (!tipo || !nombre || !dia || !hora || !fechaInput) {
         alert('Por favor completá todos los campos.');
         return;
+      }
+
+      const fecha = calcularFechaDeDiaSemana(dia, fechaInput) || fechaInput;
+      const filasInsertar = [{ tipo, nombre, dia, hora, fecha }];
+
+      // Si es un Cambio de horario y seleccionó también el turno habitual al que falta, registrar la Ausencia automáticamente
+      if (tipo === 'Cambio de horario') {
+        const selOrigen = document.getElementById('avisoCronoOrigenTurno')?.value || '';
+        if (selOrigen) {
+          const [diaOrig, horaOrig] = selOrigen.split('|');
+          const fechaOrig = document.getElementById('avisoCronoFechaOrigen')?.value || calcularFechaDeDiaSemana(diaOrig, fecha);
+          const nomResuelto = resolverNombreAlumnoAviso(nombre);
+          const alumnoObj = obtenerAlumnoPorNombre(nomResuelto);
+          const nombreLimpio = alumnoObj && alumnoObj.nombre ? alumnoObj.nombre : nombre;
+
+          if (diaOrig && horaOrig && fechaOrig) {
+            const avisosExistentes = obtenerAvisosParaFecha(diaOrig, fechaOrig);
+            const yaTieneAusencia = avisosExistentes.some(av => av.tipo === 'Ausencia' && resolverNombreAlumnoAviso(av.nombre) === nomResuelto);
+            if (!yaTieneAusencia) {
+              filasInsertar.push({
+                tipo: 'Ausencia',
+                nombre: nombreLimpio,
+                dia: diaOrig,
+                hora: horaOrig,
+                fecha: fechaOrig
+              });
+            }
+          }
+        }
       }
 
       const btn = document.getElementById('btnGuardarAvisoCrono');
@@ -6610,14 +7071,17 @@ function renderizarLibroDiario(esCargarMas) {
       }
 
       try {
-        const { error } = await _supabase.from('avisos_cronograma').insert([{ tipo, nombre, dia, hora, fecha }]);
+        const { error } = await _supabase.from('avisos_cronograma').insert(filasInsertar);
         if (error) {
           alert('Error al guardar el aviso: ' + error.message);
         } else {
           document.getElementById('modalAltaAvisoCrono').style.display = 'none';
           document.getElementById('avisoCronoNombre').value = '';
           document.getElementById('avisoCronoFecha').value = '';
+          const selOrigen = document.getElementById('avisoCronoOrigenTurno');
+          if (selOrigen) selOrigen.value = '';
           await cargarTurnosSupabase();
+          if (typeof filtrarAsistencias === 'function') filtrarAsistencias();
         }
       } catch (err) {
         alert('Error: ' + err.message);
@@ -6636,6 +7100,7 @@ function renderizarLibroDiario(esCargarMas) {
         alert('Error al borrar aviso: ' + error.message);
       } else {
         await cargarTurnosSupabase();
+        if (typeof filtrarAsistencias === 'function') filtrarAsistencias();
       }
     }
 
