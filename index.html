@@ -6307,7 +6307,43 @@ function renderizarLibroDiario(esCargarMas) {
     // FUNCIONES DEL CRONOGRAMA DINÁMICO
     let cronoDiaSeleccionado = 'todos'; // 'todos', 'hoy', o nombre del día
 
+    function obtenerLimiteExpiracionVisualAviso(a) {
+      if (!a) return null;
+      const fechaBase = obtenerFechaEfectivaAviso(a) || a.fecha;
+      if (!fechaBase) return null;
+      const [y, m, d] = fechaBase.split('-').map(Number);
+      if (!y || !m || !d) return null;
+
+      let hh = 23, mm = 0;
+      if (a.hora && /^\d{1,2}:\d{2}/.test(String(a.hora).trim())) {
+        const partes = String(a.hora).trim().split(':').map(Number);
+        hh = !isNaN(partes[0]) ? partes[0] : 23;
+        mm = !isNaN(partes[1]) ? partes[1] : 0;
+      }
+      // Expira exactamente 1 hora después de la fecha y hora del turno del aviso
+      const limite = new Date(y, m - 1, d, hh, mm, 0, 0);
+      limite.setTime(limite.getTime() + 60 * 60 * 1000);
+      return limite;
+    }
+
+    function iniciarMonitorExpiracionAvisosCrono() {
+      if (window._timerExpiracionAvisosCrono) return;
+      window._timerExpiracionAvisosCrono = setInterval(() => {
+        if (!cronogramaData || !Array.isArray(cronogramaData.avisos) || cronogramaData.avisos.length === 0) return;
+        const ahora = new Date();
+        const vigentes = cronogramaData.avisos.filter(a => {
+          const lim = obtenerLimiteExpiracionVisualAviso(a);
+          return !lim || ahora <= lim;
+        });
+        if (vigentes.length !== cronogramaData.avisos.length) {
+          cronogramaData.avisos = vigentes;
+          renderizarCronogramaDinamico();
+        }
+      }, 60000);
+    }
+
     async function cargarTurnosSupabase() {
+      iniciarMonitorExpiracionAvisosCrono();
       try {
         const [
           { data: clases, error: errClases },
@@ -6331,20 +6367,21 @@ function renderizarLibroDiario(esCargarMas) {
             const fechaBase = obtenerFechaEfectivaAviso(a) || a.fecha;
             if (fechaBase) {
               const [y, m, d] = fechaBase.split('-').map(Number);
-              // Expiración visual en grilla: al día siguiente del turno a la 1:00 AM
-              const limiteVisual = new Date(y, m - 1, d, 1, 0, 0);
-              limiteVisual.setDate(limiteVisual.getDate() + 1);
+              // Expiración en el Cronograma: 1 hora después de la fecha y hora del turno
+              const limiteVisual = obtenerLimiteExpiracionVisualAviso(a);
 
-              // Purga histórica en base de datos: 65 días después para conservar métricas semanales y mensuales de asistencia
+              // Para Ausencia y Cambio de horario, se conserva en base de datos por 65 días para no alterar las métricas de Asistencia de ese día/semana/mes.
+              // Los demás avisos (Persona nueva, Aviso General) se eliminan de la base apenas pasa 1 hora del turno.
+              const afectaAsistencia = (a.tipo === 'Ausencia' || a.tipo === 'Cambio de horario');
               const limitePurga = new Date(y, m - 1, d, 1, 0, 0);
               limitePurga.setDate(limitePurga.getDate() + 65);
 
-              if (ahora > limitePurga) {
+              if ((afectaAsistencia && ahora > limitePurga) || (!afectaAsistencia && limiteVisual && ahora > limiteVisual)) {
                 _supabase.from('avisos_cronograma').delete().eq('id', a.id).then();
                 continue;
               }
               historicos.push(a);
-              if (ahora <= limiteVisual) {
+              if (!limiteVisual || ahora <= limiteVisual) {
                 validos.push(a);
               }
             } else {
