@@ -626,6 +626,7 @@
       body.printing-crono #cronoBuscadorAlumno,
       body.printing-crono #cronoClearSearch,
       body.printing-crono #cronoResultadosBusqueda,
+      body.printing-crono .crono-btn-presente,
       body.printing-crono .crono-alumno-chip span:last-child { display: none !important; }
       .card { background: #fff !important; border: 1px solid #ccc !important; box-shadow: none !important; color: #000 !important; margin-bottom: 20px !important; break-inside: avoid; }
       .btn, .month-filter-pill { display: none !important; }
@@ -661,6 +662,10 @@
       <img src="logo.png" alt="FTG Logo" style="max-width: 100%; height: 60px; object-fit: contain;">
     </div>
     <nav>
+      <button class="nav-btn" style="background: rgba(0, 0, 0, 0.14); border: 1px solid rgba(0, 0, 0, 0.25); font-weight: 800; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;" onclick="abrirBuscadorUniversal()" title="Buscar cualquier alumno rápidamente (Atajo: Ctrl + K)">
+        <span>🔍 Buscador Rápido</span>
+        <span style="font-size: 0.7rem; background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">Ctrl+K</span>
+      </button>
       <button class="nav-btn active" onclick="cambiarSeccion('alumnosSection', this)">👥 Clientes</button>
       <button class="nav-btn" onclick="cambiarSeccion('asistenciasSection', this)">📅 Asistencias</button>
       <button class="nav-btn" onclick="cambiarSeccion('cronogramaSection', this)">⏰ Cronograma</button>
@@ -670,6 +675,7 @@
       <button class="nav-btn" onclick="cambiarSeccion('staffSection', this)">👥 Staff & Liquidación</button>
       <button class="nav-btn" id="btnNavNutricion" onclick="cambiarSeccion('nutricionSection', this)" style="display: none;">🍎 Nutrición</button>
       <button class="nav-btn" onclick="window.open('https://docs.google.com/spreadsheets/d/1BV_L2nGGubO90q6mhAMWX573vl-CsqvPmCpdSw3O7dE/edit?gid=0#gid=0', '_blank')">🏋️‍♂️ 🔗 Link de ejercicios</button>
+      <button class="nav-btn" style="background: rgba(0, 0, 0, 0.12); border: 1px dashed rgba(0, 0, 0, 0.35); font-weight: 700; margin-top: 6px;" onclick="descargarBackupCompletoExcel()" title="Descargar un archivo Excel con todas las pestañas del sistema (Clientes, Caja, Cronograma, Planes y Staff)">💾 Backup Excel Completo</button>
     </nav>
     
     <div id="userProfile" style="margin-top: auto; padding-top: 16px; border-top: 1px solid #757575; font-size: 0.85rem; color: #000;">
@@ -684,9 +690,14 @@
     <div id="alumnosSection" class="section-page active">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
         <h1 style="margin: 0;">Panel de Clientes y Gestión de Cuotas</h1>
-        <button class="btn" style="padding: 10px 18px; font-weight: bold; background: var(--neon-green); color: #000; border: none; border-radius: 8px; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;" onclick="abrirModalAltaCliente()">
-          <span>+ Nuevo Cliente</span>
-        </button>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <button class="btn btn-outline" style="padding: 10px 16px; font-weight: 700; border-color: rgba(149, 255, 83, 0.45); color: var(--neon-green); border-radius: 8px; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;" onclick="abrirModalActualizarTarifas()" title="Actualizar los valores de cuota por cantidad de días semanales">
+            <span>📈 Actualizar Tarifas</span>
+          </button>
+          <button class="btn" style="padding: 10px 18px; font-weight: bold; background: var(--neon-green); color: #000; border: none; border-radius: 8px; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;" onclick="abrirModalAltaCliente()">
+            <span>+ Nuevo Cliente</span>
+          </button>
+        </div>
       </div>
 
       <div class="metrics-grid">
@@ -802,14 +813,14 @@
 
       <!-- TARJETAS DE MÉTRICAS DEL DÍA -->
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
-        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+        <div id="cardAsistSocios" onclick="aplicarFiltroTarjetaAsistencia('todos')" title="Clic para mostrar todos los socios" class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;">
           <div style="font-size: 1.6rem; background: rgba(255, 255, 255, 0.05); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">👥</div>
           <div>
             <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Socios Activos</div>
             <div id="asistMetricaTotalSocios" style="font-size: 1.4rem; font-weight: 800; color: #fff;">0</div>
           </div>
         </div>
-        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+        <div id="cardAsistPresentes" onclick="aplicarFiltroTarjetaAsistencia('presentes')" title="Clic para filtrar solo los presentes de la fecha" class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;">
           <div style="font-size: 1.6rem; background: rgba(149, 255, 83, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">🟢</div>
           <div>
             <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Presentes Hoy</div>
@@ -817,7 +828,7 @@
             <div id="asistSubPresentes" style="font-size: 0.72rem; color: var(--text-dim);">del total de socios</div>
           </div>
         </div>
-        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+        <div id="cardAsistDia" onclick="aplicarFiltroTarjetaAsistencia('cronograma')" title="Clic para filtrar los alumnos esperados según el Cronograma de hoy" class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;">
           <div style="font-size: 1.6rem; background: rgba(149, 255, 83, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">📊</div>
           <div>
             <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Asistencia Día</div>
@@ -825,7 +836,7 @@
             <div id="asistSubDia" style="font-size: 0.72rem; color: var(--text-dim);">vs cronograma de hoy</div>
           </div>
         </div>
-        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+        <div id="cardAsistPendientesDia" onclick="aplicarFiltroTarjetaAsistencia('cronograma_pendientes')" title="Clic para ver quiénes tienen turno hoy y todavía faltan llegar" class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;">
           <div style="font-size: 1.6rem; background: rgba(59, 130, 246, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">📈</div>
           <div>
             <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Asistencia Semanal</div>
@@ -1026,6 +1037,37 @@
                 <canvas id="graficoEgresos"></canvas>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+            <div>
+              <h3 style="margin: 0;">📈 Evolución Histórica Mes a Mes (Últimos 6 Meses)</h3>
+              <span style="font-size: 0.82rem; color: var(--text-dim);">Comparativa de ingresos, egresos, ganancia neta y cuotas cobradas</span>
+            </div>
+          </div>
+          <div style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+            <div style="position: relative; height: 230px; width: 100%;">
+              <canvas id="graficoEvolucionMensual"></canvas>
+            </div>
+          </div>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; text-align: left; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th>Período</th>
+                  <th>Cuotas Cobradas</th>
+                  <th>Ingresos Totales</th>
+                  <th>Egresos Totales</th>
+                  <th>Resultado Neto</th>
+                  <th>Ganancia Socio (1/6)</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyEvolucionMensual">
+                <tr><td colspan="6" style="color: var(--text-dim); text-align: center; padding: 12px;">Calculando historial...</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
         
@@ -1379,28 +1421,28 @@
 
       <!-- TARJETAS DE RESUMEN RÁPIDO DE OCUPACIÓN -->
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 20px;">
-        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+        <div id="cardCronoInscriptos" onclick="aplicarFiltroTarjetaCrono('todos')" title="Clic para ver todos los turnos de la semana" class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;">
           <div style="font-size: 1.6rem; background: rgba(149, 255, 83, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">👥</div>
           <div>
             <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Inscriptos Semana</div>
             <div id="cronoMetricaInscriptos" style="font-size: 1.4rem; font-weight: 800; color: #fff;">0</div>
           </div>
         </div>
-        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+        <div id="cardCronoDisponibles" onclick="aplicarFiltroTarjetaCrono('disponibles')" title="Clic para filtrar solo los horarios con cupo disponible" class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;">
           <div style="font-size: 1.6rem; background: rgba(149, 255, 83, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">🟢</div>
           <div>
             <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Turnos con Cupo</div>
             <div id="cronoMetricaDisponibles" style="font-size: 1.4rem; font-weight: 800; color: var(--neon-green);">0</div>
           </div>
         </div>
-        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color);">
+        <div id="cardCronoLlenos" onclick="aplicarFiltroTarjetaCrono('llenos')" title="Clic para filtrar solo los turnos llenos" class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;">
           <div style="font-size: 1.6rem; background: rgba(255, 83, 83, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">🔴</div>
           <div>
             <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Turnos Llenos</div>
             <div id="cronoMetricaLlenos" style="font-size: 1.4rem; font-weight: 800; color: var(--danger-red);">0</div>
           </div>
         </div>
-        <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+        <div id="cardCronoAvisos" onclick="aplicarFiltroTarjetaCrono('avisos')" title="Clic para mostrar solo los turnos con avisos activos" class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;">
           <div style="font-size: 1.6rem; background: rgba(255, 193, 7, 0.1); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">🔔</div>
           <div>
             <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">Avisos Activos</div>
@@ -1665,7 +1707,7 @@
         </div>
         <div style="display: flex; flex-direction: column; gap: 4px;">
           <label style="font-size: 0.8rem; color: var(--text-dim);">Días por semana (1 a 7):</label>
-          <input type="number" id="editClienteDias" min="1" max="7">
+          <input type="number" id="editClienteDias" min="1" max="7" oninput="renderizarTurnosFichaCliente()" onchange="renderizarTurnosFichaCliente()">
         </div>
       </div>
 
@@ -1679,6 +1721,15 @@
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <label style="font-size: 0.8rem; color: var(--text-dim);">📝 Notas / Observaciones:</label>
         <input type="text" id="editClienteNotas" placeholder="Ej: Debe mes pasado, horario especial...">
+      </div>
+
+      <!-- TURNOS ASIGNADOS EN CRONOGRAMA Y DETECTOR DE DIFERENCIAS -->
+      <div style="border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; background: rgba(255,255,255,0.02);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+          <span style="font-size: 0.85rem; font-weight: 700; color: #fff;">⏰ Horarios en el Cronograma</span>
+          <span id="fichaClienteAlertaTurnos" style="font-size: 0.75rem; font-weight: 700;"></span>
+        </div>
+        <div id="fichaClienteTurnosCrono" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
       </div>
 
       <!-- ESTADO DEL CLIENTE: INACTIVO TEMPORAL / BONIFICADO -->
@@ -1736,6 +1787,37 @@
       <div style="display: flex; gap: 8px; margin-top: 12px;">
         <button class="btn btn-outline" style="flex: 1;" onclick="cerrarModalEditCliente()">Cancelar</button>
         <button class="btn" style="flex: 1; font-weight: bold;" onclick="guardarEdicionCliente()">💾 Guardar Ficha</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ACTUALIZACIÓN MASIVA DE TARIFAS POR PLAN -->
+  <div id="modalActualizarTarifas" class="modal-overlay">
+    <div class="modal-content" style="max-width: 540px; width: 95%; max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 12px;">
+        <div>
+          <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">📈 Actualización Masiva de Cuotas</h3>
+          <span style="font-size: 0.8rem; color: var(--text-dim);">Modificá los valores de referencia por cantidad de días por semana</span>
+        </div>
+        <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.9rem;" onclick="cerrarModalActualizarTarifas()">✕</button>
+      </div>
+
+      <p style="font-size: 0.83rem; color: #cbd5e1; margin: 0 0 12px 0; line-height: 1.4; background: rgba(149, 255, 83, 0.06); border: 1px solid rgba(149, 255, 83, 0.2); padding: 10px 12px; border-radius: 8px;">
+        💡 Ingresá el <strong>nuevo valor ($)</strong> en los planes que quieras actualizar. Si dejás un casillero vacío o sin cambios, ese plan no se modifica. Los clientes <strong>🎁 Bonificados</strong> no se ven afectados.
+      </p>
+
+      <div id="contenedorFilasTarifasPlanes" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;"></div>
+
+      <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 0.82rem; color: var(--text-dim); cursor: pointer; background: rgba(255,255,255,0.02); padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+        <input type="checkbox" id="chkTarifasIncluirPagados" checked style="width: auto; margin-top: 2px;" onchange="actualizarResumenCambioTarifas()">
+        <span>Actualizar el valor de cuota también en los clientes que ya pagaron este mes <em style="color: #94a3b8;">(no modifica los cobros ya asentados en el Libro Diario)</em>.</span>
+      </label>
+
+      <div id="resumenActualizacionTarifas" style="margin-top: 12px; font-size: 0.83rem; color: var(--neon-green); font-weight: 700; text-align: center; min-height: 20px;"></div>
+
+      <div style="display: flex; gap: 10px; margin-top: 14px;">
+        <button type="button" class="btn btn-outline" style="flex: 1;" onclick="cerrarModalActualizarTarifas()">Cancelar</button>
+        <button type="button" class="btn" id="btnConfirmarActualizarTarifas" style="flex: 1.3; font-weight: 800; background: var(--neon-green); color: #000;" onclick="aplicarActualizacionTarifasMasiva()">💾 Aplicar Nuevas Tarifas</button>
       </div>
     </div>
   </div>
@@ -4231,6 +4313,47 @@
       });
 
       renderizarTablaAsistencias(filtrados, diaSelNombre, cantEsperadosDia);
+      actualizarResaltadoTarjetasAsistencias();
+    }
+
+    function aplicarFiltroTarjetaAsistencia(tipo) {
+      const sel = document.getElementById('filtroEstadoAsistencia');
+      if (!sel) return;
+      if (tipo === 'todos') {
+        sel.value = 'todos';
+      } else {
+        sel.value = (sel.value === tipo) ? 'todos' : tipo;
+      }
+      filtrarAsistencias();
+    }
+
+    function actualizarResaltadoTarjetasAsistencias() {
+      const estado = document.getElementById('filtroEstadoAsistencia')?.value || 'todos';
+      const cardSocios = document.getElementById('cardAsistSocios');
+      const cardPresentes = document.getElementById('cardAsistPresentes');
+      const cardDia = document.getElementById('cardAsistDia');
+      const cardPendDia = document.getElementById('cardAsistPendientesDia');
+
+      if (cardSocios) {
+        const act = (estado === 'todos');
+        cardSocios.style.borderColor = act ? 'rgba(255,255,255,0.4)' : 'var(--border-color)';
+        cardSocios.style.boxShadow = act ? '0 0 10px rgba(255,255,255,0.08)' : '';
+      }
+      if (cardPresentes) {
+        const act = (estado === 'presentes');
+        cardPresentes.style.borderColor = act ? 'var(--neon-green)' : 'var(--border-color)';
+        cardPresentes.style.boxShadow = act ? '0 0 12px rgba(149, 255, 83, 0.2)' : '';
+      }
+      if (cardDia) {
+        const act = (estado === 'cronograma');
+        cardDia.style.borderColor = act ? 'var(--neon-green)' : 'var(--border-color)';
+        cardDia.style.boxShadow = act ? '0 0 12px rgba(149, 255, 83, 0.2)' : '';
+      }
+      if (cardPendDia) {
+        const act = (estado === 'cronograma_pendientes');
+        cardPendDia.style.borderColor = act ? '#60a5fa' : 'var(--border-color)';
+        cardPendDia.style.boxShadow = act ? '0 0 12px rgba(96, 165, 250, 0.22)' : '';
+      }
     }
 
     function obtenerHorariosAlumnoEnDia(nombreAlumno, diaNombre, fechaStr) {
@@ -5023,6 +5146,8 @@
               }
             }
           }
+
+          renderizarEvolucionHistoricaMensual(anioNum, mesNum);
   
         } catch (err) {
         console.error("ERROR CRÍTICO EN CIERRE MENSUAL:", err);
@@ -6524,6 +6649,18 @@ function renderizarLibroDiario(esCargarMas) {
             cronogramaData.turnos[key] = reservasPorClase[c.id] || [];
           }
         }
+
+        if (!Array.isArray(asistenciasMesData) || asistenciasMesData.length === 0) {
+          const hoyStr = hoyLocalISO();
+          const dIni = new Date(hoyStr + 'T12:00:00');
+          dIni.setDate(dIni.getDate() - 10);
+          const dFin = new Date(hoyStr + 'T12:00:00');
+          dFin.setDate(dFin.getDate() + 10);
+          const fIni = `${dIni.getFullYear()}-${String(dIni.getMonth() + 1).padStart(2, '0')}-${String(dIni.getDate()).padStart(2, '0')}`;
+          const fFin = `${dFin.getFullYear()}-${String(dFin.getMonth() + 1).padStart(2, '0')}-${String(dFin.getDate()).padStart(2, '0')}`;
+          const { data: astSem } = await _supabase.from('asistencias').select('id, alumno_id, fecha').gte('fecha', fIni).lte('fecha', fFin);
+          if (astSem) asistenciasMesData = astSem;
+        }
       } catch (err) {
         console.error("Error al cargar turnos del cronograma:", err);
       }
@@ -6557,6 +6694,126 @@ function renderizarLibroDiario(esCargarMas) {
       return { maxCap, inscriptos, cantTotal, cantActivos, cantInactivos, cuposDisponibles };
     }
 
+    let cronoFiltroTarjeta = 'todos';
+
+    function aplicarFiltroTarjetaCrono(tipo) {
+      if (tipo === 'todos' || cronoFiltroTarjeta === tipo) {
+        cronoFiltroTarjeta = 'todos';
+      } else {
+        cronoFiltroTarjeta = tipo;
+      }
+      renderizarCronogramaDinamico();
+    }
+
+    function actualizarResaltadoTarjetasCrono() {
+      const cInsc = document.getElementById('cardCronoInscriptos');
+      const cDisp = document.getElementById('cardCronoDisponibles');
+      const cLlen = document.getElementById('cardCronoLlenos');
+      const cAvis = document.getElementById('cardCronoAvisos');
+
+      if (cInsc) {
+        const act = (cronoFiltroTarjeta === 'todos');
+        cInsc.style.borderColor = act ? 'rgba(255,255,255,0.35)' : 'var(--border-color)';
+        cInsc.style.boxShadow = act ? '0 0 10px rgba(255,255,255,0.06)' : '';
+      }
+      if (cDisp) {
+        const act = (cronoFiltroTarjeta === 'disponibles');
+        cDisp.style.borderColor = act ? 'var(--neon-green)' : 'var(--border-color)';
+        cDisp.style.boxShadow = act ? '0 0 12px rgba(149, 255, 83, 0.22)' : '';
+      }
+      if (cLlen) {
+        const act = (cronoFiltroTarjeta === 'llenos');
+        cLlen.style.borderColor = act ? 'var(--danger-red)' : 'var(--border-color)';
+        cLlen.style.boxShadow = act ? '0 0 12px rgba(255, 83, 83, 0.22)' : '';
+      }
+      if (cAvis) {
+        const act = (cronoFiltroTarjeta === 'avisos');
+        cAvis.style.borderColor = act ? '#ffea00' : 'var(--border-color)';
+        cAvis.style.boxShadow = act ? '0 0 12px rgba(255, 234, 0, 0.22)' : '';
+      }
+    }
+
+    async function toggleAsistenciaDesdeCronograma(alumnoId, fechaISO, diaNombre) {
+      if (!alumnoId || !fechaISO) return;
+      const yaTiene = Array.isArray(asistenciasMesData) && asistenciasMesData.some(
+        ast => String(ast.alumno_id) === String(alumnoId) && String(ast.fecha) === String(fechaISO)
+      );
+
+      if (yaTiene) {
+        const backup = [...asistenciasMesData];
+        asistenciasMesData = asistenciasMesData.filter(
+          ast => !(String(ast.alumno_id) === String(alumnoId) && String(ast.fecha) === String(fechaISO))
+        );
+        renderizarCronogramaDinamico();
+        if (typeof filtrarAsistencias === 'function') filtrarAsistencias();
+
+        const { error } = await _supabase
+          .from('asistencias')
+          .delete()
+          .eq('alumno_id', alumnoId)
+          .eq('fecha', fechaISO);
+
+        if (error) {
+          asistenciasMesData = backup;
+          renderizarCronogramaDinamico();
+          if (typeof filtrarAsistencias === 'function') filtrarAsistencias();
+          alert('Error al quitar presente: ' + error.message);
+        }
+      } else {
+        const alumno = alumnosData.find(a => String(a.id) === String(alumnoId));
+        if (alumno && alumno.inactivo) {
+          const motivo = alumno.inactivo_motivo ? ` (${alumno.inactivo_motivo})` : '';
+          const confirmar = await confirmAsync(
+            `El cliente "${alumno.nombre}" figura actualmente como INACTIVO${motivo}.\n\n¿Deseas reactivarlo como cliente activo a partir de hoy?`
+          );
+          if (confirmar) {
+            const hoy = hoyLocalISO();
+            const idTxt = String(alumno.id);
+            await _supabase.from('alumnos').update({
+              inactivo: false,
+              inactivo_desde: null,
+              inactivo_motivo: null,
+              inactivo_pausa_cuota: false
+            }).eq('id', alumno.id);
+
+            await _supabase.from('alumno_estado_historial')
+              .update({ fecha_hasta: hoy })
+              .eq('alumno_id', idTxt)
+              .eq('tipo', 'inactivo')
+              .is('fecha_hasta', null);
+
+            alumno.inactivo = false;
+            alumno.inactivo_desde = null;
+            alumno.inactivo_motivo = null;
+            alumno.inactivo_pausa_cuota = false;
+            reconstruirMapaAlumnos();
+            actualizarMetricasAlumnos();
+            filtrarAlumnos();
+          }
+        }
+
+        const nuevoReg = { alumno_id: alumnoId, fecha: fechaISO };
+        asistenciasMesData.push(nuevoReg);
+        renderizarCronogramaDinamico();
+        if (typeof filtrarAsistencias === 'function') filtrarAsistencias();
+
+        const { error } = await _supabase
+          .from('asistencias')
+          .insert([{ alumno_id: alumnoId, fecha: fechaISO }]);
+
+        if (error) {
+          asistenciasMesData = asistenciasMesData.filter(
+            ast => !(String(ast.alumno_id) === String(alumnoId) && String(ast.fecha) === String(fechaISO))
+          );
+          renderizarCronogramaDinamico();
+          if (typeof filtrarAsistencias === 'function') filtrarAsistencias();
+          if (error.code !== '23505') {
+            alert('Error al marcar presente: ' + error.message);
+          }
+        }
+      }
+    }
+
     function renderizarCronogramaDinamico() {
       const container = document.getElementById('cronogramaGridContainer');
       if (!container) return;
@@ -6581,6 +6838,23 @@ function renderizarLibroDiario(esCargarMas) {
         horasAMostrar = horasAMostrar.filter(h => h >= "12:00" && h < "16:00");
       } else if (franja === 'tarde') {
         horasAMostrar = horasAMostrar.filter(h => h >= "16:00");
+      }
+
+      const cumpleFiltroTarjetaCelda = (dia, hora) => {
+        if (!cronoFiltroTarjeta || cronoFiltroTarjeta === 'todos') return true;
+        if (dia === "Sábado" && !["09:00", "09:30", "10:00", "10:30"].includes(hora)) return false;
+        const key = `${dia}-${hora}`;
+        const { maxCap, cantActivos } = obtenerCupoEfectivoTurno(key);
+        if (cronoFiltroTarjeta === 'disponibles') return cantActivos < maxCap;
+        if (cronoFiltroTarjeta === 'llenos') return cantActivos >= maxCap;
+        if (cronoFiltroTarjeta === 'avisos') {
+          return (cronogramaData.avisos || []).some(a => a.dia === dia && a.hora === hora);
+        }
+        return true;
+      };
+
+      if (cronoFiltroTarjeta && cronoFiltroTarjeta !== 'todos') {
+        horasAMostrar = horasAMostrar.filter(hora => diasAMostrar.some(dia => cumpleFiltroTarjetaCelda(dia, hora)));
       }
 
       // Configuración de columnas adaptable
@@ -6622,6 +6896,13 @@ function renderizarLibroDiario(esCargarMas) {
       if (elLlen) elLlen.innerText = turnosLlenos;
       const elAvisos = document.getElementById('cronoMetricaAvisos');
       if (elAvisos) elAvisos.innerText = (cronogramaData.avisos || []).length;
+      actualizarResaltadoTarjetasCrono();
+
+      const hoyRefISO = hoyLocalISO();
+      const fechasPorDiaSemana = {};
+      diasAMostrar.forEach(d => {
+        fechasPorDiaSemana[d] = calcularFechaDeDiaSemana(d, hoyRefISO);
+      });
 
       // Generación del HTML de la cuadrícula
       let html = '<div class="crono-hora" style="background: transparent; border: none; font-size: 0.75rem; color: var(--text-dim);">HORA</div>';
@@ -6631,6 +6912,12 @@ function renderizarLibroDiario(esCargarMas) {
           ${d} ${esHoy ? '<span style="font-size: 0.7rem; display: block; opacity: 0.9;">(Hoy)</span>' : ''}
         </div>`;
       });
+
+      if (horasAMostrar.length === 0) {
+        html += `<div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: var(--text-dim); font-size: 0.9rem;">
+          No hay turnos para mostrar con el filtro seleccionado. <button class="btn btn-outline" style="margin-left: 8px; padding: 4px 10px; font-size: 0.8rem;" onclick="aplicarFiltroTarjetaCrono('todos')">Ver todos los turnos</button>
+        </div>`;
+      }
 
       horasAMostrar.forEach(hora => {
         if (hora === "08:00") {
@@ -6654,6 +6941,10 @@ function renderizarLibroDiario(esCargarMas) {
 
           const key = `${dia}-${hora}`;
           const { maxCap, inscriptos, cantTotal, cantActivos, cantInactivos } = obtenerCupoEfectivoTurno(key);
+          const coincideFiltroTarjeta = cumpleFiltroTarjetaCelda(dia, hora);
+          const estiloAtenuado = (!coincideFiltroTarjeta && cronoFiltroTarjeta !== 'todos') ? 'opacity: 0.25;' : '';
+          const fechaTurnoISO = fechasPorDiaSemana[dia] || hoyRefISO;
+
           let pct = Math.min(100, Math.round((cantActivos / maxCap) * 100));
           const sufijoInactivos = cantInactivos > 0 ? ` (+${cantInactivos} 🌴)` : '';
           const tooltipCupo = cantInactivos > 0 
@@ -6685,7 +6976,7 @@ function renderizarLibroDiario(esCargarMas) {
           }).join('');
 
           html += `
-            <div class="crono-cell" data-key="${key}" style="position: relative;">
+            <div class="crono-cell" data-key="${key}" style="position: relative; ${estiloAtenuado}">
               <!-- Cabecera del turno con cupo y acceso a avisos -->
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <span class="cupo-tag ${badgeClase}" title="${tooltipCupo}">
@@ -6710,10 +7001,19 @@ function renderizarLibroDiario(esCargarMas) {
                   const alumnoObj = obtenerAlumnoPorNombre(r.nombre_alumno);
                   const esInactivo = alumnoObj && alumnoObj.inactivo;
                   const motivoInactivo = esInactivo ? (alumnoObj.inactivo_motivo || 'Vacaciones') : '';
+                  const yaPresente = Boolean(alumnoObj && fechaTurnoISO && Array.isArray(asistenciasMesData) && asistenciasMesData.some(
+                    ast => String(ast.alumno_id) === String(alumnoObj.id) && String(ast.fecha) === String(fechaTurnoISO)
+                  ));
+                  const estiloChip = esInactivo
+                    ? 'background: rgba(56, 189, 248, 0.12); border-left: 2px solid #38bdf8;'
+                    : (yaPresente ? 'background: rgba(149, 255, 83, 0.1); border-left: 2px solid var(--neon-green);' : '');
 
                   return `
-                    <div class="crono-alumno-chip" data-nombre="${r.nombre_alumno || ''}" style="${esInactivo ? 'background: rgba(56, 189, 248, 0.12); border-left: 2px solid #38bdf8;' : ''}" title="${esInactivo ? `Inactivo temporal (${motivoInactivo}) — No ocupa cupo físico` : ''}">
-                      <span style="word-break: break-word; line-height: 1.2; flex: 1; padding-right: 4px;">
+                    <div class="crono-alumno-chip" data-nombre="${r.nombre_alumno || ''}" style="${estiloChip}" title="${esInactivo ? `Inactivo temporal (${motivoInactivo}) — No ocupa cupo físico` : (yaPresente ? `Presente registrado el ${dia}` : '')}">
+                      ${alumnoObj ? `
+                        <button type="button" class="crono-btn-presente" onclick="toggleAsistenciaDesdeCronograma('${alumnoObj.id}', '${fechaTurnoISO}', '${dia}')" title="${yaPresente ? `Presente registrado (${dia}) — Clic para quitar presente` : `Dar Presente a ${r.nombre_alumno} (${dia})`}" style="width: 17px; height: 17px; min-width: 17px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 900; cursor: pointer; padding: 0; margin-right: 4px; transition: all 0.15s; ${yaPresente ? 'background: var(--neon-green); color: #000; border: 1px solid var(--neon-green); box-shadow: 0 0 6px rgba(149, 255, 83, 0.35);' : 'background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.18);'}">✓</button>
+                      ` : ''}
+                      <span style="word-break: break-word; line-height: 1.2; flex: 1; padding-right: 4px; ${yaPresente ? 'color: #e2fbe8; font-weight: 600;' : ''}">
                         ${esInactivo ? '<span style="font-size: 0.75rem; margin-right: 2px;" title="Inactivo por vacaciones/viaje">🌴</span>' : ''}${r.nombre_alumno}
                       </span>
                       <span style="cursor: pointer; color: var(--danger-red); opacity: 0.5; padding: 0 2px; font-size: 0.75rem; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'" onclick="quitarAlumnoTurno('${r.id}', '${encodeURIComponent(r.nombre_alumno || '')}')" title="Quitar alumno">✕</span>
@@ -7343,8 +7643,231 @@ function renderizarLibroDiario(esCargarMas) {
         document.getElementById('editClienteBonificadoMotivo').value = cliente.bonificado_motivo || '';
         actualizarCamposEstadoFicha();
         cargarHistorialEstadosFicha(cliente.id);
+        renderizarTurnosFichaCliente(cliente.nombre);
         
         document.getElementById('modalEditCliente').style.display = 'flex';
+    }
+
+    async function renderizarTurnosFichaCliente(nombreExplicito) {
+        const cont = document.getElementById('fichaClienteTurnosCrono');
+        const alerta = document.getElementById('fichaClienteAlertaTurnos');
+        if (!cont) return;
+
+        const id = document.getElementById('editClienteId')?.value;
+        const cliente = alumnosData.find(a => String(a.id) === String(id));
+        const nombre = (nombreExplicito || cliente?.nombre || document.getElementById('editClienteNombre')?.value || '').trim();
+        const diasPlan = parseInt(document.getElementById('editClienteDias')?.value, 10) || (cliente?.dias_semana || 3);
+
+        if (!cronogramaData || !cronogramaData.turnos || Object.keys(cronogramaData.turnos).length === 0) {
+            cont.innerHTML = '<span style="font-size: 0.78rem; color: var(--text-dim);">Cargando horarios del cronograma...</span>';
+            try { await cargarTurnosSupabase(); } catch (e) {}
+        }
+
+        const ordenDias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const turnosAlumno = [];
+        const nomLower = nombre.toLowerCase();
+
+        if (nomLower && cronogramaData && cronogramaData.turnos) {
+            ordenDias.forEach(dia => {
+                (cronogramaData.horas || []).forEach(hora => {
+                    const key = `${dia}-${hora}`;
+                    const inscriptos = cronogramaData.turnos[key] || [];
+                    if (inscriptos.some(r => (r.nombre_alumno || '').trim().toLowerCase() === nomLower)) {
+                        turnosAlumno.push({ dia, hora, key });
+                    }
+                });
+            });
+        }
+
+        if (turnosAlumno.length === 0) {
+            cont.innerHTML = '<span style="font-size: 0.8rem; color: var(--text-dim);">Sin turnos fijos asignados en el Cronograma.</span>';
+            if (alerta) {
+                alerta.style.color = '#fbbf24';
+                alerta.innerHTML = `⚠️ 0 de ${diasPlan} días asignados`;
+            }
+            return;
+        }
+
+        cont.innerHTML = turnosAlumno.map(t => `
+          <span style="background: rgba(149, 255, 83, 0.1); border: 1px solid rgba(149, 255, 83, 0.35); color: var(--neon-green); padding: 3px 9px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+            📅 ${t.dia} ${t.hora} hs
+          </span>
+        `).join('');
+
+        if (alerta) {
+            if (turnosAlumno.length === diasPlan) {
+                alerta.style.color = 'var(--neon-green)';
+                alerta.innerHTML = `✔ Coincide (${turnosAlumno.length}/${diasPlan} días/sem)`;
+            } else if (turnosAlumno.length > diasPlan) {
+                alerta.style.color = 'var(--danger-red)';
+                alerta.innerHTML = `🚨 Anotado en ${turnosAlumno.length} turnos (paga por ${diasPlan} días/sem)`;
+            } else {
+                alerta.style.color = '#fbbf24';
+                alerta.innerHTML = `⚠️ Anotado en ${turnosAlumno.length} de ${diasPlan} días/sem`;
+            }
+        }
+    }
+
+    function abrirModalActualizarTarifas() {
+        const cont = document.getElementById('contenedorFilasTarifasPlanes');
+        if (!cont) return;
+
+        const planesDias = [1, 2, 3, 4, 5, 6, 7];
+        const planesConClientes = planesDias.filter(d =>
+            d <= 5 || alumnosData.some(a => !a.bonificado && (parseInt(a.dias_semana, 10) || 3) === d)
+        );
+
+        cont.innerHTML = planesConClientes.map(dias => {
+            const clientesPlan = alumnosData.filter(a => !a.bonificado && (parseInt(a.dias_semana, 10) || 3) === dias);
+            const cant = clientesPlan.length;
+
+            // Calcular el valor actual más frecuente en este plan
+            const frec = {};
+            let montoMasFrecuente = 0;
+            let maxCount = 0;
+            clientesPlan.forEach(c => {
+                const m = parseFloat(c.monto) || 0;
+                if (m > 0) {
+                    frec[m] = (frec[m] || 0) + 1;
+                    if (frec[m] > maxCount) {
+                        maxCount = frec[m];
+                        montoMasFrecuente = m;
+                    }
+                }
+            });
+
+            const etiquetaPlan = dias === 7 ? 'Pase Libre (7 días/sem)' : `${dias} ${dias === 1 ? 'día' : 'días'} / semana`;
+            const refActual = montoMasFrecuente > 0 ? `Actual más común: $${montoMasFrecuente.toLocaleString('es-AR')}` : 'Sin tarifa base';
+
+            return `
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 10px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 170px;">
+                  <div style="font-weight: 700; color: #fff; font-size: 0.92rem;">🏋️ ${etiquetaPlan}</div>
+                  <div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 2px;">
+                    <strong>${cant}</strong> cliente${cant === 1 ? '' : 's'} · ${refActual}
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="color: var(--neon-green); font-weight: 800;">$</span>
+                  <input type="number" class="input-tarifa-plan" data-dias="${dias}" data-actual="${montoMasFrecuente}" placeholder="${montoMasFrecuente > 0 ? montoMasFrecuente : 'Nuevo valor'}" oninput="actualizarResumenCambioTarifas()" style="width: 135px; padding: 7px 10px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">
+                </div>
+              </div>
+            `;
+        }).join('');
+
+        actualizarResumenCambioTarifas();
+        document.getElementById('modalActualizarTarifas').style.display = 'flex';
+    }
+
+    function cerrarModalActualizarTarifas() {
+        document.getElementById('modalActualizarTarifas').style.display = 'none';
+    }
+
+    function actualizarResumenCambioTarifas() {
+        const resEl = document.getElementById('resumenActualizacionTarifas');
+        if (!resEl) return;
+        const incluirPagados = !!document.getElementById('chkTarifasIncluirPagados')?.checked;
+        const inputs = document.querySelectorAll('.input-tarifa-plan');
+
+        let totalClientesAfectados = 0;
+        let planesAfectados = 0;
+
+        inputs.forEach(inp => {
+            const val = parseFloat(inp.value);
+            const dias = parseInt(inp.getAttribute('data-dias'), 10);
+            if (!isNaN(val) && val > 0) {
+                planesAfectados++;
+                const clientesPlan = alumnosData.filter(a => {
+                    if (a.bonificado) return false;
+                    if (!incluirPagados && a.pago_confirmado) return false;
+                    return (parseInt(a.dias_semana, 10) || 3) === dias;
+                });
+                totalClientesAfectados += clientesPlan.length;
+            }
+        });
+
+        if (planesAfectados === 0) {
+            resEl.style.color = 'var(--text-dim)';
+            resEl.innerText = 'Escribí el nuevo monto en al menos un plan para previsualizar el cambio.';
+        } else {
+            resEl.style.color = 'var(--neon-green)';
+            resEl.innerText = `✔ Se actualizará la cuota de ${totalClientesAfectados} cliente(s) en ${planesAfectados} plan(es).`;
+        }
+    }
+
+    async function aplicarActualizacionTarifasMasiva() {
+        const incluirPagados = !!document.getElementById('chkTarifasIncluirPagados')?.checked;
+        const inputs = document.querySelectorAll('.input-tarifa-plan');
+        const cambios = [];
+
+        inputs.forEach(inp => {
+            const val = parseFloat(inp.value);
+            const dias = parseInt(inp.getAttribute('data-dias'), 10);
+            if (!isNaN(val) && val > 0) {
+                cambios.push({ dias, nuevoMonto: val });
+            }
+        });
+
+        if (cambios.length === 0) {
+            alert('Ingresá al menos un nuevo valor de tarifa para aplicar.');
+            return;
+        }
+
+        const resumenTxt = cambios.map(c => `• ${c.dias} día(s)/sem: $${c.nuevoMonto.toLocaleString('es-AR')}`).join('\n');
+        const ok = await confirmAsync(`¿Confirmás actualizar las cuotas con estos nuevos valores?\n\n${resumenTxt}`);
+        if (!ok) return;
+
+        const btn = document.getElementById('btnConfirmarActualizarTarifas');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = 'Actualizando...';
+        }
+
+        let totalActualizados = 0;
+        let huboError = null;
+
+        try {
+            for (const c of cambios) {
+                const clientesPlan = alumnosData.filter(a => {
+                    if (a.bonificado) return false;
+                    if (!incluirPagados && a.pago_confirmado) return false;
+                    return (parseInt(a.dias_semana, 10) || 3) === c.dias;
+                });
+
+                const ids = clientesPlan.map(a => a.id);
+                if (ids.length === 0) continue;
+
+                const { error } = await _supabase
+                    .from('alumnos')
+                    .update({ monto: c.nuevoMonto })
+                    .in('id', ids);
+
+                if (error) {
+                    huboError = error.message;
+                    break;
+                }
+
+                clientesPlan.forEach(a => {
+                    a.monto = c.nuevoMonto;
+                });
+                totalActualizados += ids.length;
+            }
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = '💾 Aplicar Nuevas Tarifas';
+            }
+        }
+
+        if (huboError) {
+            alert('Error al actualizar tarifas: ' + huboError);
+            return;
+        }
+
+        cerrarModalActualizarTarifas();
+        actualizarMetricasAlumnos();
+        filtrarAlumnos();
+        alert(`Tarifas actualizadas con éxito en ${totalActualizados} cliente(s).`);
     }
 
     function cerrarModalEditCliente() {
@@ -9129,6 +9652,432 @@ async function abrirHistorialPagosAlumno(alumnoId, alumnoNombreEncoded) {
 function cerrarHistorialPagosAlumno() {
     const modal = document.getElementById('modalHistorialPagosAlumno');
     if (modal) modal.style.display = 'none';
+}
+
+// ==========================================
+// PUNTO 8: EVOLUCIÓN HISTÓRICA MES A MES (6 MESES)
+// ==========================================
+let chartEvolucionMensualInstance = null;
+
+function renderizarEvolucionHistoricaMensual(anioBase, mesBase) {
+    const tbody = document.getElementById('tbodyEvolucionMensual');
+    const canvas = document.getElementById('graficoEvolucionMensual');
+    if (!tbody) return;
+
+    const nombresMesesCorto = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const mesesAnalizar = [];
+
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date(anioBase, mesBase - 1 - i, 1, 12, 0, 0);
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+        const clave = `${y}-${String(m).padStart(2, '0')}`;
+        const etiqueta = `${nombresMesesCorto[m - 1]} ${y}`;
+        mesesAnalizar.push({ y, m, clave, etiqueta, ingresos: 0, egresos: 0, neto: 0, cuotas: 0 });
+    }
+
+    const listadoStrs = ['nacho', 'lea', 'mariano', 'elias', 'ernesto'];
+
+    (cajaData || []).forEach(r => {
+        if (!r || !r.fecha) return;
+        const claveMes = String(r.fecha).slice(0, 7);
+        const bucket = mesesAnalizar.find(x => x.clave === claveMes);
+        if (!bucket) return;
+
+        const monto = parseFloat(r.monto) || 0;
+        const cat = r.categoria ? String(r.categoria).toLowerCase() : '';
+        const desc = (r.descripcion || r.detalle) ? String(r.detalle || r.descripcion).toLowerCase() : '';
+        const tipo = r.tipo ? String(r.tipo).toLowerCase() : '';
+
+        const esSocioText = listadoStrs.some(s => desc.includes(s) || cat.includes(s));
+        const pareceSueldo = tipo === 'sueldo' || cat.includes('sueldo') || cat.includes('honorario') || cat.includes('liquidac') || desc.includes('sueldo') || desc.includes('liquidac');
+        const esSueldo = cat === 'retiro socio' || (pareceSueldo && esSocioText);
+
+        if (esSueldo || tipo === 'egreso') {
+            bucket.egresos += monto;
+        } else if (tipo === 'ingreso') {
+            bucket.ingresos += monto;
+            if ((r.categoria || 'Otros') === 'Cuota') {
+                bucket.cuotas++;
+            }
+        }
+    });
+
+    mesesAnalizar.forEach(b => {
+        b.neto = b.ingresos - b.egresos;
+    });
+
+    tbody.innerHTML = mesesAnalizar.slice().reverse().map((b, idx) => {
+        const gananciaSocio = Math.round(b.neto / 6);
+        const esMesSeleccionado = (idx === 0);
+        return `
+          <tr style="${esMesSeleccionado ? 'background: rgba(149, 255, 83, 0.05);' : ''}">
+            <td>
+              <strong style="color: ${esMesSeleccionado ? 'var(--neon-green)' : '#fff'};">${b.etiqueta}</strong>
+              ${esMesSeleccionado ? '<span style="font-size: 0.7rem; background: rgba(149,255,83,0.18); color: var(--neon-green); padding: 1px 6px; border-radius: 6px; margin-left: 6px;">Seleccionado</span>' : ''}
+            </td>
+            <td><strong>${b.cuotas}</strong> cuotas</td>
+            <td style="color: var(--neon-green); font-weight: 700;">$${b.ingresos.toLocaleString('es-AR')}</td>
+            <td style="color: var(--danger-red); font-weight: 700;">$${b.egresos.toLocaleString('es-AR')}</td>
+            <td style="color: ${b.neto >= 0 ? 'var(--neon-green)' : 'var(--danger-red)'}; font-weight: 800;">$${b.neto.toLocaleString('es-AR')}</td>
+            <td style="color: #60a5fa; font-weight: 700;">$${gananciaSocio.toLocaleString('es-AR')}</td>
+          </tr>
+        `;
+    }).join('');
+
+    if (canvas && typeof Chart !== 'undefined') {
+        if (chartEvolucionMensualInstance) chartEvolucionMensualInstance.destroy();
+        chartEvolucionMensualInstance = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: mesesAnalizar.map(b => b.etiqueta),
+                datasets: [
+                    {
+                        label: 'Ingresos',
+                        data: mesesAnalizar.map(b => b.ingresos),
+                        backgroundColor: 'rgba(149, 255, 83, 0.85)',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Egresos',
+                        data: mesesAnalizar.map(b => b.egresos),
+                        backgroundColor: 'rgba(255, 77, 77, 0.85)',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Resultado Neto',
+                        data: mesesAnalizar.map(b => b.neto),
+                        type: 'line',
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                        borderWidth: 2,
+                        tension: 0.25,
+                        pointRadius: 4
+                    }
+                ]
+            },
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#ccc' } }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#ccc' }, grid: { color: 'rgba(255,255,255,0.08)' } },
+                    x: { ticks: { color: '#ccc' }, grid: { display: false } }
+                }
+            }
+        });
+    }
+}
+
+// ==========================================
+// PUNTO 9: BUSCADOR RÁPIDO UNIVERSAL (Ctrl + K)
+// ==========================================
+function asegurarModalBuscadorUniversal() {
+    if (document.getElementById('modalBuscadorUniversal')) return;
+    const div = document.createElement('div');
+    div.id = 'modalBuscadorUniversal';
+    div.className = 'modal-overlay';
+    div.style.zIndex = '9500';
+    div.onclick = (e) => {
+        if (e.target === div) cerrarBuscadorUniversal();
+    };
+    div.innerHTML = `
+      <div class="modal-content" style="max-width: 640px; width: 95%; max-height: 85vh; display: flex; flex-direction: column; padding: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.25rem;">🔍</span>
+            <h3 style="margin: 0;">Buscador Rápido Universal</h3>
+          </div>
+          <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.85rem;" onclick="cerrarBuscadorUniversal()">✕ Esc</button>
+        </div>
+        <input type="text" id="inputBuscadorUniversal" placeholder="Escribí el nombre del alumno para ver su estado, horarios, asistencias y acciones..." oninput="filtrarBuscadorUniversal()" style="width: 100%; padding: 11px 14px; font-size: 0.98rem; border-radius: 10px; border: 1px solid var(--neon-green); background: #14141D; color: #fff; margin-bottom: 12px;" autocomplete="off">
+        <div id="resultadosBuscadorUniversal" style="overflow-y: auto; display: flex; flex-direction: column; gap: 10px; max-height: 62vh; padding-right: 4px;"></div>
+      </div>
+    `;
+    document.body.appendChild(div);
+}
+
+async function abrirBuscadorUniversal() {
+    asegurarModalBuscadorUniversal();
+    const modal = document.getElementById('modalBuscadorUniversal');
+    if (modal) modal.style.display = 'flex';
+
+    if (!cronogramaData || !cronogramaData.turnos || Object.keys(cronogramaData.turnos).length === 0) {
+        try { await cargarTurnosSupabase(); } catch (e) {}
+    }
+
+    const inp = document.getElementById('inputBuscadorUniversal');
+    if (inp) {
+        inp.value = '';
+        setTimeout(() => inp.focus(), 40);
+    }
+    filtrarBuscadorUniversal();
+}
+
+function cerrarBuscadorUniversal() {
+    const modal = document.getElementById('modalBuscadorUniversal');
+    if (modal) modal.style.display = 'none';
+}
+
+function obtenerTurnosAlumnoCronoLista(nombreAlumno) {
+    if (!nombreAlumno || !cronogramaData || !cronogramaData.turnos) return [];
+    const nomLow = nombreAlumno.trim().toLowerCase();
+    const ordenDias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const res = [];
+    ordenDias.forEach(dia => {
+        (cronogramaData.horas || []).forEach(hora => {
+            const key = `${dia}-${hora}`;
+            const inscriptos = cronogramaData.turnos[key] || [];
+            if (inscriptos.some(r => (r.nombre_alumno || '').trim().toLowerCase() === nomLow)) {
+                res.push(`${dia.slice(0, 3)} ${hora}`);
+            }
+        });
+    });
+    return res;
+}
+
+function filtrarBuscadorUniversal() {
+    const cont = document.getElementById('resultadosBuscadorUniversal');
+    if (!cont) return;
+    const q = (document.getElementById('inputBuscadorUniversal')?.value || '').trim().toLowerCase();
+    const hoyISO = hoyLocalISO();
+    const mesActualPrefix = hoyISO.slice(0, 7);
+
+    const lista = (alumnosData || []).filter(a => {
+        if (!q) return true;
+        return (a.nombre && a.nombre.toLowerCase().includes(q)) ||
+               (a.profesor_cargo && a.profesor_cargo.toLowerCase().includes(q)) ||
+               (a.notas && a.notas.toLowerCase().includes(q));
+    }).slice(0, 20);
+
+    if (lista.length === 0) {
+        cont.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 24px;">No se encontraron clientes que coincidan con "${escHtmlEstado(q)}".</div>`;
+        return;
+    }
+
+    cont.innerHTML = lista.map(a => {
+        const esBonif = !!a.bonificado;
+        const esPausado = !!(a.inactivo && a.inactivo_pausa_cuota);
+        const estaPagado = !!a.pago_confirmado;
+        const montoNum = parseFloat(a.monto) || 0;
+        const turnos = obtenerTurnosAlumnoCronoLista(a.nombre);
+        const presentesMes = (asistenciasMesData || []).filter(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha || '').startsWith(mesActualPrefix)).length;
+        const vinoHoy = (asistenciasMesData || []).some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === hoyISO);
+
+        let badgePago = '';
+        if (esBonif) {
+            badgePago = `<span style="color: #c084fc; background: rgba(192,132,252,0.15); border: 1px solid rgba(192,132,252,0.45); padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">🎁 Bonificado</span>`;
+        } else if (esPausado) {
+            badgePago = `<span style="color: #38bdf8; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.45); padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">⏸️ Cuota Pausada</span>`;
+        } else if (estaPagado) {
+            badgePago = `<span style="color: #000; background: var(--neon-green); padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 800;">✔ Pagado ($${montoNum.toLocaleString('es-AR')})</span>`;
+        } else {
+            badgePago = `<span style="color: var(--danger-red); background: rgba(255,83,83,0.12); border: 1px solid var(--danger-red); padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;">⏳ Debe ($${montoNum.toLocaleString('es-AR')})</span>`;
+        }
+
+        return `
+          <div style="background: rgba(255,255,255,0.025); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 240px;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <strong style="font-size: 1.02rem; color: #fff;">${a.nombre}</strong>
+                ${badgePago}
+                ${a.inactivo ? `<span style="color: #38bdf8; background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.4); padding: 2px 7px; border-radius: 6px; font-size: 0.72rem; font-weight: 700;">🌴 Inactivo</span>` : ''}
+              </div>
+              <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px;">
+                <span>👨‍🏫 Prof: <strong style="color:#fff;">${a.profesor_cargo || 'Sin asignar'}</strong></span>
+                <span>· 📋 Plan: <strong>${a.dias_semana || 3}d/sem</strong></span>
+                <span>· 📅 Mes: <strong style="color: var(--neon-green);">${presentesMes} asist.</strong></span>
+              </div>
+              <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 4px;">
+                ⏰ Turnos: ${turnos.length > 0 ? turnos.map(t => `<span style="background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px; color: #e2e8f0; margin-right: 4px;">${t}</span>`).join('') : '<em style="color: var(--text-dim);">Sin turnos fijos en Cronograma</em>'}
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <button class="btn" style="padding: 6px 10px; font-size: 0.78rem; font-weight: 700; ${vinoHoy ? 'background: rgba(149,255,83,0.18); color: var(--neon-green); border: 1px solid var(--neon-green);' : 'background: var(--neon-green); color: #000;'}" onclick="togglePresenteDesdeBuscadorUniversal('${a.id}')">
+                ${vinoHoy ? '✔ Presente Hoy' : '+ Dar Presente Hoy'}
+              </button>
+              <button class="btn btn-outline" style="padding: 6px 10px; font-size: 0.78rem;" onclick="cerrarBuscadorUniversal(); abrirModalEditCliente('${a.id}')">📋 Ficha</button>
+              <button class="btn btn-outline" style="padding: 6px 10px; font-size: 0.78rem;" onclick="cerrarBuscadorUniversal(); abrirHistorialPagosAlumno('${a.id}', '${encodeURIComponent(a.nombre)}')">📜 Pagos</button>
+            </div>
+          </div>
+        `;
+    }).join('');
+}
+
+async function togglePresenteDesdeBuscadorUniversal(alumnoId) {
+    const hoyISO = hoyLocalISO();
+    await toggleAsistenciaDesdeCronograma(alumnoId, hoyISO, 'Hoy');
+    filtrarBuscadorUniversal();
+}
+
+document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        const modal = document.getElementById('modalBuscadorUniversal');
+        if (modal && modal.style.display === 'flex') {
+            cerrarBuscadorUniversal();
+        } else {
+            abrirBuscadorUniversal();
+        }
+    } else if (e.key === 'Escape') {
+        const modal = document.getElementById('modalBuscadorUniversal');
+        if (modal && modal.style.display === 'flex') {
+            cerrarBuscadorUniversal();
+        }
+    }
+});
+
+// ==========================================
+// PUNTO 10: BACKUP COMPLETO EN EXCEL (MULTI-HOJA)
+// ==========================================
+async function descargarBackupCompletoExcel() {
+    try {
+        if (!cronogramaData || !cronogramaData.turnos || Object.keys(cronogramaData.turnos).length === 0) {
+            try { await cargarTurnosSupabase(); } catch (e) {}
+        }
+        if (!Array.isArray(planesData) || planesData.length === 0) {
+            try {
+                const { data: pl } = await _supabase.from('planes').select('*').order('id', { ascending: false });
+                if (pl) planesData = pl;
+            } catch (e) {}
+        }
+        if (!Array.isArray(liquidacionesData) || liquidacionesData.length === 0) {
+            try {
+                const { data: lq } = await _supabase.from('liquidaciones').select('*').order('fecha', { ascending: false });
+                if (lq) liquidacionesData = lq;
+            } catch (e) {}
+        }
+
+        const escXml = (v) => String(v == null ? '' : v)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
+
+        const crearHojaXml = (nombreHoja, columnas, filas) => {
+            const headerCells = columnas.map(c => `<Cell ss:StyleID="sHeader"><Data ss:Type="String">${escXml(c)}</Data></Cell>`).join('');
+            const rowsXml = filas.map(fila => {
+                const cells = fila.map(val => {
+                    if (typeof val === 'number' && !isNaN(val)) {
+                        return `<Cell><Data ss:Type="Number">${val}</Data></Cell>`;
+                    }
+                    return `<Cell><Data ss:Type="String">${escXml(val)}</Data></Cell>`;
+                }).join('');
+                return `<Row>${cells}</Row>`;
+            }).join('\n');
+
+            return `
+              <Worksheet ss:Name="${escXml(nombreHoja)}">
+                <Table>
+                  <Row>${headerCells}</Row>
+                  ${rowsXml}
+                </Table>
+              </Worksheet>
+            `;
+        };
+
+        // 1. Hoja Clientes
+        const filasClientes = (alumnosData || []).map(a => [
+            a.nombre || '',
+            parseInt(a.dias_semana, 10) || 3,
+            parseFloat(a.monto) || 0,
+            a.bonificado ? 'Bonificado' : (a.inactivo && a.inactivo_pausa_cuota ? 'Cuota Pausada' : (a.pago_confirmado ? 'Pagado' : 'Pendiente')),
+            a.fecha_pago || '',
+            a.ultimo_cobrador || '',
+            a.profesor_cargo || '',
+            a.inactivo ? `Inactivo (${a.inactivo_motivo || 'Temporal'})` : 'Activo',
+            a.inactivo_desde || '',
+            a.bonificado ? (a.bonificado_motivo || 'Sí') : 'No',
+            a.notas || ''
+        ]);
+
+        // 2. Hoja Libro Diario
+        const filasCaja = (cajaData || []).map(c => [
+            c.fecha || '',
+            c.tipo || '',
+            c.categoria || '',
+            c.detalle || c.descripcion || '',
+            c.cobrador || '',
+            parseFloat(c.monto) || 0
+        ]);
+
+        // 3. Hoja Cronograma Semanal
+        const filasCrono = [];
+        const ordenDias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        ordenDias.forEach(dia => {
+            (cronogramaData.horas || []).forEach(hora => {
+                const key = `${dia}-${hora}`;
+                const inscriptos = (cronogramaData.turnos && cronogramaData.turnos[key]) ? cronogramaData.turnos[key] : [];
+                inscriptos.forEach(ins => {
+                    const al = obtenerAlumnoPorNombre(ins.nombre_alumno);
+                    filasCrono.push([
+                        dia,
+                        hora,
+                        ins.nombre_alumno || '',
+                        al?.profesor_cargo || '',
+                        al?.inactivo ? 'Inactivo temporal' : 'Activo'
+                    ]);
+                });
+            });
+        });
+
+        // 4. Hoja Planes de Renovación
+        const filasPlanes = (planesData || []).map(p => [
+            p.profesor || '',
+            p.semana || '',
+            p.alumno || '',
+            parseInt(p.dias_semana, 10) || 3,
+            p.estado || 'Sin hacer',
+            p.detalles || ''
+        ]);
+
+        // 5. Hoja Staff y Liquidaciones
+        const filasStaff = (liquidacionesData || []).map(l => [
+            l.fecha || '',
+            l.staff_nombre || '',
+            l.detalle || '',
+            l.pagador || '',
+            parseFloat(l.monto || l.total_a_pagar) || 0
+        ]);
+
+        const xmlWorkbook = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Styles>
+    <Style ss:ID="Default" ss:Name="Normal">
+      <Font ss:FontName="Calibri" ss:Size="11"/>
+    </Style>
+    <Style ss:ID="sHeader">
+      <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#FFFFFF"/>
+      <Interior ss:Color="#1F2937" ss:Pattern="Solid"/>
+    </Style>
+  </Styles>
+  ${crearHojaXml('Clientes', ['Nombre', 'Dias x Semana', 'Cuota Mensual ($)', 'Estado Cuota', 'Fecha Ultimo Pago', 'Cobrador', 'Profesor a Cargo', 'Estado Actividad', 'Inactivo Desde', 'Bonificado', 'Notas'], filasClientes)}
+  ${crearHojaXml('Libro Diario', ['Fecha', 'Tipo', 'Categoria', 'Detalle / Concepto', 'Operador / Cobrador', 'Monto ($)'], filasCaja)}
+  ${crearHojaXml('Cronograma', ['Dia', 'Hora', 'Alumno', 'Profesor a Cargo', 'Estado'], filasCrono)}
+  ${crearHojaXml('Planes Renovacion', ['Profesor', 'Fecha / Semana', 'Alumno', 'Dias x Semana', 'Estado', 'Detalles'], filasPlanes)}
+  ${crearHojaXml('Liquidaciones Staff', ['Fecha', 'Integrante Staff', 'Detalle', 'Pagador', 'Monto ($)'], filasStaff)}
+</Workbook>`;
+
+        const blob = new Blob([xmlWorkbook], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const hoy = hoyLocalISO();
+        a.href = url;
+        a.download = `Backup_Completo_FTG_${hoy}.xls`;
+        a.click();
+        URL.revokeObjectURL(url);
+        alert('Backup completo descargado con éxito (5 pestañas incluidas).');
+    } catch (err) {
+        console.error('Error generando backup completo:', err);
+        alert('Error al generar el backup: ' + err.message);
+    }
 }
 </script>
 </body>
