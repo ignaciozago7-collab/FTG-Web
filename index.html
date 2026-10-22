@@ -675,10 +675,10 @@
       <button class="nav-btn" onclick="cambiarSeccion('staffSection', this)">👥 Staff & Liquidación</button>
       <button class="nav-btn" id="btnNavNutricion" onclick="cambiarSeccion('nutricionSection', this)" style="display: none;">🍎 Nutrición</button>
       <button class="nav-btn" onclick="window.open('https://docs.google.com/spreadsheets/d/1BV_L2nGGubO90q6mhAMWX573vl-CsqvPmCpdSw3O7dE/edit?gid=0#gid=0', '_blank')">🏋️‍♂️ 🔗 Link de ejercicios</button>
-      <button class="nav-btn" style="background: rgba(0, 0, 0, 0.12); border: 1px dashed rgba(0, 0, 0, 0.35); font-weight: 700; margin-top: 6px;" onclick="descargarBackupCompletoExcel()" title="Descargar un archivo Excel con todas las pestañas del sistema (Clientes, Caja, Cronograma, Planes y Staff)">💾 Backup Excel Completo</button>
     </nav>
     
     <div id="userProfile" style="margin-top: auto; padding-top: 16px; border-top: 1px solid #757575; font-size: 0.85rem; color: #000;">
+      <button id="btnBackupExcelCompleto" class="btn btn-outline" style="display: none; width: 100%; margin-bottom: 12px; font-size: 0.82rem; padding: 8px 10px; font-weight: 800; color: #000; background: rgba(0, 0, 0, 0.12); border: 1px dashed rgba(0, 0, 0, 0.45); border-radius: 8px; cursor: pointer;" onclick="descargarBackupCompletoExcel()" title="Descargar un archivo Excel con todas las pestañas del sistema (Clientes, Caja, Cronograma, Planes y Staff)">💾 Backup Excel Completo</button>
       <p style="color: #424242; margin-bottom: 4px;">Sesión iniciada como:</p>
       <strong id="loggedUserEmail" style="color: #000000; word-break: break-all;">cargando...</strong>
       <button class="btn btn-outline" style="width: 100%; margin-top: 12px; font-size: 0.8rem; padding: 8px; color: #000; border-color: #757575;" onclick="cerrarSesion()">Cerrar Sesión / Cambiar</button>
@@ -2585,10 +2585,12 @@
         const btnCierre = document.querySelector('button[onclick*="cierreMensualSection"]');
         const btnStaff = document.querySelector('button[onclick*="staffSection"]');
         const btnNutri = document.getElementById('btnNavNutricion');
+        const btnBackup = document.getElementById('btnBackupExcelCompleto');
         
         if (btnCierre) btnCierre.style.display = esSuperAdmin ? 'block' : 'none';
         if (btnStaff) btnStaff.style.display = esSuperAdmin ? 'block' : 'none';
         if (btnNutri) btnNutri.style.display = (esSuperAdmin || esNutri) ? 'block' : 'none';
+        if (btnBackup) btnBackup.style.display = esSuperAdmin ? 'block' : 'none';
 
         if (esNutri) {
             document.querySelectorAll('.nav-btn').forEach(b => {
@@ -9933,6 +9935,10 @@ document.addEventListener('keydown', (e) => {
 // PUNTO 10: BACKUP COMPLETO EN EXCEL (MULTI-HOJA)
 // ==========================================
 async function descargarBackupCompletoExcel() {
+    if (!window.esSuperAdminGlobal) {
+        alert('Acceso restringido: solo disponible para Ignacio y Leandro.');
+        return;
+    }
     try {
         if (!cronogramaData || !cronogramaData.turnos || Object.keys(cronogramaData.turnos).length === 0) {
             try { await cargarTurnosSupabase(); } catch (e) {}
