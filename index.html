@@ -6901,10 +6901,19 @@ function renderizarLibroDiario(esCargarMas) {
       actualizarResaltadoTarjetasCrono();
 
       const hoyRefISO = hoyLocalISO();
+      // Domingo no hay turnos: se toma el día siguiente como referencia para mostrar la semana que viene (no la que pasó)
+      let fechaRefSemanaISO = hoyRefISO;
+      if (new Date().getDay() === 0) {
+        const dMan = new Date(hoyRefISO + 'T12:00:00');
+        dMan.setDate(dMan.getDate() + 1);
+        fechaRefSemanaISO = `${dMan.getFullYear()}-${String(dMan.getMonth() + 1).padStart(2, '0')}-${String(dMan.getDate()).padStart(2, '0')}`;
+      }
       const fechasPorDiaSemana = {};
       diasAMostrar.forEach(d => {
-        fechasPorDiaSemana[d] = calcularFechaDeDiaSemana(d, hoyRefISO);
+        fechasPorDiaSemana[d] = calcularFechaDeDiaSemana(d, fechaRefSemanaISO);
       });
+      // Set de presentes (alumno_id|fecha) para consultas O(1) por cada chip de la grilla
+      const setPresentesCrono = new Set((Array.isArray(asistenciasMesData) ? asistenciasMesData : []).map(ast => `${ast.alumno_id}|${ast.fecha}`));
 
       // Generación del HTML de la cuadrícula
       let html = '<div class="crono-hora" style="background: transparent; border: none; font-size: 0.75rem; color: var(--text-dim);">HORA</div>';
@@ -7003,9 +7012,7 @@ function renderizarLibroDiario(esCargarMas) {
                   const alumnoObj = obtenerAlumnoPorNombre(r.nombre_alumno);
                   const esInactivo = alumnoObj && alumnoObj.inactivo;
                   const motivoInactivo = esInactivo ? (alumnoObj.inactivo_motivo || 'Vacaciones') : '';
-                  const yaPresente = Boolean(alumnoObj && fechaTurnoISO && Array.isArray(asistenciasMesData) && asistenciasMesData.some(
-                    ast => String(ast.alumno_id) === String(alumnoObj.id) && String(ast.fecha) === String(fechaTurnoISO)
-                  ));
+                  const yaPresente = Boolean(alumnoObj && fechaTurnoISO && setPresentesCrono.has(`${alumnoObj.id}|${fechaTurnoISO}`));
                   const estiloChip = esInactivo
                     ? 'background: rgba(56, 189, 248, 0.12); border-left: 2px solid #38bdf8;'
                     : (yaPresente ? 'background: rgba(149, 255, 83, 0.1); border-left: 2px solid var(--neon-green);' : '');
