@@ -2630,7 +2630,7 @@
       
       const rtCargarAlumnos = debounce(() => cargarDatosAlumnos(), 300);
       const rtCargarLibroDiario = debounce(() => cargarLibroDiario(), 300);
-      const rtCargarAsistencias = debounce(() => cargarAsistencias(), 300);
+      const rtCargarAsistencias = debounce(() => { cargarAsistencias(); cargarAsistenciasCrono(true); }, 300);
       const rtCargarTurnos = debounce(() => cargarTurnosSupabase(), 300);
       const rtCargarNutricion = debounce(() => cargarDatosNutricion(), 300);
 
@@ -6652,17 +6652,7 @@ function renderizarLibroDiario(esCargarMas) {
           }
         }
 
-        if (!Array.isArray(asistenciasMesData) || asistenciasMesData.length === 0) {
-          const hoyStr = hoyLocalISO();
-          const dIni = new Date(hoyStr + 'T12:00:00');
-          dIni.setDate(dIni.getDate() - 10);
-          const dFin = new Date(hoyStr + 'T12:00:00');
-          dFin.setDate(dFin.getDate() + 10);
-          const fIni = `${dIni.getFullYear()}-${String(dIni.getMonth() + 1).padStart(2, '0')}-${String(dIni.getDate()).padStart(2, '0')}`;
-          const fFin = `${dFin.getFullYear()}-${String(dFin.getMonth() + 1).padStart(2, '0')}-${String(dFin.getDate()).padStart(2, '0')}`;
-          const { data: astSem } = await _supabase.from('asistencias').select('id, alumno_id, fecha').gte('fecha', fIni).lte('fecha', fFin);
-          if (astSem) asistenciasMesData = astSem;
-        }
+        await cargarAsistenciasCrono(false);
       } catch (err) {
         console.error("Error al cargar turnos del cronograma:", err);
       }
@@ -6670,6 +6660,28 @@ function renderizarLibroDiario(esCargarMas) {
       if (typeof filtrarAsistencias === 'function' && document.getElementById('tbodyAsistencias')) {
         filtrarAsistencias();
       }
+    }
+
+    // Asistencias propias del Cronograma y del Buscador: independientes de la fecha/mes elegido en la pestaña Asistencias.
+    // Cubre desde el 1° del mes actual (o 10 días atrás) hasta 10 días adelante.
+    let asistenciasCronoData = [];
+    async function cargarAsistenciasCrono(renderizar = true) {
+      try {
+        const hoyStr = hoyLocalISO();
+        const hoyD = new Date(hoyStr + 'T12:00:00');
+        const dIni = new Date(hoyD.getFullYear(), hoyD.getMonth(), 1, 12, 0, 0);
+        const dHace10 = new Date(hoyD);
+        dHace10.setDate(dHace10.getDate() - 10);
+        const desde = dHace10 < dIni ? dHace10 : dIni;
+        const dFin = new Date(hoyD);
+        dFin.setDate(dFin.getDate() + 10);
+        const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const { data, error } = await _supabase.from('asistencias').select('id, alumno_id, fecha').gte('fecha', fmt(desde)).lte('fecha', fmt(dFin));
+        if (!error && data) asistenciasCronoData = data;
+      } catch (e) {
+        console.warn('No se pudieron cargar las asistencias del cronograma:', e);
+      }
+      if (renderizar && typeof renderizarCronogramaDinamico === 'function') renderizarCronogramaDinamico();
     }
 
     function filtrarCronoDia(dia, btn) {
@@ -6737,17 +6749,26 @@ function renderizarLibroDiario(esCargarMas) {
 
     async function toggleAsistenciaDesdeCronograma(alumnoId, fechaISO, diaNombre) {
       if (!alumnoId || !fechaISO) return;
-      const yaTiene = Array.isArray(asistenciasMesData) && asistenciasMesData.some(
-        ast => String(ast.alumno_id) === String(alumnoId) && String(ast.fecha) === String(fechaISO)
-      );
+      const mismoReg = (ast) => String(ast.alumno_id) === String(alumnoId) && String(ast.fecha) === String(fechaISO);
+      const yaTiene = asistenciasCronoData.some(mismoReg);
 
-      if (yaTiene) {
-        const backup = [...asistenciasMesData];
-        asistenciasMesData = asistenciasMesData.filter(
-          ast => !(String(ast.alumno_id) === String(alumnoId) && String(ast.fecha) === String(fechaISO))
-        );
+      // Mantiene sincronizada la pestaña Asistencias (su propio listado) sin depender de ella
+      const quitarLocal = () => {
+        asistenciasCronoData = asistenciasCronoData.filter(ast => !mismoReg(ast));
+        asistenciasMesData = asistenciasMesData.filter(ast => !mismoReg(ast));
+      };
+      const agregarLocal = () => {
+        if (!asistenciasCronoData.some(mismoReg)) asistenciasCronoData.push({ alumno_id: alumnoId, fecha: fechaISO });
+        if (!asistenciasMesData.some(mismoReg)) asistenciasMesData.push({ alumno_id: alumnoId, fecha: fechaISO });
+      };
+      const refrescar = () => {
         renderizarCronogramaDinamico();
         if (typeof filtrarAsistencias === 'function') filtrarAsistencias();
+      };
+
+      if (yaTiene) {
+        quitarLocal();
+        refrescar();
 
         const { error } = await _supabase
           .from('asistencias')
@@ -6756,9 +6777,8 @@ function renderizarLibroDiario(esCargarMas) {
           .eq('fecha', fechaISO);
 
         if (error) {
-          asistenciasMesData = backup;
-          renderizarCronogramaDinamico();
-          if (typeof filtrarAsistencias === 'function') filtrarAsistencias();
+          agregarLocal();
+          refrescar();
           alert('Error al quitar presente: ' + error.message);
         }
       } else {
@@ -6794,23 +6814,20 @@ function renderizarLibroDiario(esCargarMas) {
           }
         }
 
-        const nuevoReg = { alumno_id: alumnoId, fecha: fechaISO };
-        asistenciasMesData.push(nuevoReg);
-        renderizarCronogramaDinamico();
-        if (typeof filtrarAsistencias === 'function') filtrarAsistencias();
+        agregarLocal();
+        refrescar();
 
         const { error } = await _supabase
           .from('asistencias')
           .insert([{ alumno_id: alumnoId, fecha: fechaISO }]);
 
         if (error) {
-          asistenciasMesData = asistenciasMesData.filter(
-            ast => !(String(ast.alumno_id) === String(alumnoId) && String(ast.fecha) === String(fechaISO))
-          );
-          renderizarCronogramaDinamico();
-          if (typeof filtrarAsistencias === 'function') filtrarAsistencias();
+          quitarLocal();
+          refrescar();
           if (error.code !== '23505') {
             alert('Error al marcar presente: ' + error.message);
+          } else {
+            await cargarAsistenciasCrono(true);
           }
         }
       }
@@ -6913,7 +6930,7 @@ function renderizarLibroDiario(esCargarMas) {
         fechasPorDiaSemana[d] = calcularFechaDeDiaSemana(d, fechaRefSemanaISO);
       });
       // Set de presentes (alumno_id|fecha) para consultas O(1) por cada chip de la grilla
-      const setPresentesCrono = new Set((Array.isArray(asistenciasMesData) ? asistenciasMesData : []).map(ast => `${ast.alumno_id}|${ast.fecha}`));
+      const setPresentesCrono = new Set((Array.isArray(asistenciasCronoData) ? asistenciasCronoData : []).map(ast => `${ast.alumno_id}|${ast.fecha}`));
 
       // Generación del HTML de la cuadrícula
       let html = '<div class="crono-hora" style="background: transparent; border: none; font-size: 0.75rem; color: var(--text-dim);">HORA</div>';
@@ -9872,8 +9889,8 @@ function filtrarBuscadorUniversal() {
         const estaPagado = !!a.pago_confirmado;
         const montoNum = parseFloat(a.monto) || 0;
         const turnos = obtenerTurnosAlumnoCronoLista(a.nombre);
-        const presentesMes = (asistenciasMesData || []).filter(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha || '').startsWith(mesActualPrefix)).length;
-        const vinoHoy = (asistenciasMesData || []).some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === hoyISO);
+        const presentesMes = (asistenciasCronoData || []).filter(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha || '').startsWith(mesActualPrefix)).length;
+        const vinoHoy = (asistenciasCronoData || []).some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === hoyISO);
 
         let badgePago = '';
         if (esBonif) {
