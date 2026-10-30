@@ -7595,8 +7595,16 @@ function renderizarLibroDiario(esCargarMas) {
           document.getElementById('avisoCronoFecha').value = '';
           const selOrigen = document.getElementById('avisoCronoOrigenTurno');
           if (selOrigen) selOrigen.value = '';
+          // Avisar si el turno ya venció visualmente (pasó más de 1 hora): se guarda y cuenta en Asistencias, pero no se dibuja en la grilla
+          const filasVencidas = filasInsertar.filter(f => {
+            const lim = obtenerLimiteExpiracionVisualAviso(f);
+            return lim && new Date() > lim;
+          });
           await cargarTurnosSupabase();
           if (typeof filtrarAsistencias === 'function') filtrarAsistencias();
+          if (filasVencidas.length > 0) {
+            alert(`Aviso guardado (cuenta en Asistencias), pero ${filasVencidas.length === 1 ? 'ese turno ya pasó' : 'esos turnos ya pasaron'} hace más de 1 hora, por eso no se muestra en la grilla del Cronograma.`);
+          }
         }
       } catch (err) {
         alert('Error: ' + err.message);
