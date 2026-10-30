@@ -2347,6 +2347,8 @@
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let alumnosData = [];
+    const _cacheNormTexto = new Map();
+    let _cacheResolverNombre = new Map();
 
     let limiteAlumnos = 50;
     let limiteLibroDiario = 50;
@@ -3140,6 +3142,7 @@
       let alumnosPorNombreMap = new Map();
       function reconstruirMapaAlumnos() {
         alumnosPorNombreMap = new Map();
+        _cacheResolverNombre = new Map();
         (alumnosData || []).forEach(a => {
           if (a && a.nombre) {
             alumnosPorNombreMap.set(a.nombre.trim().toLowerCase(), a);
@@ -3805,18 +3808,33 @@
       select.innerHTML = html;
     }
 
+    // Cachés de rendimiento: la resolución de nombres se repite miles de veces al calcular asistencias del mes
     function normalizarTextoComparacion(str) {
-      return String(str || '')
+      const clave = String(str || '');
+      const enCache = _cacheNormTexto.get(clave);
+      if (enCache !== undefined) return enCache;
+      const res = clave
         .trim()
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/\s+/g, ' ');
+      if (_cacheNormTexto.size > 5000) _cacheNormTexto.clear();
+      _cacheNormTexto.set(clave, res);
+      return res;
     }
 
     function resolverNombreAlumnoAviso(textoAviso) {
       const raw = String(textoAviso || '').trim();
       if (!raw) return '';
+      const enCache = _cacheResolverNombre.get(raw);
+      if (enCache !== undefined) return enCache;
+      const resultado = _resolverNombreAlumnoAvisoSinCache(raw);
+      _cacheResolverNombre.set(raw, resultado);
+      return resultado;
+    }
+
+    function _resolverNombreAlumnoAvisoSinCache(raw) {
       const directo = obtenerAlumnoPorNombre(raw);
       if (directo && directo.nombre) return directo.nombre.trim().toLowerCase();
 
@@ -4096,10 +4114,12 @@
       const diaSelNombre = nombresDias[dSel.getDay()];
       const esDomingo = (dSel.getDay() === 0);
 
-      // Presentes del día seleccionado
-      const presentesHoy = alumnosPadron.filter(a => 
-        asistenciasMesData.some(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha) === String(fechaSel))
-      );
+      // Presentes del día seleccionado (índice por Set: evita recorrer todas las asistencias por cada alumno)
+      const idsPresentesFecha = new Set();
+      asistenciasMesData.forEach(ast => {
+        if (String(ast.fecha) === String(fechaSel)) idsPresentesFecha.add(String(ast.alumno_id));
+      });
+      const presentesHoy = alumnosPadron.filter(a => idsPresentesFecha.has(String(a.id)));
       const cantPresentes = presentesHoy.length;
 
       // 1. Asistencia Día (en base al cronograma + avisos de ausencia/recupero de fechaSel)
