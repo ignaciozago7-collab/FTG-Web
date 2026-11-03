@@ -674,6 +674,7 @@
       <button class="nav-btn" onclick="cambiarSeccion('cierreMensualSection', this)">📊 Cierre Mensual</button>
       <button class="nav-btn" onclick="cambiarSeccion('staffSection', this)">👥 Staff & Liquidación</button>
       <button class="nav-btn" id="btnNavNutricion" onclick="cambiarSeccion('nutricionSection', this)" style="display: none;">🍎 Nutrición</button>
+      <button class="nav-btn" id="btnNavClasesProf" onclick="cambiarSeccion('clasesProfSection', this)" style="display: none;">🥋 Clases Profesionales</button>
       <button class="nav-btn" onclick="window.open('https://docs.google.com/spreadsheets/d/1BV_L2nGGubO90q6mhAMWX573vl-CsqvPmCpdSw3O7dE/edit?gid=0#gid=0', '_blank')">🏋️‍♂️ 🔗 Link de ejercicios</button>
     </nav>
     
@@ -1250,6 +1251,41 @@
              <h3 style="margin:0; margin-bottom: 15px;">Rendición Mensual</h3>
              
              <div id="resumenNutriMensual"></div>
+           </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN CLASES PROFESIONALES -->
+      <div id="clasesProfSection" class="section-page">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+          <h1 style="margin: 0;">🥋 Clases Profesionales</h1>
+          <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+              <div id="clasesProfContextInfo" style="color: var(--neon-green); font-weight: bold;"></div>
+              <select id="filtroProfClases" onchange="renderVistasClasesProf()" style="display: none; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: #14141D; color: #fff;"></select>
+              <div class="month-filter-pill">
+                 <span class="icon">📅</span>
+                 <input type="month" id="mesFiltroClasesProf" onchange="renderVistasClasesProf()">
+              </div>
+          </div>
+        </div>
+
+        <div class="tabs-clientes" style="margin-bottom: 20px;">
+          <button class="tab-btn active" onclick="cambiarTabClasesProf('alumnos', this)">📋 Alumnos y Pagos</button>
+          <button class="tab-btn" onclick="cambiarTabClasesProf('rendicion', this)">💰 Rendición del Mes</button>
+        </div>
+
+        <div id="tabClasesProfAlumnos" class="tab-content active">
+           <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+              <button class="btn" style="background: var(--neon-green); color: #000; font-weight: bold;" onclick="abrirModalClaseProf()">+ Nueva Clase</button>
+              <button class="btn btn-outline" style="font-weight: bold;" onclick="copiarAlumnosMesAnteriorClasesProf()" title="Copia los alumnos activos del mes anterior como pendientes de pago">📋 Copiar alumnos del mes anterior</button>
+           </div>
+           <div id="listaClasesProf"><div style="color: var(--text-dim);">Cargando clases...</div></div>
+        </div>
+
+        <div id="tabClasesProfRendicion" class="tab-content">
+           <div class="card">
+             <h3 style="margin:0; margin-bottom: 15px;">Rendición Mensual</h3>
+             <div id="resumenClasesProf"></div>
            </div>
         </div>
       </div>
@@ -2079,6 +2115,42 @@
     </div>
   </div>
 
+  <!-- MODAL CLASE PROFESIONAL -->
+  <div id="modalClaseProf" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px;">
+        <h3 id="tituloModalClaseProf">Nueva Clase</h3>
+        <input type="hidden" id="claseProfIdEdit">
+        <label>Profesional:</label>
+        <select id="claseProfEmail"></select>
+        <label>Nombre de la clase:</label>
+        <input type="text" id="claseProfNombre" placeholder="Ej: Funcional, Boxeo..." autocomplete="off">
+        <label>Días y horarios (opcional):</label>
+        <input type="text" id="claseProfHorarios" placeholder="Ej: Lun y Mié 19:00" autocomplete="off">
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button class="btn btn-outline" style="flex: 1;" onclick="cerrarModalClaseProf()">Cancelar</button>
+            <button class="btn" style="flex: 1; background: var(--neon-green); color: #000;" onclick="guardarClaseProf()">Guardar</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- MODAL ALUMNO DE CLASE PROFESIONAL -->
+  <div id="modalAlumnoClaseProf" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px;">
+        <h3 id="tituloModalAlumnoClaseProf">Nuevo Alumno</h3>
+        <input type="hidden" id="alumnoClaseProfClaseId">
+        <label>Nombre del alumno:</label>
+        <input type="text" id="alumnoClaseProfNombre" placeholder="Nombre y apellido" autocomplete="off">
+        <label>Cuota mensual ($):</label>
+        <input type="number" id="alumnoClaseProfMonto" placeholder="Ej: 25000" min="0">
+        <label>Notas (opcional):</label>
+        <input type="text" id="alumnoClaseProfNotas" placeholder="Ej: Paga por transferencia" autocomplete="off">
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button class="btn btn-outline" style="flex: 1;" onclick="cerrarModalAlumnoClaseProf()">Cancelar</button>
+            <button class="btn" style="flex: 1; background: var(--neon-green); color: #000;" onclick="guardarAlumnoClaseProf()">Agregar</button>
+        </div>
+    </div>
+  </div>
+
   <!-- MODAL NUEVO TURNO NUTRICIÓN -->
   <div id="modalNuevoTurnoNutri" class="modal-overlay">
     <div class="modal-content" style="max-width: 400px;">
@@ -2580,8 +2652,10 @@
       const emailActual = document.getElementById('loggedUserEmail').innerText.trim();
         const esSuperAdmin = (emailActual === 'ignaciozago7@gmail.com' || emailActual === 'leandrovilliani7@gmail.com');
         const esNutri = (emailActual === 'luciaperruzzaaa@gmail.com' || emailActual === 'santiagoruizzavala@gmail.com');
+        const esProfClases = PROFESIONALES_CLASES.some(p => p.email === emailActual.toLowerCase());
         window.esSuperAdminGlobal = esSuperAdmin;
         window.esNutriGlobal = esNutri;
+        window.esProfClasesGlobal = esProfClases;
         window.emailActualGlobal = emailActual;
 
         const btnCierre = document.querySelector('button[onclick*="cierreMensualSection"]');
@@ -2592,6 +2666,8 @@
         if (btnCierre) btnCierre.style.display = esSuperAdmin ? 'block' : 'none';
         if (btnStaff) btnStaff.style.display = esSuperAdmin ? 'block' : 'none';
         if (btnNutri) btnNutri.style.display = (esSuperAdmin || esNutri) ? 'block' : 'none';
+        const btnClasesProf = document.getElementById('btnNavClasesProf');
+        if (btnClasesProf) btnClasesProf.style.display = (esSuperAdmin || esProfClases) ? 'block' : 'none';
         if (btnBackup) btnBackup.style.display = esSuperAdmin ? 'block' : 'none';
 
         if (esNutri) {
@@ -2601,12 +2677,21 @@
                 }
             });
         }
+        if (esProfClases && !esSuperAdmin) {
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                if(b.id !== 'btnNavClasesProf' && !b.innerText.includes('Cerrar Ses')) {
+                    b.style.display = 'none';
+                }
+            });
+        }
 
       const seccionActiva = document.querySelector('.section-page.active');
       if (window.esNutriGlobal) {
             cambiarSeccion('nutricionSection', document.getElementById('btnNavNutricion'));
             document.getElementById('nutriContextInfo').innerText = '👤 Hola, ' + window.emailActualGlobal;
-        } else if (!window.esSuperAdminGlobal && seccionActiva && (seccionActiva.id === 'cierreMensualSection' || seccionActiva.id === 'staffSection' || seccionActiva.id === 'nutricionSection')) {
+        } else if (esProfClases && !esSuperAdmin) {
+            cambiarSeccion('clasesProfSection', document.getElementById('btnNavClasesProf'));
+        } else if (!window.esSuperAdminGlobal && seccionActiva && (seccionActiva.id === 'cierreMensualSection' || seccionActiva.id === 'staffSection' || seccionActiva.id === 'nutricionSection' || seccionActiva.id === 'clasesProfSection')) {
             cambiarSeccion('alumnosSection', document.querySelector('button[onclick*="alumnosSection"]'));
         }
 
@@ -2614,11 +2699,11 @@
         cargarStaff(),
         cargarDatosAlumnos()
       ];
-      if (!esNutri || esSuperAdmin) {
+      if ((!esNutri && !esProfClases) || esSuperAdmin) {
         promesasInicio.push(cargarLibroDiario(), cargarTurnosSupabase());
       }
       if (esSuperAdmin) {
-        promesasInicio.push(cargarHistorialLiquidaciones(), cargarConfiguracionReservas(), cargarDatosNutricion());
+        promesasInicio.push(cargarHistorialLiquidaciones(), cargarConfiguracionReservas(), cargarDatosNutricion(), cargarDatosClasesProf());
       }
 
       Promise.allSettled(promesasInicio).then(() => {
@@ -2910,6 +2995,8 @@
         cargarTurnosSupabase();
       } else if (idSeccion === 'nutricionSection') {
         cargarDatosNutricion();
+      } else if (idSeccion === 'clasesProfSection') {
+        cargarDatosClasesProf();
       }
     }
 
@@ -8238,6 +8325,421 @@ function sonMismoHorarioNutri(fhA, fhB) {
         return Math.abs(da.getTime() - db.getTime()) < 60000;
     }
     return false;
+}
+
+// ==========================================
+// MÓDULO CLASES PROFESIONALES (Brenda / Ernesto)
+// ==========================================
+const PROFESIONALES_CLASES = [
+    { email: 'brenda.oliiiva@gmail.com', nombre: 'Brenda Oliva', keyword: 'brenda', pctGymDefault: 40 },
+    { email: 'erneesgomez@gmail.com', nombre: 'Ernesto Gómez', keyword: 'ernesto', pctGymDefault: 40 }
+];
+let clasesProfData = [];
+let clasesProfAlumnosData = [];
+
+function escCP(s) {
+    return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function fmtMontoCP(n) {
+    return '$' + (parseFloat(n) || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 });
+}
+function hoyISOCP() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function mesFiltroClasesProf() {
+    const el = document.getElementById('mesFiltroClasesProf');
+    return (el && el.value) ? el.value : hoyISOCP().substring(0, 7);
+}
+function mesAnteriorCP(mes) {
+    let [y, m] = mes.split('-').map(Number);
+    m -= 1;
+    if (m === 0) { m = 12; y -= 1; }
+    return y + '-' + String(m).padStart(2, '0');
+}
+function pctGymProfesionalClases(prof) {
+    const staff = (Array.isArray(staffData) ? staffData : []).find(s => normalizarTextoNutri(s.nombre).includes(prof.keyword));
+    const pct = staff ? parseFloat(staff.porcentaje) : NaN;
+    return (!isNaN(pct) && pct > 0) ? pct : prof.pctGymDefault;
+}
+function profesionalesVisiblesClasesProf() {
+    if (window.esSuperAdminGlobal) {
+        const sel = document.getElementById('filtroProfClases');
+        const v = sel ? sel.value : 'todos';
+        if (v && v !== 'todos') return PROFESIONALES_CLASES.filter(p => p.email === v);
+        return PROFESIONALES_CLASES;
+    }
+    const mail = (window.emailActualGlobal || '').toLowerCase();
+    return PROFESIONALES_CLASES.filter(p => p.email === mail);
+}
+
+function cambiarTabClasesProf(tab, btn) {
+    btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tabClasesProfAlumnos').classList.toggle('active', tab === 'alumnos');
+    document.getElementById('tabClasesProfRendicion').classList.toggle('active', tab === 'rendicion');
+}
+
+async function cargarDatosClasesProf() {
+    const inputMes = document.getElementById('mesFiltroClasesProf');
+    if (inputMes && !inputMes.value) inputMes.value = hoyISOCP().substring(0, 7);
+
+    const sel = document.getElementById('filtroProfClases');
+    if (sel) {
+        if (window.esSuperAdminGlobal) {
+            if (!sel.options.length) {
+                sel.innerHTML = '<option value="todos">👥 Todos los profesionales</option>' +
+                    PROFESIONALES_CLASES.map(p => `<option value="${p.email}">${escCP(p.nombre)}</option>`).join('');
+            }
+            sel.style.display = 'block';
+        } else {
+            sel.style.display = 'none';
+        }
+    }
+    const info = document.getElementById('clasesProfContextInfo');
+    if (info && !window.esSuperAdminGlobal) {
+        const p = PROFESIONALES_CLASES.find(x => x.email === (window.emailActualGlobal || '').toLowerCase());
+        info.innerText = p ? '👋 Hola, ' + p.nombre : '';
+    }
+
+    try {
+        const [resClases, resAlumnos] = await Promise.all([
+            _supabase.from('clases_prof').select('*').order('id', { ascending: true }),
+            _supabase.from('clases_prof_alumnos').select('*').order('nombre_alumno', { ascending: true })
+        ]);
+        if (resClases.error || resAlumnos.error) {
+            console.error('Error cargando clases_prof:', resClases.error || resAlumnos.error);
+            const lista = document.getElementById('listaClasesProf');
+            if (lista) lista.innerHTML = '<div class="card" style="color: var(--danger-red);">⚠️ No se pudieron cargar las clases. Verificá que se haya ejecutado el script SQL de "Clases Profesionales" en Supabase.</div>';
+            return;
+        }
+        clasesProfData = resClases.data || [];
+        clasesProfAlumnosData = resAlumnos.data || [];
+        renderVistasClasesProf();
+    } catch (e) { console.error('Error cargando clases profesionales', e); }
+}
+
+function renderVistasClasesProf() {
+    renderizarClasesProf();
+    renderizarRendicionClasesProf();
+}
+
+function alumnosDeClaseMes(claseId, mes) {
+    return clasesProfAlumnosData.filter(a => String(a.clase_id) === String(claseId) && a.mes === mes);
+}
+
+function renderizarClasesProf() {
+    const cont = document.getElementById('listaClasesProf');
+    if (!cont) return;
+    const mes = mesFiltroClasesProf();
+    const profs = profesionalesVisiblesClasesProf();
+    if (!profs.length) { cont.innerHTML = '<div style="color: var(--text-dim);">Sin acceso.</div>'; return; }
+
+    let html = '';
+    profs.forEach(prof => {
+        const clases = clasesProfData.filter(c => (c.profesional_email || '').toLowerCase() === prof.email);
+        if (window.esSuperAdminGlobal) {
+            html += `<h3 style="color: var(--neon-green); margin: 25px 0 12px 0;">👤 ${escCP(prof.nombre)}</h3>`;
+        }
+        if (!clases.length) {
+            html += '<div class="card" style="color: var(--text-dim);">Todavía no hay clases cargadas. Usá <strong>+ Nueva Clase</strong> para empezar.</div>';
+            return;
+        }
+        clases.forEach(c => {
+            const alumnos = alumnosDeClaseMes(c.id, mes);
+            const activos = alumnos.filter(a => a.activo !== false);
+            const cobrado = activos.filter(a => a.pagado).reduce((s, a) => s + (parseFloat(a.monto) || 0), 0);
+            const pendiente = activos.filter(a => !a.pagado).reduce((s, a) => s + (parseFloat(a.monto) || 0), 0);
+
+            let filas = '';
+            if (!alumnos.length) {
+                filas = '<tr><td colspan="6" style="padding: 15px 8px; text-align: center; color: var(--text-dim);">Sin alumnos este mes. Agregá uno o copiá los del mes anterior.</td></tr>';
+            } else {
+                alumnos.forEach(a => {
+                    const activo = a.activo !== false;
+                    const pagado = !!a.pagado;
+                    filas += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); ${activo ? '' : 'opacity: 0.45;'}">
+                        <td style="padding: 10px 8px; font-weight: bold; color: #fff;">${escCP(a.nombre_alumno)}${a.notas ? `<div style="font-weight: normal; font-size: 0.78rem; color: var(--text-dim);">${escCP(a.notas)}</div>` : ''}</td>
+                        <td style="padding: 10px 8px;"><input type="number" min="0" value="${parseFloat(a.monto) || 0}" onchange="editarMontoAlumnoCP(${a.id}, this.value)" style="width: 110px; padding: 6px; border-radius: 6px; background: #14141D; border: 1px solid var(--border-color); color: #fff;"></td>
+                        <td style="padding: 10px 8px;"><button class="btn" onclick="togglePagadoAlumnoCP(${a.id})" style="padding: 6px 12px; font-size: 0.82rem; font-weight: bold; border: none; ${pagado ? 'background: var(--neon-green); color: #000;' : 'background: #f59e0b; color: #000;'}">${pagado ? '✔ Pagado' : '⏳ Pendiente'}</button></td>
+                        <td style="padding: 10px 8px;"><input type="date" value="${a.fecha_pago || ''}" ${pagado ? '' : 'disabled'} onchange="cambiarFechaPagoAlumnoCP(${a.id}, this.value)" style="padding: 5px; border-radius: 6px; background: #14141D; border: 1px solid var(--border-color); color: #fff;"></td>
+                        <td style="padding: 10px 8px;"><button class="btn btn-outline" onclick="toggleActivoAlumnoCP(${a.id})" style="padding: 6px 10px; font-size: 0.8rem; ${activo ? 'color: var(--neon-green); border-color: var(--neon-green);' : 'color: var(--text-dim);'}">${activo ? 'Activo' : 'Inactivo'}</button></td>
+                        <td style="padding: 10px 8px; text-align: right;"><button class="btn btn-danger" onclick="eliminarAlumnoCP(${a.id})" style="padding: 5px 9px; font-size: 0.8rem; border: none;" title="Eliminar alumno">🗑️</button></td>
+                    </tr>`;
+                });
+            }
+
+            html += `
+            <div class="card" style="margin-bottom: 18px; border-left: 4px solid var(--neon-green);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                    <div>
+                        <h3 style="margin: 0;">${escCP(c.nombre)}</h3>
+                        ${c.dias_horarios ? `<div style="color: var(--text-dim); font-size: 0.85rem;">🕒 ${escCP(c.dias_horarios)}</div>` : ''}
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="btn" style="background: var(--neon-green); color: #000; font-weight: bold; padding: 7px 14px;" onclick="abrirModalAlumnoCP(${c.id})">+ Alumno</button>
+                        <button class="btn btn-outline" style="padding: 7px 12px;" onclick="abrirModalClaseProf(${c.id})" title="Editar clase">✏️</button>
+                        <button class="btn btn-danger" style="padding: 7px 12px; border: none;" onclick="eliminarClaseProf(${c.id})" title="Eliminar clase">🗑️</button>
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.93rem; text-align: left;">
+                        <thead><tr style="border-bottom: 1px solid rgba(255,255,255,0.2); color: var(--text-dim);">
+                            <th style="padding: 8px;">Alumno</th><th style="padding: 8px;">Cuota</th><th style="padding: 8px;">Pago</th><th style="padding: 8px;">Fecha de pago</th><th style="padding: 8px;">Mes</th><th></th>
+                        </tr></thead>
+                        <tbody>${filas}</tbody>
+                    </table>
+                </div>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.9rem;">
+                    <span>👥 Activos: <strong>${activos.length}</strong></span>
+                    <span style="color: var(--neon-green);">💵 Cobrado: <strong>${fmtMontoCP(cobrado)}</strong></span>
+                    <span style="color: #f59e0b;">⏳ Pendiente: <strong>${fmtMontoCP(pendiente)}</strong></span>
+                </div>
+            </div>`;
+        });
+    });
+    cont.innerHTML = html;
+}
+
+function renderizarRendicionClasesProf() {
+    const cont = document.getElementById('resumenClasesProf');
+    if (!cont) return;
+    const mes = mesFiltroClasesProf();
+    const profs = profesionalesVisiblesClasesProf();
+
+    let totalGymGlobal = 0;
+    let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px;">';
+
+    profs.forEach(prof => {
+        const pctGym = pctGymProfesionalClases(prof);
+        const clases = clasesProfData.filter(c => (c.profesional_email || '').toLowerCase() === prof.email);
+        let cobrado = 0, pendiente = 0;
+        let filasClases = '', filasPagos = '';
+        const pagos = [];
+
+        clases.forEach(c => {
+            const activos = alumnosDeClaseMes(c.id, mes).filter(a => a.activo !== false);
+            const cob = activos.filter(a => a.pagado).reduce((s, a) => s + (parseFloat(a.monto) || 0), 0);
+            const pen = activos.filter(a => !a.pagado).reduce((s, a) => s + (parseFloat(a.monto) || 0), 0);
+            cobrado += cob; pendiente += pen;
+            activos.filter(a => a.pagado).forEach(a => pagos.push({ ...a, claseNombre: c.nombre }));
+            filasClases += `<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 8px; color: #fff; font-weight: bold;">${escCP(c.nombre)}</td>
+                <td style="padding: 8px;">${activos.length}</td>
+                <td style="padding: 8px; color: var(--neon-green);">${fmtMontoCP(cob)}</td>
+                <td style="padding: 8px; color: #f59e0b;">${fmtMontoCP(pen)}</td></tr>`;
+        });
+
+        const gym = cobrado * pctGym / 100;
+        const gananciaProf = cobrado - gym;
+        totalGymGlobal += gym;
+
+        pagos.sort((a, b) => String(b.fecha_pago || '').localeCompare(String(a.fecha_pago || '')));
+        pagos.forEach(a => {
+            const m = parseFloat(a.monto) || 0;
+            const fp = a.fecha_pago ? a.fecha_pago.split('-').reverse().join('/') : '-';
+            filasPagos += `<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 8px;">${fp}</td>
+                <td style="padding: 8px; color: #fff; font-weight: bold;">${escCP(a.nombre_alumno)}</td>
+                <td style="padding: 8px; color: var(--text-dim);">${escCP(a.claseNombre)}</td>
+                <td style="padding: 8px; color: var(--neon-green);">${fmtMontoCP(m)}</td>
+                <td style="padding: 8px; color: var(--danger-red);">${fmtMontoCP(m * pctGym / 100)}</td></tr>`;
+        });
+
+        html += `
+        <div class="card" style="padding: 25px; border-top: 4px solid var(--neon-green);">
+            <h4 style="margin: 0 0 20px 0; color: var(--neon-green); font-size: 1.4rem;">💰 Resumen de ${escCP(prof.nombre)}</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px;">
+                <div><div style="color: var(--text-dim); font-size: 0.85rem;">Total Cobrado</div><div style="font-size: 1.5rem; font-weight: 800; color: var(--neon-green);">${fmtMontoCP(cobrado)}</div></div>
+                <div><div style="color: var(--text-dim); font-size: 0.85rem;">Pendiente de cobro</div><div style="font-size: 1.5rem; font-weight: 800; color: #f59e0b;">${fmtMontoCP(pendiente)}</div></div>
+                <div><div style="color: var(--text-dim); font-size: 0.85rem;">Ganancia Profesional (${100 - pctGym}%)</div><div style="font-size: 1.5rem; font-weight: 800; color: #3b82f6;">${fmtMontoCP(gananciaProf)}</div></div>
+                <div><div style="color: var(--text-dim); font-size: 0.85rem;">A rendir al Gym (${pctGym}%)</div><div style="font-size: 1.5rem; font-weight: 800; color: var(--danger-red);">${fmtMontoCP(gym)}</div></div>
+            </div>
+            <h5 style="color: #fff; margin: 20px 0 8px 0;">Por clase</h5>
+            <div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; font-size: 0.92rem; text-align: left;">
+                <thead><tr style="border-bottom: 1px solid rgba(255,255,255,0.2); color: var(--text-dim);"><th style="padding: 8px;">Clase</th><th style="padding: 8px;">Activos</th><th style="padding: 8px;">Cobrado</th><th style="padding: 8px;">Pendiente</th></tr></thead>
+                <tbody>${filasClases || '<tr><td colspan="4" style="padding: 12px; text-align: center; color: var(--text-dim);">Sin clases.</td></tr>'}</tbody>
+            </table></div>
+            <h5 style="color: #fff; margin: 20px 0 8px 0;">Lista de pagos del mes</h5>
+            <div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; font-size: 0.92rem; text-align: left;">
+                <thead><tr style="border-bottom: 1px solid rgba(255,255,255,0.2); color: var(--text-dim);"><th style="padding: 8px;">Fecha</th><th style="padding: 8px;">Alumno</th><th style="padding: 8px;">Clase</th><th style="padding: 8px;">Monto</th><th style="padding: 8px; color: var(--danger-red);">Gym (${pctGym}%)</th></tr></thead>
+                <tbody>${filasPagos || '<tr><td colspan="5" style="padding: 12px; text-align: center; color: var(--text-dim);">No hay pagos registrados este mes.</td></tr>'}</tbody>
+            </table></div>
+        </div>`;
+    });
+    html += '</div>';
+
+    if (window.esSuperAdminGlobal && profs.length > 1) {
+        html = `<div style="background: rgba(239,68,68,0.08); border: 1px solid var(--danger-red); border-radius: 12px; padding: 16px; margin-bottom: 20px; font-size: 1.1rem;">🏢 Total a recibir por el Gym este mes: <strong style="color: var(--danger-red);">${fmtMontoCP(totalGymGlobal)}</strong></div>` + html;
+    }
+    cont.innerHTML = html;
+}
+
+// ---- Clases ----
+function abrirModalClaseProf(id) {
+    const sel = document.getElementById('claseProfEmail');
+    const esAdmin = !!window.esSuperAdminGlobal;
+    const disponibles = esAdmin ? PROFESIONALES_CLASES : PROFESIONALES_CLASES.filter(p => p.email === (window.emailActualGlobal || '').toLowerCase());
+    sel.innerHTML = disponibles.map(p => `<option value="${p.email}">${escCP(p.nombre)}</option>`).join('');
+    sel.disabled = !esAdmin;
+
+    document.getElementById('claseProfIdEdit').value = id || '';
+    if (id) {
+        const c = clasesProfData.find(x => String(x.id) === String(id));
+        if (!c) return;
+        document.getElementById('tituloModalClaseProf').innerText = 'Editar Clase';
+        document.getElementById('claseProfNombre').value = c.nombre || '';
+        document.getElementById('claseProfHorarios').value = c.dias_horarios || '';
+        sel.value = (c.profesional_email || '').toLowerCase();
+        sel.disabled = true;
+    } else {
+        document.getElementById('tituloModalClaseProf').innerText = 'Nueva Clase';
+        document.getElementById('claseProfNombre').value = '';
+        document.getElementById('claseProfHorarios').value = '';
+        const filtro = document.getElementById('filtroProfClases');
+        if (esAdmin && filtro && filtro.value && filtro.value !== 'todos') sel.value = filtro.value;
+    }
+    document.getElementById('modalClaseProf').style.display = 'flex';
+    setTimeout(() => document.getElementById('claseProfNombre').focus(), 50);
+}
+function cerrarModalClaseProf() {
+    document.getElementById('modalClaseProf').style.display = 'none';
+}
+async function guardarClaseProf() {
+    const id = document.getElementById('claseProfIdEdit').value;
+    const nombre = document.getElementById('claseProfNombre').value.trim();
+    const horarios = document.getElementById('claseProfHorarios').value.trim();
+    const email = document.getElementById('claseProfEmail').value;
+    if (!nombre) { mostrarToast('Por favor, ingresá el nombre de la clase', 'error'); return; }
+    if (!email) { mostrarToast('Error: no se pudo determinar el profesional', 'error'); return; }
+
+    let res;
+    if (id) {
+        res = await _supabase.from('clases_prof').update({ nombre, dias_horarios: horarios || null }).eq('id', id);
+    } else {
+        res = await _supabase.from('clases_prof').insert([{ profesional_email: email, nombre, dias_horarios: horarios || null }]);
+    }
+    if (res.error) { console.error(res.error); mostrarToast('Error al guardar la clase: ' + res.error.message, 'error'); return; }
+    cerrarModalClaseProf();
+    mostrarToast(id ? 'Clase actualizada' : 'Clase creada');
+    await cargarDatosClasesProf();
+}
+async function eliminarClaseProf(id) {
+    const c = clasesProfData.find(x => String(x.id) === String(id));
+    if (!c) return;
+    if (!(await confirmAsync(`¿Eliminar la clase "${c.nombre}" y TODOS sus alumnos y pagos (todos los meses)?`))) return;
+    const { error } = await _supabase.from('clases_prof').delete().eq('id', id);
+    if (error) { mostrarToast('Error al eliminar: ' + error.message, 'error'); return; }
+    mostrarToast('Clase eliminada');
+    await cargarDatosClasesProf();
+}
+
+// ---- Alumnos ----
+function abrirModalAlumnoCP(claseId) {
+    const c = clasesProfData.find(x => String(x.id) === String(claseId));
+    if (!c) return;
+    document.getElementById('alumnoClaseProfClaseId').value = claseId;
+    document.getElementById('tituloModalAlumnoClaseProf').innerText = `Nuevo Alumno - ${c.nombre}`;
+    document.getElementById('alumnoClaseProfNombre').value = '';
+    document.getElementById('alumnoClaseProfNotas').value = '';
+    // sugerir la cuota del último alumno cargado en esta clase
+    const ult = clasesProfAlumnosData.filter(a => String(a.clase_id) === String(claseId)).slice(-1)[0];
+    document.getElementById('alumnoClaseProfMonto').value = ult ? (parseFloat(ult.monto) || '') : '';
+    document.getElementById('modalAlumnoClaseProf').style.display = 'flex';
+    setTimeout(() => document.getElementById('alumnoClaseProfNombre').focus(), 50);
+}
+function cerrarModalAlumnoClaseProf() {
+    document.getElementById('modalAlumnoClaseProf').style.display = 'none';
+}
+async function guardarAlumnoClaseProf() {
+    const claseId = document.getElementById('alumnoClaseProfClaseId').value;
+    const nombre = document.getElementById('alumnoClaseProfNombre').value.trim();
+    const monto = parseFloat(document.getElementById('alumnoClaseProfMonto').value);
+    const notas = document.getElementById('alumnoClaseProfNotas').value.trim();
+    const c = clasesProfData.find(x => String(x.id) === String(claseId));
+    if (!c) return;
+    if (!nombre) { mostrarToast('Por favor, ingresá el nombre del alumno', 'error'); return; }
+    if (isNaN(monto) || monto < 0) { mostrarToast('Por favor, ingresá una cuota válida', 'error'); return; }
+    const mes = mesFiltroClasesProf();
+    const dup = alumnosDeClaseMes(claseId, mes).some(a => normalizarTextoNutri(a.nombre_alumno) === normalizarTextoNutri(nombre));
+    if (dup) { mostrarToast('Ese alumno ya está cargado en esta clase este mes', 'error'); return; }
+
+    const { error } = await _supabase.from('clases_prof_alumnos').insert([{
+        clase_id: c.id, profesional_email: c.profesional_email, mes, nombre_alumno: nombre,
+        monto, pagado: false, activo: true, notas: notas || null
+    }]);
+    if (error) { mostrarToast('Error al agregar alumno: ' + error.message, 'error'); return; }
+    cerrarModalAlumnoClaseProf();
+    mostrarToast('Alumno agregado');
+    await cargarDatosClasesProf();
+}
+
+async function actualizarAlumnoCP(id, cambios) {
+    const a = clasesProfAlumnosData.find(x => String(x.id) === String(id));
+    if (!a) return;
+    const previo = { ...a };
+    Object.assign(a, cambios);
+    renderVistasClasesProf();
+    const { error } = await _supabase.from('clases_prof_alumnos').update(cambios).eq('id', id);
+    if (error) {
+        Object.assign(a, previo);
+        renderVistasClasesProf();
+        mostrarToast('Error al guardar el cambio: ' + error.message, 'error');
+    }
+}
+function editarMontoAlumnoCP(id, valor) {
+    const m = parseFloat(valor);
+    if (isNaN(m) || m < 0) { mostrarToast('Por favor, ingresá un monto válido', 'error'); renderVistasClasesProf(); return; }
+    actualizarAlumnoCP(id, { monto: m });
+}
+function togglePagadoAlumnoCP(id) {
+    const a = clasesProfAlumnosData.find(x => String(x.id) === String(id));
+    if (!a) return;
+    if (a.pagado) actualizarAlumnoCP(id, { pagado: false, fecha_pago: null });
+    else actualizarAlumnoCP(id, { pagado: true, fecha_pago: hoyISOCP() });
+}
+function cambiarFechaPagoAlumnoCP(id, valor) {
+    actualizarAlumnoCP(id, { fecha_pago: valor || null });
+}
+function toggleActivoAlumnoCP(id) {
+    const a = clasesProfAlumnosData.find(x => String(x.id) === String(id));
+    if (!a) return;
+    actualizarAlumnoCP(id, { activo: a.activo === false });
+}
+async function eliminarAlumnoCP(id) {
+    const a = clasesProfAlumnosData.find(x => String(x.id) === String(id));
+    if (!a) return;
+    if (!(await confirmAsync(`¿Eliminar a "${a.nombre_alumno}" de este mes?`))) return;
+    const { error } = await _supabase.from('clases_prof_alumnos').delete().eq('id', id);
+    if (error) { mostrarToast('Error al eliminar: ' + error.message, 'error'); return; }
+    clasesProfAlumnosData = clasesProfAlumnosData.filter(x => String(x.id) !== String(id));
+    renderVistasClasesProf();
+    mostrarToast('Alumno eliminado');
+}
+
+async function copiarAlumnosMesAnteriorClasesProf() {
+    const mes = mesFiltroClasesProf();
+    const prev = mesAnteriorCP(mes);
+    const emails = profesionalesVisiblesClasesProf().map(p => p.email);
+    const clasesIds = clasesProfData.filter(c => emails.includes((c.profesional_email || '').toLowerCase())).map(c => String(c.id));
+
+    const nuevos = [];
+    clasesProfAlumnosData.filter(a => a.mes === prev && a.activo !== false && clasesIds.includes(String(a.clase_id))).forEach(a => {
+        const existe = alumnosDeClaseMes(a.clase_id, mes).some(x => normalizarTextoNutri(x.nombre_alumno) === normalizarTextoNutri(a.nombre_alumno));
+        if (!existe) {
+            nuevos.push({
+                clase_id: a.clase_id, profesional_email: a.profesional_email, mes,
+                nombre_alumno: a.nombre_alumno, monto: a.monto, pagado: false, fecha_pago: null, activo: true, notas: a.notas || null
+            });
+        }
+    });
+    if (!nuevos.length) { mostrarToast('No hay alumnos nuevos para copiar desde ' + prev, 'error'); return; }
+    if (!(await confirmAsync(`Se copiarán ${nuevos.length} alumno(s) de ${prev} a ${mes} como Pendientes. ¿Continuar?`))) return;
+    const { error } = await _supabase.from('clases_prof_alumnos').insert(nuevos);
+    if (error) { mostrarToast('Error al copiar alumnos: ' + error.message, 'error'); return; }
+    mostrarToast(`${nuevos.length} alumno(s) copiados`);
+    await cargarDatosClasesProf();
 }
 
 async function cargarDatosNutricion() {
