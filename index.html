@@ -766,6 +766,7 @@
           <button class="tab-btn" id="btnTabPagados" onclick="cambiarTabClientes('pagados', this)">Pagados</button>
           <button class="tab-btn" id="btnTabInactivos" style="color: #38bdf8; font-weight: bold;" onclick="cambiarTabClientes('inactivos', this)">🌴 Inactivos</button>
           <button class="tab-btn" id="btnTabRiesgo" style="color: #ff4c4c; font-weight: bold;" onclick="cambiarTabClientes('riesgo', this)">En Riesgo 🚨</button>
+          <button class="tab-btn" id="btnTabExAlumnos" style="color: #f59e0b; font-weight: bold;" onclick="cambiarTabClientes('exalumnos', this)">🚪 Ex-alumnos / Bajas</button>
         </div>
 
         <div id="tabTodos" class="tab-content active">
@@ -786,6 +787,15 @@
 
         <div id="tabRiesgo" class="tab-content">
           <ul id="listaAlumnosRiesgo"><div class="skeleton skeleton-row"></div></ul>
+        </div>
+
+        <div id="tabExAlumnos" class="tab-content">
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px;">
+            <input type="text" id="buscadorExAlumnos" placeholder="Buscar ex-alumno..." oninput="renderizarExAlumnos()" autocomplete="off" style="flex: 1; min-width: 200px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: #14141D; color: #fff;">
+            <span id="contadorExAlumnos" style="color: var(--text-dim); font-size: 0.85rem;"></span>
+          </div>
+          <div style="color: var(--text-dim); font-size: 0.82rem; margin-bottom: 10px;">Clientes que dejaron el gimnasio. No figuran en cobros ni en el cronograma, pero se conserva todo su historial. Si vuelven, tocá <strong>Reincorporar</strong>.</div>
+          <ul id="listaExAlumnos"><div style="color: var(--text-dim);">Cargando...</div></ul>
         </div>
       </div>
     </div>
@@ -1817,7 +1827,7 @@
 
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);">
         <button type="button" class="btn btn-outline" style="font-size: 0.82rem; padding: 6px 12px;" onclick="abrirHistorialDesdeFicha()">📜 Ver Historial de Pagos</button>
-        <button type="button" class="btn btn-danger" style="font-size: 0.82rem; padding: 6px 12px;" onclick="borrarClienteDesdeFicha()">🗑️ Eliminar Cliente</button>
+        <button type="button" class="btn btn-danger" style="font-size: 0.82rem; padding: 6px 12px;" onclick="darDeBajaDesdeFicha()" title="Lo saca de turnos y cobros, pero conserva su historial. Se puede reincorporar desde 🚪 Ex-alumnos / Bajas">🚪 Dar de Baja</button>
       </div>
 
       <div style="display: flex; gap: 8px; margin-top: 12px;">
@@ -3036,6 +3046,9 @@
       } else if (tab === 'riesgo') {
         document.getElementById('tabRiesgo').classList.add('active');
         cargarAlumnosEnRiesgo();
+      } else if (tab === 'exalumnos') {
+        document.getElementById('tabExAlumnos').classList.add('active');
+        cargarExAlumnos();
       }
       actualizarResaltadoTarjetasClientes();
     }
@@ -3411,27 +3424,159 @@
       abrirModalAltaCliente();
     }
 
-    async function borrarCliente(id) {
+    // Resumen de los turnos fijos actuales de un cliente, ej: "Lunes 18:00, Miércoles 18:00"
+    function resumenTurnosDeCliente(nombre) {
+      const clave = String(nombre || '').trim().toLowerCase();
+      if (!clave || !cronogramaData || !cronogramaData.turnos) return '';
+      const lista = [];
+      Object.entries(cronogramaData.turnos).forEach(([key, arr]) => {
+        if ((arr || []).some(r => String(r.nombre_alumno || '').trim().toLowerCase() === clave)) {
+          lista.push(key.replace('-', ' '));
+        }
+      });
+      return lista.join(', ');
+    }
+
+    // BAJA: el cliente deja el gimnasio. No se borra: queda en 🚪 Ex-alumnos / Bajas con todo su historial.
+    async function darDeBajaCliente(id) {
       try {
         if (!id) throw new Error("ID inválido");
         const cliente = (alumnosData || []).find(a => String(a.id) === String(id));
+        if (!cliente) { alert('Error: no se encontró el cliente.'); return; }
 
-        if (await confirmAsync("¿Estás seguro de eliminar este cliente?")) {
-          const { error } = await _supabase.from('alumnos').update({ activo: false }).eq('id', id);
-          if (error) {
-            alert('Error al borrar cliente: ' + error.message);
-          } else {
-            if (cliente && cliente.nombre) {
-              await _supabase.from('reservas_clases').delete().ilike('nombre_alumno', cliente.nombre.trim());
-              if (typeof cargarTurnosSupabase === 'function') cargarTurnosSupabase();
-            }
-            await cargarDatosAlumnos();
-          }
+        const ok = await confirmAsync(`¿Dar de baja a ${cliente.nombre}? Se quita de los turnos del cronograma y deja de figurar en cobros. No se borra: queda en "Ex-alumnos / Bajas" y lo podés reincorporar cuando vuelva.`);
+        if (!ok) return;
+
+        const hoy = hoyLocalISO();
+        const usuario = document.getElementById('loggedUserEmail')?.innerText || null;
+        const turnosPrevios = resumenTurnosDeCliente(cliente.nombre);
+
+        const { error } = await _supabase.from('alumnos').update({
+          activo: false,
+          inactivo: false,
+          inactivo_desde: null,
+          inactivo_motivo: null,
+          inactivo_pausa_cuota: false
+        }).eq('id', id);
+        if (error) { alert('Error al dar de baja al cliente: ' + error.message); return; }
+
+        const fallos = [];
+        const r1 = await _supabase.from('reservas_clases').delete().ilike('nombre_alumno', cliente.nombre.trim());
+        if (r1.error) fallos.push(r1.error.message);
+        if (cliente.inactivo) {
+          const r2 = await _supabase.from('alumno_estado_historial').update({ fecha_hasta: hoy })
+            .eq('alumno_id', String(id)).eq('tipo', 'inactivo').is('fecha_hasta', null);
+          if (r2.error) fallos.push(r2.error.message);
         }
+        const r3 = await _supabase.from('alumno_estado_historial').insert([{
+          alumno_id: String(id), alumno_nombre: cliente.nombre, tipo: 'baja',
+          motivo: turnosPrevios ? `Turnos que tenía: ${turnosPrevios}` : null,
+          pausa_cuota: false, fecha_desde: hoy, registrado_por: usuario
+        }]);
+        if (r3.error) fallos.push(r3.error.message);
+        if (fallos.length) console.error('Avisos al dar de baja:', fallos);
+
+        if (typeof cargarTurnosSupabase === 'function') cargarTurnosSupabase();
+        await cargarDatosAlumnos();
+        mostrarToast(`${cliente.nombre} fue dado de baja. Lo encontrás en 🚪 Ex-alumnos / Bajas.`);
       } catch (error) {
-        console.error("Error al borrar cliente:", error);
+        console.error("Error al dar de baja al cliente:", error);
+        alert('Error al dar de baja al cliente.');
       }
     }
+
+    let exAlumnosData = [];
+    let exAlumnosBajaMap = {};
+
+    async function cargarExAlumnos() {
+      const lista = document.getElementById('listaExAlumnos');
+      if (lista && !exAlumnosData.length) lista.innerHTML = '<div style="color: var(--text-dim);">Cargando...</div>';
+      const [resAlumnos, resBajas] = await Promise.all([
+        _supabase.from('alumnos').select('*').eq('activo', false).order('nombre', { ascending: true }),
+        _supabase.from('alumno_estado_historial').select('alumno_id, fecha_desde, motivo, id').eq('tipo', 'baja').is('fecha_hasta', null).order('id', { ascending: true })
+      ]);
+      if (resAlumnos.error) {
+        if (lista) lista.innerHTML = '<div style="color: var(--danger-red);">No se pudieron cargar los ex-alumnos.</div>';
+        return;
+      }
+      exAlumnosData = (resAlumnos.data || []).map(a => { a.nombre = formatearTitulo(a.nombre); return a; });
+      exAlumnosBajaMap = {};
+      (resBajas.data || []).forEach(b => { exAlumnosBajaMap[String(b.alumno_id)] = b; });
+      renderizarExAlumnos();
+    }
+
+    function renderizarExAlumnos() {
+      const lista = document.getElementById('listaExAlumnos');
+      if (!lista) return;
+      const texto = (document.getElementById('buscadorExAlumnos')?.value || '').trim().toLowerCase();
+      const items = exAlumnosData.filter(a => !texto || String(a.nombre || '').toLowerCase().includes(texto));
+      const contador = document.getElementById('contadorExAlumnos');
+      if (contador) contador.innerText = `${items.length} ex-alumno(s)`;
+
+      if (!items.length) {
+        lista.innerHTML = `<div style="color: var(--text-dim); padding: 15px; text-align: center;">${exAlumnosData.length ? 'Sin resultados.' : 'No hay ex-alumnos. Cuando des de baja a un cliente, aparece acá.'}</div>`;
+        return;
+      }
+      const fmt = (f) => f ? new Date(f + 'T12:00:00').toLocaleDateString('es-AR') : null;
+      lista.innerHTML = items.map(a => {
+        const baja = exAlumnosBajaMap[String(a.id)];
+        const fechaBaja = baja ? fmt(baja.fecha_desde) : null;
+        const idq = String(a.id).replace(/'/g, "\\'");
+        return `
+        <li style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 14px; margin-bottom: 8px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-left: 4px solid #f59e0b; border-radius: 10px; list-style: none;">
+          <div>
+            <strong style="color: #fff;">${escHtmlEstado(a.nombre)}</strong>
+            <div style="font-size: 0.8rem; color: var(--text-dim);">
+              🚪 ${fechaBaja ? 'Baja: ' + fechaBaja : 'Fecha de baja no registrada'}
+              · ${a.dias_semana || '-'} día(s)/sem · Cuota: $${(parseFloat(a.monto) || 0).toLocaleString('es-AR')}
+              ${a.profesor_cargo ? ' · Prof: ' + escHtmlEstado(a.profesor_cargo) : ''}
+            </div>
+            ${baja && baja.motivo ? `<div style="font-size: 0.78rem; color: #94a3b8;">${escHtmlEstado(baja.motivo)}</div>` : ''}
+            ${a.notas ? `<div style="font-size: 0.78rem; color: #94a3b8;">📝 ${escHtmlEstado(a.notas)}</div>` : ''}
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-outline" style="padding: 7px 12px; font-size: 0.82rem;" onclick="abrirHistorialPagosAlumno('${idq}', '${encodeURIComponent(a.nombre)}')">📜 Pagos</button>
+            <button class="btn" style="padding: 7px 14px; font-size: 0.85rem; font-weight: bold; background: var(--neon-green); color: #000; border: none;" onclick="reincorporarCliente('${idq}')">🔄 Reincorporar</button>
+          </div>
+        </li>`;
+      }).join('');
+    }
+
+    async function reincorporarCliente(id) {
+      const ex = exAlumnosData.find(a => String(a.id) === String(id));
+      if (!ex) return;
+      const clave = String(ex.nombre || '').trim().toLowerCase();
+      if ((alumnosData || []).some(a => String(a.nombre || '').trim().toLowerCase() === clave)) {
+        alert(`Error: ya existe un cliente activo llamado "${ex.nombre}". Renombralo o revisalo antes de reincorporar.`);
+        return;
+      }
+      if (!(await confirmAsync(`¿Reincorporar a ${ex.nombre} como cliente activo? Vuelve con su historial y su cuota pendiente. Después le asignás sus turnos en el Cronograma.`))) return;
+
+      const hoy = hoyLocalISO();
+      const { error } = await _supabase.from('alumnos').update({
+        activo: true,
+        inactivo: false,
+        inactivo_desde: null,
+        inactivo_motivo: null,
+        inactivo_pausa_cuota: false,
+        pago_confirmado: false,
+        ultimo_cobrador: null,
+        fecha_pago: null
+      }).eq('id', id);
+      if (error) { alert('Error al reincorporar: ' + error.message); return; }
+
+      const baja = exAlumnosBajaMap[String(id)];
+      const rh = await _supabase.from('alumno_estado_historial').update({ fecha_hasta: hoy })
+        .eq('alumno_id', String(id)).eq('tipo', 'baja').is('fecha_hasta', null);
+      if (rh.error) console.error('No se pudo cerrar el período de baja:', rh.error);
+
+      exAlumnosData = exAlumnosData.filter(a => String(a.id) !== String(id));
+      renderizarExAlumnos();
+      await cargarDatosAlumnos();
+      const extra = baja && baja.motivo ? ` (${baja.motivo})` : '';
+      mostrarToast(`${ex.nombre} fue reincorporado.${extra}`);
+    }
+
 
     function estaExentoDeCuota(a) {
       if (!a) return false;
@@ -4005,6 +4150,23 @@
         return calcularFechaDeDiaSemana(a.dia, a.fecha);
       }
       return a.fecha || '';
+    }
+
+    // Fecha de referencia de la semana que muestra la grilla del Cronograma (domingo => semana que viene)
+    function obtenerFechaRefSemanaCrono() {
+      const hoyISO = hoyLocalISO();
+      if (new Date().getDay() !== 0) return hoyISO;
+      const dMan = new Date(hoyISO + 'T12:00:00');
+      dMan.setDate(dMan.getDate() + 1);
+      return `${dMan.getFullYear()}-${String(dMan.getMonth() + 1).padStart(2, '0')}-${String(dMan.getDate()).padStart(2, '0')}`;
+    }
+
+    // true si el aviso corresponde a la semana que muestra la grilla (los de semanas futuras NO van en las celdas)
+    function avisoEsDeSemanaMostrada(a) {
+      if (!a || !a.dia) return true;
+      const fechaEf = obtenerFechaEfectivaAviso(a);
+      if (!fechaEf) return true;
+      return fechaEf === calcularFechaDeDiaSemana(a.dia, obtenerFechaRefSemanaCrono());
     }
 
     function obtenerAvisosParaFecha(diaNombre, fechaStr) {
@@ -6974,7 +7136,7 @@ function renderizarLibroDiario(esCargarMas) {
         if (cronoFiltroTarjeta === 'disponibles') return cantActivos < maxCap;
         if (cronoFiltroTarjeta === 'llenos') return cantActivos >= maxCap;
         if (cronoFiltroTarjeta === 'avisos') {
-          return (cronogramaData.avisos || []).some(a => a.dia === dia && a.hora === hora);
+          return (cronogramaData.avisos || []).some(a => a.dia === dia && a.hora === hora && avisoEsDeSemanaMostrada(a));
         }
         return true;
       };
@@ -7021,7 +7183,7 @@ function renderizarLibroDiario(esCargarMas) {
       const elLlen = document.getElementById('cronoMetricaLlenos');
       if (elLlen) elLlen.innerText = turnosLlenos;
       const elAvisos = document.getElementById('cronoMetricaAvisos');
-      if (elAvisos) elAvisos.innerText = (cronogramaData.avisos || []).length;
+      if (elAvisos) elAvisos.innerText = (cronogramaData.avisos || []).filter(avisoEsDeSemanaMostrada).length;
       actualizarResaltadoTarjetasCrono();
 
       const hoyRefISO = hoyLocalISO();
@@ -7100,7 +7262,7 @@ function renderizarLibroDiario(esCargarMas) {
             badgeTexto = `${cantActivos} / ${maxCap}${sufijoInactivos} (Último)`;
           }
 
-          const avisosCelda = (cronogramaData.avisos || []).filter(a => a.dia === dia && a.hora === hora);
+          const avisosCelda = (cronogramaData.avisos || []).filter(a => a.dia === dia && a.hora === hora && avisoEsDeSemanaMostrada(a));
           let contenidoAvisos = avisosCelda.map(a => {
             const tLow = (a.tipo || '').toLowerCase();
             let colorBase = tLow.includes('persona') ? 'var(--neon-green)' : (tLow.includes('cambio') ? '#ffea00' : (tLow.includes('ausencia') ? '#ff5353' : '#4cc9f0'));
@@ -7446,9 +7608,13 @@ function renderizarLibroDiario(esCargarMas) {
     function renderizarAvisosDiarios() {
       const ul = document.getElementById('listaAvisosDiarios');
       if (!ul) return;
-      const avisos = cronogramaData.avisos || [];
+      const avisos = (cronogramaData.avisos || []).slice().sort((x, y) => {
+        const fx = obtenerFechaEfectivaAviso(x) || '9999-99-99';
+        const fy = obtenerFechaEfectivaAviso(y) || '9999-99-99';
+        return fx.localeCompare(fy) || String(x.hora || '').localeCompare(String(y.hora || ''));
+      });
       if (avisos.length === 0) {
-        ul.innerHTML = '<li style="color: var(--text-dim); padding: 8px 0;">No hay avisos registrados para la semana.</li>';
+        ul.innerHTML = '<li style="color: var(--text-dim); padding: 8px 0;">No hay avisos registrados.</li>';
         return;
       }
       ul.innerHTML = avisos.map(a => {
@@ -7460,11 +7626,15 @@ function renderizarLibroDiario(esCargarMas) {
         else if (tipoNorm.includes('persona') || tipoNorm.includes('prueba')) { colorBase = 'var(--neon-green)'; icono = '🟢'; }
 
         const fechaEf = obtenerFechaEfectivaAviso(a) || a.fecha;
+        const esFuturo = !avisoEsDeSemanaMostrada(a);
+        const badgeFuturo = esFuturo
+          ? '<span style="margin-left: 8px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.5px; color: #38bdf8; background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.45); padding: 2px 7px; border-radius: 10px; white-space: nowrap;">📅 PRÓXIMA SEMANA</span>'
+          : '';
         return `
-          <li style="padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+          <li style="padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); ${esFuturo ? 'border-left: 3px solid #38bdf8;' : ''} border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
             <div>
               <span style="margin-right: 6px;">${icono}</span><strong style="color: ${colorBase};">${a.tipo}</strong>: <span style="font-weight: 600; color: #fff;">${a.nombre}</span>
-              <span style="font-size: 0.85rem; color: var(--text-dim); margin-left: 8px;">→ ${a.dia} ${a.hora} hs ${fechaEf ? '(' + fechaEf.split('-').reverse().join('/') + ')' : ''}</span>
+              <span style="font-size: 0.85rem; color: var(--text-dim); margin-left: 8px;">→ ${a.dia} ${a.hora} hs ${fechaEf ? '(' + fechaEf.split('-').reverse().join('/') + ')' : ''}</span>${badgeFuturo}
             </div>
             <button class="btn btn-outline" style="padding: 3px 8px; font-size: 0.85rem;" onclick="borrarAviso('${a.id}')" title="Eliminar aviso">🗑️</button>
           </li>
@@ -8023,10 +8193,10 @@ function renderizarLibroDiario(esCargarMas) {
         abrirHistorialPagosAlumno(id, encodeURIComponent(nombre));
     }
 
-    function borrarClienteDesdeFicha() {
+    function darDeBajaDesdeFicha() {
         const id = document.getElementById('editClienteId').value;
         cerrarModalEditCliente();
-        borrarCliente(id);
+        darDeBajaCliente(id);
     }
 
     function hoyLocalISO() {
@@ -8077,8 +8247,9 @@ function renderizarLibroDiario(esCargarMas) {
         const fmt = (f) => f ? new Date(f + 'T12:00:00').toLocaleDateString('es-AR') : '';
         cont.innerHTML = data.map(h => {
             const esIna = h.tipo === 'inactivo';
-            const icono = esIna ? '🌴' : '🎁';
-            const etiqueta = esIna ? 'Inactivo' : 'Bonificado';
+            const esBaja = h.tipo === 'baja';
+            const icono = esBaja ? '🚪' : (esIna ? '🌴' : '🎁');
+            const etiqueta = esBaja ? 'Baja' : (esIna ? 'Inactivo' : 'Bonificado');
             const rango = h.fecha_hasta
                 ? `${fmt(h.fecha_desde)} → ${fmt(h.fecha_hasta)}`
                 : `${fmt(h.fecha_desde)} → <strong style="color: var(--neon-green);">en curso</strong>`;
