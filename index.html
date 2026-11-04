@@ -2659,10 +2659,10 @@
       if (main) main.style.setProperty('display', 'block', 'important');
 
       // Control de accesos por email
-      const emailActual = document.getElementById('loggedUserEmail').innerText.trim();
+      const emailActual = (document.getElementById('loggedUserEmail')?.innerText || '').trim().toLowerCase();
         const esSuperAdmin = (emailActual === 'ignaciozago7@gmail.com' || emailActual === 'leandrovilliani7@gmail.com');
         const esNutri = (emailActual === 'luciaperruzzaaa@gmail.com' || emailActual === 'santiagoruizzavala@gmail.com');
-        const esProfClases = PROFESIONALES_CLASES.some(p => p.email === emailActual.toLowerCase());
+        const esProfClases = PROFESIONALES_CLASES.some(p => p.email === emailActual);
         window.esSuperAdminGlobal = esSuperAdmin;
         window.esNutriGlobal = esNutri;
         window.esProfClasesGlobal = esProfClases;
@@ -2713,7 +2713,13 @@
         promesasInicio.push(cargarLibroDiario(), cargarTurnosSupabase());
       }
       if (esSuperAdmin) {
-        promesasInicio.push(cargarHistorialLiquidaciones(), cargarConfiguracionReservas(), cargarDatosNutricion(), cargarDatosClasesProf());
+        promesasInicio.push(cargarHistorialLiquidaciones(), cargarConfiguracionReservas());
+      }
+      if (esSuperAdmin || esNutri) {
+        promesasInicio.push(cargarDatosNutricion());
+      }
+      if (esSuperAdmin || esProfClases) {
+        promesasInicio.push(cargarDatosClasesProf());
       }
 
       Promise.allSettled(promesasInicio).then(() => {
@@ -3004,8 +3010,10 @@
       } else if (idSeccion === 'cronogramaSection') {
         cargarTurnosSupabase();
       } else if (idSeccion === 'nutricionSection') {
+        if (typeof renderVistasNutricion === 'function') renderVistasNutricion();
         cargarDatosNutricion();
       } else if (idSeccion === 'clasesProfSection') {
+        if (typeof renderVistasClasesProf === 'function') renderVistasClasesProf();
         cargarDatosClasesProf();
       }
     }
@@ -3020,9 +3028,18 @@
       document.getElementById('tabNutriPacientes').classList.remove('active');
       document.getElementById('tabNutriRendicion').classList.remove('active');
       
-      if(tab === 'agenda') document.getElementById('tabNutriAgenda').classList.add('active');
-      if(tab === 'pacientes') document.getElementById('tabNutriPacientes').classList.add('active');
-      if(tab === 'rendicion') document.getElementById('tabNutriRendicion').classList.add('active');
+      if(tab === 'agenda') {
+        document.getElementById('tabNutriAgenda').classList.add('active');
+        if (typeof renderizarAgendaNutri === 'function') renderizarAgendaNutri();
+      }
+      if(tab === 'pacientes') {
+        document.getElementById('tabNutriPacientes').classList.add('active');
+        if (typeof renderizarPacientesNutri === 'function') renderizarPacientesNutri();
+      }
+      if(tab === 'rendicion') {
+        document.getElementById('tabNutriRendicion').classList.add('active');
+        if (typeof renderizarRendicionNutri === 'function') renderizarRendicionNutri();
+      }
     }
 
     function cambiarTabClientes(tab, btn) {
@@ -5568,6 +5585,7 @@
         poblarSelectoresOperadores();
         if (typeof actualizarFiltroProfesoresAlumnos === 'function') actualizarFiltroProfesoresAlumnos();
         if (Array.isArray(alumnosData) && alumnosData.length > 0) filtrarAlumnos();
+        if (typeof renderVistasNutricion === 'function' && Array.isArray(nutriTurnosData) && nutriTurnosData.length > 0) renderVistasNutricion();
         cargarHorasMesDesdeDB().then(() => renderizarGrillaHoras());
       }
     }
@@ -8967,6 +8985,11 @@ async function cargarDatosNutricion() {
         inputMes.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     }
 
+    // Render inmediato si ya hay datos en memoria para eliminar pantallas en blanco
+    if ((nutriTurnosData && nutriTurnosData.length > 0) || (nutriPacientesData && nutriPacientesData.length > 0)) {
+        renderVistasNutricion();
+    }
+
     try {
         const [resPacientes, resTurnos, resMediciones] = await Promise.all([
             _supabase.from('nutricion_pacientes').select('*').order('nombre', {ascending: true}),
@@ -8984,7 +9007,10 @@ async function cargarDatosNutricion() {
         renderizarPacientesNutri();
         renderizarRendicionNutri();
         actualizarDatalistPacientes();
-    } catch(e) { console.error('Error cargando nutricion', e); }
+    } catch(e) { 
+        console.error('Error cargando nutricion', e);
+        renderVistasNutricion();
+    }
 }
 
 function actualizarDatalistPacientes() {
@@ -9330,15 +9356,21 @@ function renderizarAgendaNutri() {
 
     const profesionales = obtenerProfesionalesNutricion();
     
+    // Capturar si hay turnos con profesionales que no estén en staff
+    (nutriTurnosData || []).forEach(t => {
+        if (t.nutricionista_nombre && !profesionales.some(p => esMismoProfesionalNutri(p.nombre, t.nutricionista_nombre))) {
+            profesionales.push({ id: 'ext-' + t.nutricionista_nombre, nombre: formatearTitulo(t.nutricionista_nombre), porcentaje: 30 });
+        }
+    });
+
     let colsHtml = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">';
 
     const dHoy = new Date();
     const mesActual = dHoy.getFullYear() + '-' + String(dHoy.getMonth() + 1).padStart(2, '0');
     const mesFiltro = document.getElementById('mesFiltroNutricion')?.value || mesActual;
-    const esMesActual = (mesFiltro === mesActual);
 
     profesionales.forEach(prof => {
-        const turnosProf = nutriTurnosData.filter(t => esMismoProfesionalNutri(t.nutricionista_nombre, prof.nombre));
+        const turnosProf = (nutriTurnosData || []).filter(t => esMismoProfesionalNutri(t.nutricionista_nombre, prof.nombre));
         
         colsHtml += `
         <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 15px;">
@@ -9347,11 +9379,11 @@ function renderizarAgendaNutri() {
         `;
 
         const renderCard = (t) => {
-            let pac = nutriPacientesData.find(p => String(p.id) === String(t.paciente_id) || parseInt(p.id, 10) === parseInt(t.paciente_id, 10));
-            if (!pac && alumnosData) {
+            let pac = (nutriPacientesData || []).find(p => String(p.id) === String(t.paciente_id) || parseInt(p.id, 10) === parseInt(t.paciente_id, 10));
+            if (!pac && Array.isArray(alumnosData)) {
                 pac = alumnosData.find(a => String(a.id) === String(t.paciente_id));
             }
-            const pacNombre = pac?.nombre || 'Desconocido';
+            const pacNombre = pac?.nombre || t.paciente_nombre || 'Paciente';
             const pacIdParam = pac?.id || t.paciente_id || '';
             const fecha = parsearFechaHoraNutri(t.fecha_hora);
             const strFecha = fecha 
@@ -9396,19 +9428,18 @@ function renderizarAgendaNutri() {
         };
 
         const ahora = new Date();
-        const turnosFuturos = turnosProf.filter(t => {
-            const f = parsearFechaHoraNutri(t.fecha_hora);
-            if (!f || f < ahora) return false;
-            if (esMesActual) return true;
-            const mesT = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}`;
-            return mesT === mesFiltro;
-        });
+        const turnosFuturos = [];
+        const turnosPasados = [];
 
-        const turnosPasados = turnosProf.filter(t => {
+        turnosProf.forEach(t => {
             const f = parsearFechaHoraNutri(t.fecha_hora);
-            if (!f || f >= ahora) return false;
-            const mesT = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}`;
-            return mesT === mesFiltro;
+            const mesT = f ? `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}` : String(t.fecha_hora || '').substring(0, 7);
+            if (mesFiltro && mesT && mesT !== mesFiltro) return;
+            if (!f || f >= ahora) {
+                turnosFuturos.push(t);
+            } else {
+                turnosPasados.push(t);
+            }
         });
         
         if (turnosFuturos.length === 0 && turnosPasados.length === 0) {
