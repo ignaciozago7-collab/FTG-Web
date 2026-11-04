@@ -3499,10 +3499,57 @@
         if (lista) lista.innerHTML = '<div style="color: var(--danger-red);">No se pudieron cargar los ex-alumnos.</div>';
         return;
       }
-      exAlumnosData = (resAlumnos.data || []).map(a => { a.nombre = formatearTitulo(a.nombre); return a; });
+
+      // FILTRO DE SEGURIDAD: Quien ya esté como cliente activo NUNCA figura como ex-alumno
+      const nombresActivos = new Set((alumnosData || []).map(a => normalizarTextoComparacion(a.nombre)));
+      exAlumnosData = (resAlumnos.data || [])
+        .map(a => { a.nombre = formatearTitulo(a.nombre); return a; })
+        .filter(a => !nombresActivos.has(normalizarTextoComparacion(a.nombre)));
+
       exAlumnosBajaMap = {};
       (resBajas.data || []).forEach(b => { exAlumnosBajaMap[String(b.alumno_id)] = b; });
       renderizarExAlumnos();
+
+      // Unificación automática en segundo plano de registros duplicados en Supabase
+      unificarDuplicadosEnBase(resAlumnos.data || []);
+    }
+
+    async function unificarDuplicadosEnBase(inactivosDB) {
+      if (!Array.isArray(inactivosDB) || inactivosDB.length === 0 || !Array.isArray(alumnosData) || alumnosData.length === 0) return;
+      const mapaActivos = new Map();
+      alumnosData.forEach(a => {
+        const k = normalizarTextoComparacion(a.nombre);
+        if (k && !mapaActivos.has(k)) mapaActivos.set(k, a);
+      });
+
+      const duplicados = inactivosDB.filter(ina => mapaActivos.has(normalizarTextoComparacion(ina.nombre)));
+      if (duplicados.length === 0) return;
+
+      for (const dup of duplicados) {
+        const activo = mapaActivos.get(normalizarTextoComparacion(dup.nombre));
+        if (!activo || String(activo.id) === String(dup.id)) continue;
+        try {
+          // Traspasar asistencias históricas del ID inactivo al ID activo evitando duplicados
+          const { data: astViejas } = await _supabase.from('asistencias').select('id, fecha').eq('alumno_id', dup.id);
+          if (Array.isArray(astViejas) && astViejas.length > 0) {
+            const { data: astActivas } = await _supabase.from('asistencias').select('fecha').eq('alumno_id', activo.id);
+            const fechasActivas = new Set((astActivas || []).map(x => x.fecha));
+            for (const av of astViejas) {
+              if (fechasActivas.has(av.fecha)) {
+                await _supabase.from('asistencias').delete().eq('id', av.id);
+              } else {
+                await _supabase.from('asistencias').update({ alumno_id: activo.id }).eq('id', av.id);
+              }
+            }
+          }
+          // Traspasar historial de estados
+          await _supabase.from('alumno_estado_historial').update({ alumno_id: String(activo.id) }).eq('alumno_id', String(dup.id));
+          // Eliminar el registro viejo duplicado de alumnos
+          await _supabase.from('alumnos').delete().eq('id', dup.id);
+        } catch (e) {
+          console.warn('Error al unificar registro duplicado:', dup.nombre, e);
+        }
+      }
     }
 
     function renderizarExAlumnos() {
