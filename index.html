@@ -879,6 +879,9 @@
             <button class="btn btn-outline" onclick="cambiarFechaAsistenciaRelativa(1)" style="padding: 6px 10px; font-size: 0.85rem;" title="Día siguiente">▶</button>
             <button class="btn btn-outline" onclick="irAFechaHoyAsistencia()" style="padding: 6px 12px; font-size: 0.85rem;" title="Ir al día de hoy">Hoy</button>
             <span id="labelFechaAsistenciaDia" style="font-size: 0.85rem; font-weight: 700; color: var(--neon-green); margin-left: 6px;"></span>
+            <button id="btnFeriadoAsistencia" class="btn btn-outline" onclick="abrirModalFeriadoAsistencia()" style="padding: 6px 12px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;" title="Declarar este día como Feriado o de horario reducido">
+              <span>🎉 Marcar Feriado</span>
+            </button>
           </div>
 
           <!-- FILTROS POR PROFESOR, ESTADO Y BUSCADOR -->
@@ -1640,6 +1643,68 @@
   </div>
 
   <!-- MODAL EDICIÓN ASIENTO DE CAJA -->
+  <!-- MODAL FERIADO / HORARIO ESPECIAL -->
+  <div class="modal-overlay" id="modalFeriadoAsistencia" style="display: none;">
+    <div class="modal-content" style="max-width: 520px; width: 100%; display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+          <span>🎉</span> <span>Día Feriado / Horario Especial</span>
+        </h3>
+        <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.85rem;" onclick="cerrarModalFeriadoAsistencia()">✕</button>
+      </div>
+
+      <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 12px; font-size: 0.88rem;">
+        <div>Fecha: <strong id="feriadoFechaTitulo" style="color: #fbbf24;"></strong></div>
+        <div style="color: var(--text-dim); font-size: 0.8rem; margin-top: 4px;">
+          Al activar este día como Feriado, <strong>se desactiva el cronograma habitual</strong> para no penalizar ausencias ni arruinar las métricas semanales y mensuales.
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <label style="font-size: 0.82rem; color: var(--text-dim); font-weight: 700;">MODO DE CÁLCULO DE ASISTENCIA:</label>
+
+        <!-- Opción 1: Automático Solo Presentes -->
+        <label style="display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.02); cursor: pointer; transition: 0.2s;" id="labelModoFeriadoPresentes">
+          <input type="radio" name="modoFeriadoRadio" value="presentes" id="radioFeriadoPresentes" checked onchange="actualizarVisibilidadModoFeriado()" style="margin-top: 3px; cursor: pointer;">
+          <div>
+            <strong style="color: var(--neon-green); display: block; font-size: 0.92rem;">🟢 Automático: Solo los que vinieron (Presentes = Esperados)</strong>
+            <span style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-top: 3px;">
+              Ideal para no cargar la planilla de Google. Los alumnos que reciban presente cuentan como esperados y asistidos (100% de efectividad). Nadie queda como ausente injustificado.
+            </span>
+          </div>
+        </label>
+
+        <!-- Opción 2: Anotados en Drive -->
+        <label style="display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.02); cursor: pointer; transition: 0.2s;" id="labelModoFeriadoAnotados">
+          <input type="radio" name="modoFeriadoRadio" value="anotados" id="radioFeriadoAnotados" onchange="actualizarVisibilidadModoFeriado()" style="margin-top: 3px; cursor: pointer;">
+          <div>
+            <strong style="color: #60a5fa; display: block; font-size: 0.92rem;">📋 Cargar lista de inscriptos en Google Sheet</strong>
+            <span style="font-size: 0.8rem; color: var(--text-dim); display: block; margin-top: 3px;">
+              Pegá o escribí los nombres de los que se anotaron. Tus esperados serán exactamente ellos. Si alguno no vino, figurará como pendiente de asistir.
+            </span>
+          </div>
+        </label>
+      </div>
+
+      <!-- Bloque para ingresar nombres de anotados -->
+      <div id="bloqueAnotadosFeriado" style="display: none; flex-direction: column; gap: 8px;">
+        <label style="font-size: 0.82rem; color: var(--text-dim);">
+          Escribí o pegá los nombres de los anotados (separados por coma o uno por línea):
+        </label>
+        <textarea id="inputAnotadosFeriado" rows="4" placeholder="Ej: Juan Perez, Maria Gomez, Lucas Rodriguez..." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: #14141D; color: #fff; font-family: inherit; font-size: 0.85rem; resize: vertical;" oninput="actualizarContadorAnotadosFeriado()"></textarea>
+        <div id="contadorAnotadosFeriado" style="font-size: 0.78rem; color: #60a5fa;">0 alumnos reconocidos</div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px;">
+        <button id="btnEliminarFeriado" class="btn btn-danger" style="display: none; padding: 8px 14px; font-size: 0.85rem;" onclick="quitarFeriadoActual()">🗑️ Desactivar Feriado</button>
+        <div style="display: flex; gap: 10px; margin-left: auto;">
+          <button class="btn btn-outline" style="padding: 8px 14px; font-size: 0.85rem;" onclick="cerrarModalFeriadoAsistencia()">Cancelar</button>
+          <button class="btn" style="padding: 8px 18px; font-size: 0.85rem; font-weight: bold; background: var(--neon-green); color: #000;" onclick="guardarFeriadoActual()">💾 Guardar Feriado</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL ASISTENCIA MASIVA -->
   <div class="modal-overlay" id="modalAsistenciaMasiva">
     <div class="modal-content" style="max-width: 650px; width: 100%; display: flex; flex-direction: column; max-height: 90vh;">
@@ -2437,6 +2502,7 @@
     let alumnosFiltradosCache = [];
 
     let asistenciasMesData = [];
+    let feriadosData = {};
     let staffData = [];
     let planesData = [];
       let chartIngresosInstance = null;
@@ -2707,7 +2773,8 @@
 
       const promesasInicio = [
         cargarStaff(),
-        cargarDatosAlumnos()
+        cargarDatosAlumnos(),
+        cargarFeriados()
       ];
       if ((!esNutri && !esProfClases) || esSuperAdmin) {
         promesasInicio.push(cargarLibroDiario(), cargarTurnosSupabase());
@@ -4068,6 +4135,7 @@
         asistenciasMesData = data || [];
       }
 
+      actualizarBotonFeriadoUI();
       poblarSelectProfesorAsistencias();
       filtrarAsistencias();
     }
@@ -4102,6 +4170,228 @@
         html += `<option value="${p.nombre}" ${p.nombre === valorPrevio ? 'selected' : ''}>Prof. ${p.nombre}</option>`;
       });
       select.innerHTML = html;
+    }
+
+    // ==========================================
+    // GESTIÓN DE DÍAS FERIADOS / HORARIO ESPECIAL
+    // ==========================================
+    async function cargarFeriados() {
+      try {
+        const local = localStorage.getItem('ftg_feriados');
+        if (local) {
+          try { feriadosData = JSON.parse(local) || {}; } catch (e) { feriadosData = {}; }
+        } else {
+          feriadosData = {};
+        }
+      } catch (e) {}
+
+      if (typeof _supabase !== 'undefined' && _supabase) {
+        try {
+          const { data, error } = await _supabase.from('feriados').select('*');
+          if (!error && Array.isArray(data)) {
+            const mapa = {};
+            data.forEach(item => {
+              if (item && item.fecha) {
+                mapa[item.fecha] = item;
+              }
+            });
+            feriadosData = { ...feriadosData, ...mapa };
+            try { localStorage.setItem('ftg_feriados', JSON.stringify(feriadosData)); } catch (e) {}
+          }
+        } catch (e) {
+          console.warn("Tabla feriados no disponible en Supabase aún (usando local):", e);
+        }
+      }
+      actualizarBotonFeriadoUI();
+    }
+
+    function obtenerFeriadoDeFecha(fechaStr) {
+      if (!fechaStr || !feriadosData) return null;
+      return feriadosData[fechaStr] || null;
+    }
+
+    function parsearNombresFeriado(texto) {
+      if (!texto) return [];
+      if (Array.isArray(texto)) return texto;
+      return String(texto)
+        .split(/[\n,;]+/)
+        .map(s => s.trim())
+        .filter(s => s.length > 1);
+    }
+
+    function actualizarBotonFeriadoUI() {
+      const inputFecha = document.getElementById('fechaAsistencia');
+      const btn = document.getElementById('btnFeriadoAsistencia');
+      if (!inputFecha || !btn) return;
+
+      const fechaSel = inputFecha.value;
+      const feriado = obtenerFeriadoDeFecha(fechaSel);
+
+      if (feriado) {
+        btn.innerHTML = `<span>🎉 Feriado Activo</span>`;
+        btn.style.background = 'rgba(245, 158, 11, 0.2)';
+        btn.style.borderColor = '#fbbf24';
+        btn.style.color = '#fbbf24';
+        btn.title = `Este día está configurado como Feriado (${feriado.modo === 'anotados' ? 'Lista de Google Sheet' : 'Solo presentes'}). Clic para modificar o desactivar.`;
+      } else {
+        btn.innerHTML = `<span>🎉 Marcar Feriado</span>`;
+        btn.style.background = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        btn.title = 'Declarar este día como Feriado o de horario reducido';
+      }
+    }
+
+    function abrirModalFeriadoAsistencia() {
+      const inputFecha = document.getElementById('fechaAsistencia');
+      if (!inputFecha || !inputFecha.value) return;
+      const fechaSel = inputFecha.value;
+
+      const fObj = new Date(fechaSel + 'T12:00:00');
+      const diaSemanaStr = fObj.toLocaleDateString('es-AR', { weekday: 'long' });
+      const diaSemanaCap = diaSemanaStr.charAt(0).toUpperCase() + diaSemanaStr.slice(1);
+      const fechaCortaStr = fObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+      const elTit = document.getElementById('feriadoFechaTitulo');
+      if (elTit) elTit.innerText = `${diaSemanaCap} ${fechaCortaStr} (${fechaSel})`;
+
+      const modal = document.getElementById('modalFeriadoAsistencia');
+      if (!modal) return;
+
+      const feriado = obtenerFeriadoDeFecha(fechaSel);
+      const radioPresentes = document.getElementById('radioFeriadoPresentes');
+      const radioAnotados = document.getElementById('radioFeriadoAnotados');
+      const txtArea = document.getElementById('inputAnotadosFeriado');
+      const btnEliminar = document.getElementById('btnEliminarFeriado');
+
+      if (feriado) {
+        if (feriado.modo === 'anotados') {
+          if (radioAnotados) radioAnotados.checked = true;
+        } else {
+          if (radioPresentes) radioPresentes.checked = true;
+        }
+        if (txtArea) txtArea.value = feriado.alumnos || '';
+        if (btnEliminar) btnEliminar.style.display = 'inline-block';
+      } else {
+        if (radioPresentes) radioPresentes.checked = true;
+        if (txtArea) txtArea.value = '';
+        if (btnEliminar) btnEliminar.style.display = 'none';
+      }
+
+      actualizarVisibilidadModoFeriado();
+      actualizarContadorAnotadosFeriado();
+      modal.style.display = 'flex';
+    }
+
+    function cerrarModalFeriadoAsistencia() {
+      const modal = document.getElementById('modalFeriadoAsistencia');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function actualizarVisibilidadModoFeriado() {
+      const radioAnotados = document.getElementById('radioFeriadoAnotados');
+      const bloque = document.getElementById('bloqueAnotadosFeriado');
+      const labelPresentes = document.getElementById('labelModoFeriadoPresentes');
+      const labelAnotados = document.getElementById('labelModoFeriadoAnotados');
+
+      const esAnotados = Boolean(radioAnotados && radioAnotados.checked);
+      if (bloque) bloque.style.display = esAnotados ? 'flex' : 'none';
+
+      if (labelPresentes) {
+        labelPresentes.style.borderColor = !esAnotados ? 'var(--neon-green)' : 'var(--border-color)';
+        labelPresentes.style.background = !esAnotados ? 'rgba(149, 255, 83, 0.08)' : 'rgba(255,255,255,0.02)';
+      }
+      if (labelAnotados) {
+        labelAnotados.style.borderColor = esAnotados ? '#60a5fa' : 'var(--border-color)';
+        labelAnotados.style.background = esAnotados ? 'rgba(96, 165, 250, 0.08)' : 'rgba(255,255,255,0.02)';
+      }
+    }
+
+    function actualizarContadorAnotadosFeriado() {
+      const txtArea = document.getElementById('inputAnotadosFeriado');
+      const elCont = document.getElementById('contadorAnotadosFeriado');
+      if (!txtArea || !elCont) return;
+
+      const lista = parsearNombresFeriado(txtArea.value);
+      if (lista.length === 0) {
+        elCont.innerText = '0 alumnos reconocidos';
+        elCont.style.color = 'var(--text-dim)';
+        return;
+      }
+
+      let encontrados = 0;
+      lista.forEach(nom => {
+        const resuelto = resolverNombreAlumnoAviso(nom);
+        const al = obtenerAlumnoPorNombre(resuelto);
+        if (al) encontrados++;
+      });
+
+      elCont.innerText = `✓ ${lista.length} anotados (${encontrados} encontrados en la base de alumnos)`;
+      elCont.style.color = '#60a5fa';
+    }
+
+    async function guardarFeriadoActual() {
+      const inputFecha = document.getElementById('fechaAsistencia');
+      if (!inputFecha || !inputFecha.value) return;
+      const fecha = inputFecha.value;
+
+      const modo = document.getElementById('radioFeriadoAnotados')?.checked ? 'anotados' : 'presentes';
+      const textoAnotados = document.getElementById('inputAnotadosFeriado')?.value || '';
+
+      const obj = {
+        fecha: fecha,
+        modo: modo,
+        alumnos: textoAnotados.trim(),
+        updated_at: new Date().toISOString()
+      };
+
+      feriadosData[fecha] = obj;
+      try {
+        localStorage.setItem('ftg_feriados', JSON.stringify(feriadosData));
+      } catch (e) { console.error("Error guardando en localStorage:", e); }
+
+      // Intentar guardar en Supabase (upsert)
+      if (typeof _supabase !== 'undefined' && _supabase) {
+        try {
+          const { error } = await _supabase
+            .from('feriados')
+            .upsert(obj, { onConflict: 'fecha' });
+          if (error) {
+            console.warn("Supabase upsert feriados error (se mantiene en local):", error);
+          }
+        } catch (e) {
+          console.warn("Error de conexión con Supabase:", e);
+        }
+      }
+
+      cerrarModalFeriadoAsistencia();
+      actualizarBotonFeriadoUI();
+      filtrarAsistencias();
+    }
+
+    async function quitarFeriadoActual() {
+      const inputFecha = document.getElementById('fechaAsistencia');
+      if (!inputFecha || !inputFecha.value) return;
+      const fecha = inputFecha.value;
+
+      if (!confirm(`¿Querés desactivar el día ${fecha} como feriado y volver al cronograma habitual?`)) {
+        return;
+      }
+
+      delete feriadosData[fecha];
+      try {
+        localStorage.setItem('ftg_feriados', JSON.stringify(feriadosData));
+      } catch (e) {}
+
+      if (typeof _supabase !== 'undefined' && _supabase) {
+        try {
+          await _supabase.from('feriados').delete().eq('fecha', fecha);
+        } catch (e) {}
+      }
+
+      cerrarModalFeriadoAsistencia();
+      actualizarBotonFeriadoUI();
+      filtrarAsistencias();
     }
 
     // Cachés de rendimiento: la resolución de nombres se repite miles de veces al calcular asistencias del mes
@@ -4333,6 +4623,35 @@
     }
 
     function obtenerAlumnosEsperadosDia(diaNombre, fechaStr) {
+      const feriado = obtenerFeriadoDeFecha(fechaStr);
+      if (feriado) {
+        const setEsperados = new Set();
+        if (feriado.modo === 'anotados') {
+          const lista = parsearNombresFeriado(feriado.alumnos);
+          lista.forEach(nom => {
+            const nomLower = resolverNombreAlumnoAviso(nom);
+            if (nomLower) {
+              const alumnoObj = obtenerAlumnoPorNombre(nomLower);
+              if (alumnoObj && (alumnoObj.activo === false || alumnoObj.inactivo)) return;
+              setEsperados.add(nomLower);
+            }
+          });
+        } else {
+          // 'presentes': esperados son exactamente los que vinieron ese día
+          if (Array.isArray(asistenciasMesData)) {
+            asistenciasMesData.forEach(ast => {
+              if (String(ast.fecha) === String(fechaStr)) {
+                const al = (alumnosData || []).find(a => String(a.id) === String(ast.alumno_id));
+                if (al && al.nombre) {
+                  setEsperados.add(al.nombre.trim().toLowerCase());
+                }
+              }
+            });
+          }
+        }
+        return setEsperados;
+      }
+
       const setNombres = new Set();
       if (cronogramaData && cronogramaData.turnos) {
         Object.keys(cronogramaData.turnos).forEach(k => {
@@ -4393,6 +4712,11 @@
 
     function obtenerCantidadEsperadosDia(diaNombre, totalDisponibles, fechaStr) {
       if (diaNombre === "Domingo") return 0;
+      const feriado = obtenerFeriadoDeFecha(fechaStr);
+      if (feriado) {
+        const setNombres = obtenerAlumnosEsperadosDia(diaNombre, fechaStr);
+        return setNombres.size;
+      }
       const setNombres = obtenerAlumnosEsperadosDia(diaNombre, fechaStr);
       if (setNombres.size > 0 || tieneTurnosCargadosEnCronograma()) return setNombres.size;
       return Math.max(1, Math.round(((totalDisponibles || 10) * 3) / 6));
@@ -4573,10 +4897,14 @@
 
       const elPctDia = document.getElementById('asistMetricaPorcentaje');
       if (elPctDia) elPctDia.innerText = `${pctDia}%`;
+      const feriadoActivo = obtenerFeriadoDeFecha(fechaSel);
       const elSubDia = document.getElementById('asistSubDia');
       if (elSubDia) {
         if (esDomingo) {
           elSubDia.innerText = 'Domingo sin actividades';
+        } else if (feriadoActivo) {
+          const descModo = feriadoActivo.modo === 'anotados' ? 'inscriptos en planilla' : 'asistencias directas';
+          elSubDia.innerText = `🎉 Feriado / Horario Especial: ${cantPresentes} de ${cantEsperadosDia} esperados (${descModo})`;
         } else {
           const detallesAvisos = [];
           if (cantAusenciasConAvisoHoy > 0) detallesAvisos.push(`-${cantAusenciasConAvisoHoy} con aviso`);
@@ -4615,11 +4943,17 @@
       const elBadgeHoy = document.getElementById('cantPresentesHoy');
       if (elBadgeHoy) elBadgeHoy.innerText = cantPresentes;
 
+      const esperadosFeriadoSet = feriadoActivo ? obtenerAlumnosEsperadosDia(diaSelNombre, fechaSel) : null;
+
       // Asignar horarios efectivos y estado de avisos de este día a cada alumno
       alumnosPadron.forEach(a => {
         if (esDomingo) {
           a._estadoAvisoHoy = { horariosHabituales: [], horariosEfectivos: [], tieneAusencia: false, horasAusencia: [], tieneCambio: false, horasCambio: [] };
           a._horariosHoy = [];
+        } else if (feriadoActivo) {
+          const esEsperado = Boolean(a.nombre && esperadosFeriadoSet && esperadosFeriadoSet.has(a.nombre.trim().toLowerCase()));
+          a._estadoAvisoHoy = { horariosHabituales: [], horariosEfectivos: esEsperado ? ['Feriado'] : [], tieneAusencia: false, horasAusencia: [], tieneCambio: false, horasCambio: [] };
+          a._horariosHoy = esEsperado ? ['Feriado'] : [];
         } else {
           const est = obtenerEstadoAvisosAlumnoEnFecha(a.nombre, diaSelNombre, fechaSel);
           a._estadoAvisoHoy = est;
@@ -4734,8 +5068,13 @@
         : 'todos';
       const esModoCrono = (estadoFiltro === 'cronograma' || estadoFiltro === 'cronograma_pendientes');
 
+      const fechaSel = document.getElementById('fechaAsistencia') ? document.getElementById('fechaAsistencia').value : '';
+      const feriadoActivo = obtenerFeriadoDeFecha(fechaSel);
+
       if (contenedorResumen && staffData && alumnosData) {
-        const labelDiaBtn = diaSelNombre && diaSelNombre !== 'Domingo' ? `Turnos ${diaSelNombre}` : 'Turnos del día';
+        const labelDiaBtn = feriadoActivo
+          ? '🎉 Turnos Feriado'
+          : (diaSelNombre && diaSelNombre !== 'Domingo' ? `Turnos ${diaSelNombre}` : 'Turnos del día');
         let resumenHTML = `
           <button type="button" class="btn btn-outline" onclick="alternarFiltroCronogramaAsistencias()" style="padding: 4px 12px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px; ${esModoCrono ? 'background: rgba(149, 255, 83, 0.18); color: var(--neon-green); font-weight: 800; border-color: var(--neon-green); box-shadow: 0 0 10px rgba(149, 255, 83, 0.2);' : 'border-color: rgba(149, 255, 83, 0.4); color: var(--neon-green);'}" title="Mostrar solo los alumnos esperados en el Cronograma de este día (incluye recuperos y descuenta ausencias con aviso)">
             <span>📅 ${labelDiaBtn}</span>
@@ -4759,8 +5098,6 @@
         });
         contenedorResumen.innerHTML = resumenHTML;
       }
-
-      const fechaSel = document.getElementById('fechaAsistencia') ? document.getElementById('fechaAsistencia').value : '';
 
       if (!items || items.length === 0) {
         const msgVacio = esModoCrono
@@ -4798,11 +5135,12 @@
             const presDelTurno = alumnosDelTurno.filter(al =>
               asistenciasMesData.some(ast => String(ast.alumno_id) === String(al.id) && String(ast.fecha) === String(fechaSel))
             ).length;
+            const etiquetaTurno = horaPpal === 'Feriado' ? '🎉 Horario Especial / Feriado' : `🕒 Turno ${horaPpal} hs`;
             filasHTML += `
               <tr style="background: rgba(149, 255, 83, 0.06); border-top: 1px solid rgba(149, 255, 83, 0.22); border-bottom: 1px solid rgba(149, 255, 83, 0.14);">
                 <td colspan="7" style="padding: 7px 14px; font-weight: 800; color: var(--neon-green); font-size: 0.84rem; letter-spacing: 0.4px;">
                   <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>🕒 Turno ${horaPpal} hs</span>
+                    <span>${etiquetaTurno}</span>
                     <span style="font-size: 0.76rem; color: var(--text-dim); font-weight: 600;">${presDelTurno} de ${alumnosDelTurno.length} presentes</span>
                   </div>
                 </td>
@@ -4820,7 +5158,9 @@
         ).join('');
 
         let badgeHorario = '';
-        if (horariosHoy.length > 0) {
+        if (feriadoActivo && horariosHoy.includes('Feriado')) {
+          badgeHorario = `<span style="font-size: 0.7rem; color: #fbbf24; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.45); padding: 1px 6px; border-radius: 4px; font-weight: 700;" title="Esperado por horario especial de Feriado">🎉 Feriado</span>`;
+        } else if (horariosHoy.length > 0) {
           if (estAviso.tieneCambio) {
             badgeHorario = `<span style="font-size: 0.7rem; color: #fbbf24; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.45); padding: 1px 6px; border-radius: 4px; font-weight: 700;" title="Cambio de horario temporal / Recupera hoy (${diaSelNombre})">🟡 Recupera ${horariosHoy.join(' / ')} hs</span>`;
           } else {
