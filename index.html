@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>From The Ground - Gestión Integral</title>
   <link rel="icon" href="favicon.png" type="image/png">
+  <!-- CONFIGURACIÓN PWA (APP MÓVIL) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1B1B26">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FTG Fitness">
+  <link rel="apple-touch-icon" href="favicon.png">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://ltoiylrqpbplfiuhvfbi.supabase.co" crossorigin>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2531,6 +2539,15 @@
     const buscarAlumnoEnGrillaDebounced = debounce(() => buscarAlumnoEnGrilla(), 140);
     const filtrarListaCronoDebounced = debounce(() => filtrarListaCrono(), 140);
     const filtrarListaMasivaAsistenciaDebounced = debounce(() => filtrarListaMasivaAsistencia(), 140);
+
+    // REGISTRO DE SERVICE WORKER PARA PWA (APP MÓVIL)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('FTG App instalable lista en el dispositivo:', reg.scope))
+          .catch(err => console.warn('PWA SW error:', err));
+      });
+    }
 
     document.addEventListener('DOMContentLoaded', async () => {
 

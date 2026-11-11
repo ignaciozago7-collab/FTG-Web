@@ -1,0 +1,26 @@
+{
+  "name": "From The Ground - FTG Fitness",
+  "short_name": "FTG Fitness",
+  "description": "Sistema de Gestión Integral FTG Fitness",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1B1B26",
+  "theme_color": "#1B1B26",
+  "orientation": "portrait-primary",
+  "lang": "es-AR",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "1024x356",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
