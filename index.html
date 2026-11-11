@@ -764,7 +764,7 @@
           <button class="tab-btn active" id="btnTabTodos" onclick="cambiarTabClientes('todos', this)">Todos</button>
           <button class="tab-btn" id="btnTabPendientes" onclick="cambiarTabClientes('pendientes', this)">Pendientes</button>
           <button class="tab-btn" id="btnTabPagados" onclick="cambiarTabClientes('pagados', this)">Pagados</button>
-          <button class="tab-btn" id="btnTabInactivos" style="color: #38bdf8; font-weight: bold;" onclick="cambiarTabClientes('inactivos', this)">🌴 Inactivos</button>
+          <button class="tab-btn" id="btnTabInactivos" style="color: #38bdf8; font-weight: bold;" onclick="cambiarTabClientes('inactivos', this)">🌴 Inactivos (<span id="tabInactivosBadge">0</span>)</button>
           <button class="tab-btn" id="btnTabRiesgo" style="color: #ff4c4c; font-weight: bold;" onclick="cambiarTabClientes('riesgo', this)">En Riesgo 🚨</button>
           <button class="tab-btn" id="btnTabExAlumnos" style="color: #f59e0b; font-weight: bold;" onclick="cambiarTabClientes('exalumnos', this)">🚪 Ex-alumnos / Bajas</button>
         </div>
@@ -3122,11 +3122,11 @@
         document.getElementById('tabPagados').classList.add('active');
       } else if (tab === 'inactivos') {
         const selEstado = document.getElementById('filtroEstadoCliente');
-        if (selEstado && selEstado.value === 'activos') {
+        if (selEstado && (selEstado.value === 'activos' || selEstado.value === 'pagantes')) {
           selEstado.value = '';
-          filtrarAlumnos();
         }
         document.getElementById('tabInactivos')?.classList.add('active');
+        filtrarAlumnos();
       } else if (tab === 'riesgo') {
         document.getElementById('tabRiesgo').classList.add('active');
         cargarAlumnosEnRiesgo();
@@ -3161,13 +3161,14 @@
         cambiarTabClientes('todos', document.getElementById('btnTabTodos'));
         filtrarAlumnos();
       } else if (tipo === 'inactivos') {
-        if (selEstado && selEstado.value === 'activos') {
-          selEstado.value = '';
-          filtrarAlumnos();
-        }
         if (tabInactivosActiva) {
           cambiarTabClientes('todos', document.getElementById('btnTabTodos'));
         } else {
+          if (selEstado && (selEstado.value === 'activos' || selEstado.value === 'pagantes')) {
+            selEstado.value = '';
+          }
+          const fFecha = document.getElementById('filtroFechaAlumnos');
+          if (fFecha) fFecha.value = '';
           cambiarTabClientes('inactivos', document.getElementById('btnTabInactivos'));
         }
       } else if (tipo === 'pagados') {
@@ -3739,6 +3740,8 @@
       if (elBonif) elBonif.innerText = bonificados;
       const elInactCard = document.getElementById('metricaInactivosCard');
       if (elInactCard) elInactCard.innerText = inactivos;
+      const elTabInactBadge = document.getElementById('tabInactivosBadge');
+      if (elTabInactBadge) elTabInactBadge.innerText = inactivos;
 
       const elPagados = document.getElementById('metricaPagados');
       if (elPagados) elPagados.innerText = pagados;
@@ -3886,7 +3889,22 @@
 
       const pendientes = items.filter(a => !estaExentoDeCuota(a) && !a.pago_confirmado);
       const pagados = items.filter(a => !estaExentoDeCuota(a) && a.pago_confirmado);
-      const inactivos = items.filter(a => a.inactivo);
+      
+      // En la pestaña de Inactivos, obtenemos los alumnos inactivos directamente desde alumnosData
+      // aplicando únicamente los filtros relevantes (buscador de texto y profesor asignado si hay uno seleccionado).
+      // Esto evita que filtros de fecha de pago o de estado de cobro los hagan desaparecer.
+      const textoBuscador = document.getElementById('buscador')?.value.toLowerCase().trim() || '';
+      const profFiltroActivo = document.getElementById('filtroProfesorAlumnos')?.value || '';
+      const inactivos = (alumnosData || []).filter(a => {
+        if (!a.inactivo) return false;
+        if (textoBuscador && !(a.nombre && a.nombre.toLowerCase().includes(textoBuscador))) return false;
+        if (profFiltroActivo === '__SIN_ASIGNAR__') {
+          if (a.profesor_cargo && String(a.profesor_cargo).trim() !== '') return false;
+        } else if (profFiltroActivo) {
+          if ((a.profesor_cargo || '').trim().toLowerCase() !== profFiltroActivo.trim().toLowerCase()) return false;
+        }
+        return true;
+      });
 
       if (listaTodos) {
           let html = renderizarListaAlumnosHTML(items.slice(0, limiteAlumnos));
@@ -4060,6 +4078,17 @@
       const cobradorFiltro = document.getElementById('filtroCobradorAlumnos')?.value || '';
       const montoFiltro = parseFloat(document.getElementById('filtroMontoAlumnos')?.value) || 0;
       const estadoFiltro = document.getElementById('filtroEstadoCliente')?.value || '';
+
+      // Si el usuario eligió "Inactivos" en el desplegable y está parado en la pestaña Pendientes o Pagados,
+      // lo cambiamos automáticamente a la pestaña Inactivos para que vea a los alumnos de inmediato
+      if (estadoFiltro === 'inactivos') {
+        const tabPendientes = document.getElementById('tabPendientes');
+        const tabPagados = document.getElementById('tabPagados');
+        if (tabPendientes?.classList.contains('active') || tabPagados?.classList.contains('active')) {
+          cambiarTabClientes('inactivos', document.getElementById('btnTabInactivos'));
+          return;
+        }
+      }
 
       alumnosFiltradosCache = alumnosData.filter(a => {
         let ok = true;
@@ -5100,9 +5129,14 @@
       }
 
       if (!items || items.length === 0) {
-        const msgVacio = esModoCrono
-          ? `No hay alumnos esperados en el Cronograma para este día (${diaSelNombre || 'fecha seleccionada'}) con los filtros actuales.`
-          : 'No se encontraron alumnos con los filtros seleccionados.';
+        let msgVacio = 'No se encontraron alumnos con los filtros seleccionados.';
+        if (esModoCrono) {
+          msgVacio = `No hay alumnos esperados en el Cronograma para este día (${diaSelNombre || 'fecha seleccionada'}) con los filtros actuales.`;
+        } else if (estadoFiltro === 'inactivos') {
+          msgVacio = profActivo
+            ? `No hay alumnos inactivos asignados al Prof. ${profActivo}. Podés tocar el botón "Todos" arriba para ver los inactivos de otros profesores.`
+            : 'No hay alumnos inactivos registrados para mostrar.';
+        }
         tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-dim); padding: 20px;">${msgVacio}</td></tr>`;
         return;
       }
