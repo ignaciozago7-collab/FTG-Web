@@ -84,6 +84,14 @@
         0% { background-position: -400px 0; }
         100% { background-position: 400px 0; }
       }
+      @keyframes ftgSpin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes ftgPulse {
+        0%, 100% { opacity: 0.85; transform: scale(0.98); }
+        50% { opacity: 1; transform: scale(1.02); }
+      }
       .skeleton {
         background: var(--card-bg);
         background-image: linear-gradient(to right, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.1) 20%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0) 100%);
@@ -649,14 +657,27 @@
 </head>
 <body>
 
-  <!-- PANTALLA DE LOGIN -->
-  <div id="loginSection" style="display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; background: #1B1B26; position: fixed; top: 0; left: 0; z-index: 2000;">
-    <div class="card" style="width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
-      <h3 style="margin-bottom: 8px;">Iniciar Sesión - FTG</h3>
-      <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 16px;">Ingrese sus credenciales de acceso corporativo.</p>
+  <!-- PANTALLA DE LOGIN / SPLASH -->
+  <div id="loginSection" style="display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; background: #1B1B26; position: fixed; top: 0; left: 0; z-index: 2000; transition: opacity 0.2s ease-out;">
+    <!-- Splash Screen inicial (mientras valida sesión para evitar parpadeos del formulario) -->
+    <div id="loginSplash" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 16px;">
+      <img src="logo.png" alt="FTG Logo" style="height: 70px; max-width: 220px; object-fit: contain; animation: ftgPulse 1.8s infinite ease-in-out;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+        <div style="width: 18px; height: 18px; border: 2.5px solid rgba(149, 255, 83, 0.2); border-top-color: var(--neon-green); border-radius: 50%; animation: ftgSpin 0.8s linear infinite;"></div>
+        <span style="color: var(--text-dim); font-size: 0.88rem; font-weight: 600; letter-spacing: 0.3px;">Iniciando sistema...</span>
+      </div>
+    </div>
+
+    <!-- Formulario de Login (oculto por defecto; solo se muestra si NO hay sesión activa) -->
+    <div id="loginCard" class="card" style="width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); display: none;">
+      <div style="text-align: center; margin-bottom: 16px;">
+        <img src="logo.png" alt="FTG Logo" style="height: 50px; max-width: 160px; object-fit: contain; margin-bottom: 8px;">
+        <h3 style="margin-bottom: 4px; font-size: 1.25rem;">Iniciar Sesión - FTG</h3>
+        <p style="color: var(--text-dim); font-size: 0.85rem; margin: 0;">Ingrese sus credenciales de acceso corporativo.</p>
+      </div>
       <div style="display: flex; flex-direction: column; gap: 12px;">
-        <input type="email" id="loginEmail" placeholder="Correo electrónico" required>
-        <input type="password" id="loginPassword" placeholder="Contraseña" required>
+        <input type="email" id="loginEmail" placeholder="Correo electrónico" required autocomplete="email">
+        <input type="password" id="loginPassword" placeholder="Contraseña" required autocomplete="current-password">
         <div style="display: flex; gap: 8px;">
           <button class="btn" id="btnLogin" style="flex: 1; padding: 12px;">Ingresar</button>
           <button class="btn btn-outline" id="btnRegister" style="flex: 1; padding: 12px;">Registrarse</button>
@@ -664,6 +685,23 @@
       </div>
     </div>
   </div>
+
+  <script>
+    // Optimización instantánea: si NO hay sesión en localStorage, mostrar directamente el login sin delay
+    (function() {
+      try {
+        var hasSession = Object.keys(localStorage).some(function(k) {
+          return k.startsWith('sb-') && k.endsWith('-auth-token') && localStorage.getItem(k);
+        });
+        if (!hasSession) {
+          var splash = document.getElementById('loginSplash');
+          var card = document.getElementById('loginCard');
+          if (splash) splash.style.display = 'none';
+          if (card) card.style.display = 'block';
+        }
+      } catch(e) {}
+    })();
+  </script>
 
   <aside style="display: none;">
     <div style="font-weight: 800; font-size: 1.1rem;">
@@ -2621,6 +2659,13 @@
       const btnRegister = document.getElementById('btnRegister');
       if (btnRegister) btnRegister.addEventListener('click', registrarCuenta);
 
+      const passInput = document.getElementById('loginPassword');
+      if (passInput) {
+        passInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') iniciarSesion();
+        });
+      }
+
       verificarSesionActiva();
     });
 
@@ -2634,19 +2679,49 @@
     }
 
     async function verificarSesionActiva() {
-      const { data: { session } } = await _supabase.auth.getSession();
-      if (session) {
-        document.getElementById('loggedUserEmail').innerText = session.user.email;
-        const { data: perfil } = await _supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .maybeSingle();
-        
-        const rol = perfil ? perfil.role : 'limited';
-        aplicarPermisos(rol);
-      } else {
-        document.getElementById('loginSection').style.display = 'flex';
+      try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (session) {
+          document.getElementById('loggedUserEmail').innerText = session.user.email;
+          
+          // Fast-path: si ya tenemos rol en caché local, activamos permisos sin demora
+          const cachedRole = localStorage.getItem('ftg_user_role');
+          if (cachedRole) {
+            aplicarPermisos(cachedRole);
+          }
+
+          const { data: perfil } = await _supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          
+          const rol = perfil ? perfil.role : (cachedRole || 'limited');
+          localStorage.setItem('ftg_user_role', rol);
+          aplicarPermisos(rol);
+        } else {
+          localStorage.removeItem('ftg_user_role');
+          const splash = document.getElementById('loginSplash');
+          const card = document.getElementById('loginCard');
+          if (splash) splash.style.display = 'none';
+          if (card) card.style.display = 'block';
+          const loginSection = document.getElementById('loginSection');
+          if (loginSection) {
+            loginSection.style.opacity = '1';
+            loginSection.style.display = 'flex';
+          }
+        }
+      } catch (err) {
+        console.error('Error al verificar sesión:', err);
+        const splash = document.getElementById('loginSplash');
+        const card = document.getElementById('loginCard');
+        if (splash) splash.style.display = 'none';
+        if (card) card.style.display = 'block';
+        const loginSection = document.getElementById('loginSection');
+        if (loginSection) {
+          loginSection.style.opacity = '1';
+          loginSection.style.display = 'flex';
+        }
       }
     }
 
@@ -2655,7 +2730,16 @@
       if (error) {
         alert('Error al cerrar sesión: ' + error.message);
       } else {
-        document.getElementById('loginSection').style.display = 'flex';
+        localStorage.removeItem('ftg_user_role');
+        const splash = document.getElementById('loginSplash');
+        const card = document.getElementById('loginCard');
+        if (splash) splash.style.display = 'none';
+        if (card) card.style.display = 'block';
+        const loginSection = document.getElementById('loginSection');
+        if (loginSection) {
+          loginSection.style.opacity = '1';
+          loginSection.style.display = 'flex';
+        }
         document.querySelector('aside').style.setProperty('display', 'none', 'important');
         document.querySelector('main').style.setProperty('display', 'none', 'important');
         document.getElementById('loginEmail').value = '';
@@ -2708,6 +2792,7 @@
         .maybeSingle();
 
       const rol = (!perfilError && perfil) ? perfil.role : 'limited';
+      localStorage.setItem('ftg_user_role', rol);
       aplicarPermisos(rol);
     }
 
@@ -2737,7 +2822,12 @@
       const aside = document.querySelector('aside');
       const main = document.querySelector('main');
 
-      if (loginSection) loginSection.style.setProperty('display', 'none', 'important');
+      if (loginSection) {
+        loginSection.style.opacity = '0';
+        setTimeout(() => {
+          loginSection.style.setProperty('display', 'none', 'important');
+        }, 150);
+      }
       if (aside) aside.style.setProperty('display', 'flex', 'important');
       if (main) main.style.setProperty('display', 'block', 'important');
 
