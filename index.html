@@ -1017,6 +1017,77 @@
           <h4>Total Cuotas Cobradas</h4>
           <div class="val" id="cierreCantCuotas">0</div>
         </div>
+        <div class="metric-card">
+          <h4>Ticket Promedio (Cuota)</h4>
+          <div class="val" id="cierreTicketPromedio" style="color: var(--neon-green);">$0</div>
+          <small style="color: var(--text-dim); font-size: 0.75rem;">Total cuotas ÷ alumnos</small>
+        </div>
+      </div>
+
+      <!-- SECCIÓN ACTIVIDADES ESPECIALES (GANANCIA PARA EL GYM) -->
+      <div class="card" style="margin-top: 20px; border-left: 4px solid var(--neon-green);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+          <div>
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">✨ Actividades Especiales — Ganancia Neta para FTG</h3>
+            <p style="margin: 4px 0 0 0; color: var(--text-dim); font-size: 0.85rem;">Porcentaje pactado y dinero limpio que ingresa a la caja del gimnasio.</p>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px;">
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 700; font-size: 0.95rem;">🍎 Nutrición</span>
+              <span id="cierreNutriPct" style="background: rgba(149, 255, 83, 0.15); color: var(--neon-green); padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;">30% Gym</span>
+            </div>
+            <div id="cierreNutriGanancia" style="font-size: 1.6rem; font-weight: 800; color: var(--neon-green); margin-top: 10px;">$0</div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 4px;">Lucía / Santiago</div>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 700; font-size: 0.95rem;">🥋 Clases Brenda</span>
+              <span id="cierreBrendaPct" style="background: rgba(149, 255, 83, 0.15); color: var(--neon-green); padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;">40% Gym</span>
+            </div>
+            <div id="cierreBrendaGanancia" style="font-size: 1.6rem; font-weight: 800; color: var(--neon-green); margin-top: 10px;">$0</div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 4px;">Brenda Oliva</div>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 700; font-size: 0.95rem;">🥊 Clases Ernesto</span>
+              <span id="cierreErnestoPct" style="background: rgba(149, 255, 83, 0.15); color: var(--neon-green); padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;">40% Gym</span>
+            </div>
+            <div id="cierreErnestoGanancia" style="font-size: 1.6rem; font-weight: 800; color: var(--neon-green); margin-top: 10px;">$0</div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 4px;">Ernesto Gómez</div>
+          </div>
+
+          <div style="background: rgba(149, 255, 83, 0.08); border: 1px solid rgba(149, 255, 83, 0.35); border-radius: 12px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 700; font-size: 0.95rem; color: #fff;">💎 Total Actividades</span>
+              <span style="color: var(--neon-green); font-size: 0.78rem; font-weight: 700;">Extra Limpio</span>
+            </div>
+            <div id="cierreTotalActividades" style="font-size: 1.6rem; font-weight: 800; color: var(--neon-green); margin-top: 10px;">$0</div>
+            <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 4px;">Aporte directo a FTG</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN EVOLUCIÓN DE LA MATRÍCULA -->
+      <div class="card" style="margin-top: 20px;">
+        <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">👥 Evolución de la Matrícula (Altas vs Bajas del Mes)</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
+            <div style="color: var(--text-dim); font-size: 0.85rem; font-weight: 600;">🟢 Nuevos Alumnos (Altas)</div>
+            <div id="cierreAltasMes" style="font-size: 1.8rem; font-weight: 800; color: #10b981; margin-top: 6px;">0</div>
+          </div>
+          <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
+            <div style="color: var(--text-dim); font-size: 0.85rem; font-weight: 600;">🔴 Bajas / Inactivos</div>
+            <div id="cierreBajasMes" style="font-size: 1.8rem; font-weight: 800; color: #ef4444; margin-top: 6px;">0</div>
+          </div>
+          <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 16px; text-align: center;">
+            <div style="color: var(--text-dim); font-size: 0.85rem; font-weight: 600;">📊 Crecimiento Neto</div>
+            <div id="cierreBalanceNeto" style="font-size: 1.8rem; font-weight: 800; color: #3b82f6; margin-top: 6px;">0</div>
+          </div>
+        </div>
       </div>
 
       <div class="card" style="margin-top: 20px;">
@@ -5758,6 +5829,7 @@
         let totalIngresos = 0;
         let totalEgresosGeneral = 0;
         let cantCuotas = 0;
+        let totalMontoCuotas = 0;
         let resumenIngresos = {};
         let resumenEgresos = {};
 
@@ -5801,7 +5873,11 @@
             resumenEgresos[catNombre] = (resumenEgresos[catNombre] || 0) + monto;
           } else if (tipo === 'ingreso') {
             totalIngresos += monto;
-            if (catNombre === 'Cuota') cantCuotas++;
+            const esCuota = (catNombre === 'Cuota') || cat.includes('cuota') || desc.includes('cuota');
+            if (esCuota) {
+              cantCuotas++;
+              totalMontoCuotas += monto;
+            }
             liquidacion[operador].cobrado += monto;
             resumenIngresos[catNombre] = (resumenIngresos[catNombre] || 0) + monto;
           } else if (tipo === 'egreso') {
@@ -5828,6 +5904,121 @@
 
         const elCuotas = document.getElementById('cierreCantCuotas');
         if (elCuotas) elCuotas.innerText = cantCuotas;
+
+        const ticketPromedio = cantCuotas > 0 ? Math.round(totalMontoCuotas / cantCuotas) : 0;
+        const elTicket = document.getElementById('cierreTicketPromedio');
+        if (elTicket) elTicket.innerText = `$${ticketPromedio.toLocaleString('es-AR')}`;
+
+        // CÁLCULO DE ACTIVIDADES ESPECIALES (Nutrición, Brenda y Ernesto)
+        if (!clasesProfData || !clasesProfData.length || !clasesProfAlumnosData || !clasesProfAlumnosData.length) {
+          try {
+            const [resClases, resAlumnosCP] = await Promise.all([
+              _supabase.from('clases_prof').select('*'),
+              _supabase.from('clases_prof_alumnos').select('*')
+            ]);
+            if (resClases.data) clasesProfData = resClases.data;
+            if (resAlumnosCP.data) clasesProfAlumnosData = resAlumnosCP.data;
+          } catch(e) {
+            console.warn('Error cargando clases prof para cierre:', e);
+          }
+        }
+
+        if (!nutriTurnosData || !nutriTurnosData.length) {
+          try {
+            const { data: turnosNutri } = await _supabase.from('nutricion_turnos').select('*');
+            if (turnosNutri) nutriTurnosData = turnosNutri;
+          } catch(e) {
+            console.warn('Error cargando turnos nutrición para cierre:', e);
+          }
+        }
+
+        // Nutrición: porcentaje y ganancia neta para el Gym
+        let cobradoNutri = 0;
+        const pctGymNutri = 30;
+        (nutriTurnosData || []).forEach(t => {
+          if (t.estado !== 'asistio') return;
+          const fh = String(t.fecha_hora || '');
+          if (fh.startsWith(periodo)) {
+            cobradoNutri += parseFloat(t.monto) || 0;
+          }
+        });
+        const gananciaGymNutri = Math.round((cobradoNutri * pctGymNutri) / 100);
+
+        // Clases Brenda: porcentaje y ganancia neta para el Gym
+        const profBrenda = PROFESIONALES_CLASES.find(p => p.keyword === 'brenda' || (p.email || '').includes('brenda'));
+        const pctGymBrenda = profBrenda ? (typeof pctGymProfesionalClases === 'function' ? pctGymProfesionalClases(profBrenda) : (profBrenda.pctGymDefault || 40)) : 40;
+        const clasesBrenda = (clasesProfData || []).filter(c => (c.profesional_email || '').toLowerCase().includes('brenda'));
+        const idsBrenda = clasesBrenda.map(c => c.id);
+        const alumnosBrenda = (clasesProfAlumnosData || []).filter(a => idsBrenda.includes(a.clase_id) && a.mes === periodo && a.pagado && a.activo !== false);
+        const cobradoBrenda = alumnosBrenda.reduce((s, a) => s + (parseFloat(a.monto) || 0), 0);
+        const gananciaGymBrenda = Math.round((cobradoBrenda * pctGymBrenda) / 100);
+
+        // Clases Ernesto: porcentaje y ganancia neta para el Gym
+        const profErnesto = PROFESIONALES_CLASES.find(p => p.keyword === 'ernesto' || (p.email || '').includes('ernesto'));
+        const pctGymErnesto = profErnesto ? (typeof pctGymProfesionalClases === 'function' ? pctGymProfesionalClases(profErnesto) : (profErnesto.pctGymDefault || 40)) : 40;
+        const clasesErnesto = (clasesProfData || []).filter(c => (c.profesional_email || '').toLowerCase().includes('ernesto'));
+        const idsErnesto = clasesErnesto.map(c => c.id);
+        const alumnosErnesto = (clasesProfAlumnosData || []).filter(a => idsErnesto.includes(a.clase_id) && a.mes === periodo && a.pagado && a.activo !== false);
+        const cobradoErnesto = alumnosErnesto.reduce((s, a) => s + (parseFloat(a.monto) || 0), 0);
+        const gananciaGymErnesto = Math.round((cobradoErnesto * pctGymErnesto) / 100);
+
+        const totalActividades = gananciaGymNutri + gananciaGymBrenda + gananciaGymErnesto;
+
+        const elNutriPct = document.getElementById('cierreNutriPct');
+        if (elNutriPct) elNutriPct.innerText = `${pctGymNutri}% Gym`;
+        const elNutriGanancia = document.getElementById('cierreNutriGanancia');
+        if (elNutriGanancia) elNutriGanancia.innerText = `$${gananciaGymNutri.toLocaleString('es-AR')}`;
+
+        const elBrendaPct = document.getElementById('cierreBrendaPct');
+        if (elBrendaPct) elBrendaPct.innerText = `${pctGymBrenda}% Gym`;
+        const elBrendaGanancia = document.getElementById('cierreBrendaGanancia');
+        if (elBrendaGanancia) elBrendaGanancia.innerText = `$${gananciaGymBrenda.toLocaleString('es-AR')}`;
+
+        const elErnestoPct = document.getElementById('cierreErnestoPct');
+        if (elErnestoPct) elErnestoPct.innerText = `${pctGymErnesto}% Gym`;
+        const elErnestoGanancia = document.getElementById('cierreErnestoGanancia');
+        if (elErnestoGanancia) elErnestoGanancia.innerText = `$${gananciaGymErnesto.toLocaleString('es-AR')}`;
+
+        const elTotalAct = document.getElementById('cierreTotalActividades');
+        if (elTotalAct) elTotalAct.innerText = `$${totalActividades.toLocaleString('es-AR')}`;
+
+        // EVOLUCIÓN DE LA MATRÍCULA (Altas vs Bajas del Mes)
+        let altasMes = 0;
+        if (alumnosData && alumnosData.length) {
+          altasMes = alumnosData.filter(a => {
+            const f = a.created_at || a.fecha_alta || a.fecha_ingreso;
+            return f && String(f).startsWith(periodo);
+          }).length;
+        }
+
+        let bajasMes = 0;
+        try {
+          const { data: histBajas } = await _supabase
+            .from('alumno_estado_historial')
+            .select('id, tipo, fecha_desde')
+            .gte('fecha_desde', fechaInicio)
+            .lte('fecha_desde', fechaFin)
+            .in('tipo', ['baja', 'inactivo']);
+          if (histBajas) {
+            bajasMes = histBajas.length;
+          }
+        } catch(e) {
+          console.warn('Error obteniendo bajas para cierre:', e);
+        }
+
+        const balanceNeto = altasMes - bajasMes;
+
+        const elAltas = document.getElementById('cierreAltasMes');
+        if (elAltas) elAltas.innerText = `+${altasMes}`;
+
+        const elBajas = document.getElementById('cierreBajasMes');
+        if (elBajas) elBajas.innerText = `-${bajasMes}`;
+
+        const elBalance = document.getElementById('cierreBalanceNeto');
+        if (elBalance) {
+          elBalance.innerText = `${balanceNeto >= 0 ? '+' : ''}${balanceNeto} ${balanceNeto >= 0 ? '📈' : '📉'}`;
+          elBalance.style.color = balanceNeto >= 0 ? 'var(--neon-green)' : 'var(--danger-red)';
+        }
 
         const tbodyIntegrantes = document.getElementById('tbodyCierreIntegrantes');
         if (tbodyIntegrantes) {
