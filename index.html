@@ -5923,6 +5923,15 @@
           }
         }
 
+        if (!staffData || !staffData.length) {
+          try {
+            const { data: stf } = await _supabase.from('staff').select('*');
+            if (stf) staffData = stf;
+          } catch(e) {
+            console.warn('Error cargando staff para auditoría:', e);
+          }
+        }
+
         if (!nutriTurnosData || !nutriTurnosData.length) {
           try {
             const { data: turnosNutri } = await _supabase.from('nutricion_turnos').select('*');
@@ -5932,17 +5941,29 @@
           }
         }
 
-        // Nutrición: porcentaje y ganancia neta para el Gym
+        // Nutrición: porcentaje y ganancia neta individual de cada nutricionista según Staff
+        const profesionalesNutri = typeof obtenerProfesionalesNutricion === 'function'
+          ? obtenerProfesionalesNutricion()
+          : [
+              { id: 'def-lucia', nombre: 'Lucia Perruzza', porcentaje: 30 },
+              { id: 'def-santiago', nombre: 'Santiago Ruiz Zavala', porcentaje: 15 }
+            ];
+
+        let gananciaGymNutri = 0;
         let cobradoNutri = 0;
-        const pctGymNutri = 30;
         (nutriTurnosData || []).forEach(t => {
           if (t.estado !== 'asistio') return;
-          const fh = String(t.fecha_hora || '');
-          if (fh.startsWith(periodo)) {
-            cobradoNutri += parseFloat(t.monto) || 0;
-          }
+          const f = typeof parsearFechaHoraNutri === 'function' ? parsearFechaHoraNutri(t.fecha_hora) : null;
+          const mesT = f ? `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}` : String(t.fecha_hora || '').substring(0, 7);
+          if (mesT !== periodo) return;
+
+          const profObj = profesionalesNutri.find(px => typeof esMismoProfesionalNutri === 'function' ? esMismoProfesionalNutri(px.nombre, t.nutricionista_nombre) : (t.nutricionista_nombre && px.nombre.toLowerCase().includes(t.nutricionista_nombre.toLowerCase())));
+          const pct = profObj ? (parseFloat(profObj.porcentaje) || 30) : 30;
+          const m = parseFloat(t.monto) || 0;
+          cobradoNutri += m;
+          gananciaGymNutri += (m * pct) / 100;
         });
-        const gananciaGymNutri = Math.round((cobradoNutri * pctGymNutri) / 100);
+        gananciaGymNutri = Math.round(gananciaGymNutri);
 
         // Clases Brenda: porcentaje y ganancia neta para el Gym
         const profBrenda = PROFESIONALES_CLASES.find(p => p.keyword === 'brenda' || (p.email || '').includes('brenda'));
@@ -5965,7 +5986,10 @@
         const totalActividades = gananciaGymNutri + gananciaGymBrenda + gananciaGymErnesto;
 
         const elNutriPct = document.getElementById('cierreNutriPct');
-        if (elNutriPct) elNutriPct.innerText = `${pctGymNutri}% Gym`;
+        if (elNutriPct) {
+          const resumenPcts = profesionalesNutri.map(p => `${p.nombre.split(' ')[0]} ${p.porcentaje}%`).join(' | ');
+          elNutriPct.innerText = resumenPcts ? `${resumenPcts} Gym` : '30% Gym';
+        }
         const elNutriGanancia = document.getElementById('cierreNutriGanancia');
         if (elNutriGanancia) elNutriGanancia.innerText = `$${gananciaGymNutri.toLocaleString('es-AR')}`;
 
