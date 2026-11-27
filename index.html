@@ -811,7 +811,7 @@
           <button class="tab-btn" id="btnTabPendientes" onclick="cambiarTabClientes('pendientes', this)">Pendientes</button>
           <button class="tab-btn" id="btnTabPagados" onclick="cambiarTabClientes('pagados', this)">Pagados</button>
           <button class="tab-btn" id="btnTabInactivos" style="color: #38bdf8; font-weight: bold;" onclick="cambiarTabClientes('inactivos', this)">🌴 Inactivos (<span id="tabInactivosBadge">0</span>)</button>
-          <button class="tab-btn" id="btnTabRiesgo" style="color: #ff4c4c; font-weight: bold;" onclick="cambiarTabClientes('riesgo', this)">En Riesgo 🚨</button>
+          <button class="tab-btn" id="btnTabRiesgo" style="color: #ff4c4c; font-weight: bold;" onclick="cambiarTabClientes('riesgo', this)">En Riesgo 🚨 (<span id="tabRiesgoBadge">0</span>)</button>
           <button class="tab-btn" id="btnTabExAlumnos" style="color: #f59e0b; font-weight: bold;" onclick="cambiarTabClientes('exalumnos', this)">🚪 Ex-alumnos / Bajas</button>
         </div>
 
@@ -1958,6 +1958,17 @@
           <span id="fichaClienteAlertaTurnos" style="font-size: 0.75rem; font-weight: 700;"></span>
         </div>
         <div id="fichaClienteTurnosCrono" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+      </div>
+
+      <!-- PRESENTES Y ASISTENCIAS DEL MES -->
+      <div style="border: 1px solid rgba(149, 255, 83, 0.25); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; background: rgba(149, 255, 83, 0.03);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+          <span style="font-size: 0.85rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">📅 Presentes de este Mes</span>
+          <span id="fichaClienteBadgePresentes" style="font-size: 0.76rem; font-weight: 800; color: var(--neon-green); background: rgba(149, 255, 83, 0.15); border: 1px solid rgba(149, 255, 83, 0.35); padding: 2px 8px; border-radius: 6px;">0 presentes</span>
+        </div>
+        <div id="fichaClienteFechasPresentes" style="display: flex; flex-wrap: wrap; gap: 6px; max-height: 85px; overflow-y: auto;">
+          <span style="font-size: 0.78rem; color: var(--text-dim);">Cargando presentes...</span>
+        </div>
       </div>
 
       <!-- ESTADO DEL CLIENTE: INACTIVO TEMPORAL / BONIFICADO -->
@@ -3419,27 +3430,46 @@
     
       async function cargarAlumnosEnRiesgo() {
         const listaRiesgo = document.getElementById('listaAlumnosRiesgo');
-        listaRiesgo.innerHTML = '<div style="text-align: center; color: var(--text-dim);">Analizando asistencias...</div>';
+        if (listaRiesgo) {
+          listaRiesgo.innerHTML = '<div style="text-align: center; color: var(--text-dim); padding: 15px;">Analizando asistencias recientes...</div>';
+        }
 
         const limite = new Date();
         limite.setDate(limite.getDate() - 45);
         const strLimite = limite.toISOString().split('T')[0];
 
+        // IMPORTANTE: ordenar descendente con límite amplio para que las asistencias más recientes (hoy, esta semana)
+        // se obtengan primero y no queden cortadas por el límite por defecto de 1000 filas de Supabase
         const { data, error } = await _supabase
           .from('asistencias')
           .select('alumno_id, fecha')
-          .gte('fecha', strLimite);
+          .gte('fecha', strLimite)
+          .order('fecha', { ascending: false })
+          .limit(5000);
 
         if (error) {
-            listaRiesgo.innerHTML = `<div style="color: var(--danger-red);">Error: ${error.message}</div>`;
+            if (listaRiesgo) listaRiesgo.innerHTML = `<div style="color: var(--danger-red);">Error: ${error.message}</div>`;
             return;
         }
 
         const ultimasAsistencias = {};
+
+        // 1. Incorporar asistencias registradas recientemente en memoria (en Asistencias o en Cronograma)
+        [...(asistenciasMesData || []), ...(asistenciasCronoData || [])].forEach(a => {
+            if (!a || !a.alumno_id || !a.fecha) return;
+            const aid = String(a.alumno_id);
+            if (!ultimasAsistencias[aid] || a.fecha > ultimasAsistencias[aid]) {
+                ultimasAsistencias[aid] = a.fecha;
+            }
+        });
+
+        // 2. Incorporar asistencias de la base de datos
         if (data) {
             data.forEach(a => {
-                if (!ultimasAsistencias[a.alumno_id] || a.fecha > ultimasAsistencias[a.alumno_id]) {
-                    ultimasAsistencias[a.alumno_id] = a.fecha;
+                if (!a || !a.alumno_id || !a.fecha) return;
+                const aid = String(a.alumno_id);
+                if (!ultimasAsistencias[aid] || a.fecha > ultimasAsistencias[aid]) {
+                    ultimasAsistencias[aid] = a.fecha;
                 }
             });
         }
@@ -3449,24 +3479,30 @@
 
         let htmlRiesgo = '';
 
-        const alumnosRiesgo = alumnosData
+        const alumnosRiesgo = (alumnosData || [])
             .filter(a => !a.inactivo)
             .map(a => {
-              const ultimaFechaStr = ultimasAsistencias[a.id];
+              const aid = String(a.id);
+              const ultimaFechaStr = ultimasAsistencias[aid];
               let diasAusente = 999;
               if (ultimaFechaStr) {
                   const ultimaFecha = new Date(ultimaFechaStr + 'T12:00:00');
                   ultimaFecha.setHours(0,0,0,0);
-                  const diffTime = Math.abs(hoy - ultimaFecha);
-                  diasAusente = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  const diffTime = Math.max(0, hoy - ultimaFecha);
+                  diasAusente = Math.floor(diffTime / (1000 * 60 * 60 * 24));
               }
               return { ...a, diasAusente, ultimaFechaStr };
             })
             .filter(a => a.diasAusente >= 7)
             .sort((a, b) => b.diasAusente - a.diasAusente);
 
+        const badgeRiesgo = document.getElementById('tabRiesgoBadge');
+        if (badgeRiesgo) badgeRiesgo.innerText = alumnosRiesgo.length;
+
+        if (!listaRiesgo) return;
+
         if (alumnosRiesgo.length === 0) {
-            listaRiesgo.innerHTML = '<div style="text-align: center; color: var(--text-dim); padding: 15px;">¡Excelente! No hay alumnos en riesgo (inactivos +7 días).</div>';
+            listaRiesgo.innerHTML = '<div style="text-align: center; color: var(--text-dim); padding: 20px;">¡Excelente! No hay alumnos en riesgo (todos tienen asistencias en los últimos 7 días).</div>';
             return;
         }
 
@@ -3476,7 +3512,9 @@
             const badgeBg = isPeligro ? 'rgba(255, 83, 83, 0.1)' : 'rgba(245, 158, 11, 0.1)';
             const textRiesgo = isPeligro ? 'Peligro' : 'Alerta';
             
-            const txtDias = a.ultimaFechaStr ? `Última clase: hace ${a.diasAusente} días` : `Sin asistir en 45+ días`;
+            const txtDias = a.ultimaFechaStr 
+              ? `Última asistencia: hace ${a.diasAusente} día${a.diasAusente === 1 ? '' : 's'} (${a.ultimaFechaStr.split('-').reverse().join('/')})` 
+              : `Sin asistir en más de 45 días`;
             
             const msg = encodeURIComponent(`¡Hola ${a.nombre}! Acá los profes de FTG. Vimos que hace unas semanitas que no te pasás por el gym. ¿Todo bien? ¡Te guardamos el lugar para cuando quieras retomar!`);
             const wppLink = `https://wa.me/?text=${msg}`;
@@ -3484,14 +3522,15 @@
             htmlRiesgo += `
               <li style="padding: 14px 16px; background: rgba(255,255,255,0.01); border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; border: 1px solid var(--border-color); border-left: 4px solid ${badgeColor};">
                 <div style="flex: 1; min-width: 200px;">
-                  <strong style="font-size: 1.1rem;">${a.nombre}</strong>
+                  <strong style="font-size: 1.05rem; cursor: pointer;" onclick="abrirModalEditCliente('${a.id}')" title="Ver ficha del cliente">${a.nombre}</strong>
                   <span style="color: ${badgeColor}; border: 1px solid ${badgeColor}; background-color: ${badgeBg}; font-size: 0.75rem; font-weight: bold; padding: 2px 6px; border-radius: 6px; margin-left: 8px;">${textRiesgo}</span>
                   <div style="margin-top: 6px; font-size: 0.85rem; color: var(--text-dim);">
                     ⏳ ${txtDias}
                   </div>
                 </div>
-                <div style="display: flex; gap: 8px;">
-                  <a href="${wppLink}" target="_blank" class="btn" style="background: #25D366; color: #000; font-weight: bold; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.82rem;" onclick="abrirModalEditCliente('${a.id}')">📋 Ficha</button>
+                  <a href="${wppLink}" target="_blank" class="btn" style="background: #25D366; color: #000; font-weight: bold; text-decoration: none; display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 0.82rem;">
                     💬 WSP de faltas
                   </a>
                 </div>
@@ -3989,6 +4028,10 @@
             `;
           }
 
+          const mesActualFmt = (document.getElementById('fechaAsistencia')?.value || hoy).slice(0, 7);
+          const cantPresentesMes = (asistenciasMesData || []).filter(ast => String(ast.alumno_id) === String(a.id) && String(ast.fecha).startsWith(mesActualFmt)).length;
+          const badgePresentesMes = `<span onclick="abrirModalEditCliente('${a.id}')" style="cursor: pointer; font-size: 0.76rem; font-weight: 700; color: ${cantPresentesMes > 0 ? 'var(--neon-green)' : 'var(--text-dim)'}; background: ${cantPresentesMes > 0 ? 'rgba(149, 255, 83, 0.1)' : 'rgba(255, 255, 255, 0.04)'}; border: 1px solid ${cantPresentesMes > 0 ? 'rgba(149, 255, 83, 0.3)' : 'rgba(255, 255, 255, 0.08)'}; padding: 2px 7px; border-radius: 6px;" title="Asistencias registradas en el mes actual (${mesActualFmt}) — Clic para ver ficha">📅 ${cantPresentesMes} pres.</span>`;
+
           return `
             <li style="padding: 12px 16px; background: rgba(255,255,255,0.015); border-radius: 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--border-color); border-left: 3px solid ${colorBorde};">
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; width: 100%;">
@@ -3997,6 +4040,7 @@
                   <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
                     <strong style="font-size: 1.05rem; color: #fff; cursor: pointer;" onclick="abrirModalEditCliente('${a.id}')" title="Ver o editar ficha del cliente">${a.nombre}</strong> 
                     <span style="font-size: 0.78rem; color: var(--text-dim); background: rgba(255,255,255,0.06); padding: 2px 7px; border-radius: 6px;">${a.dias_semana || 3} días/sem</span>
+                    ${badgePresentesMes}
                     ${tagEstado}
                     <span style="font-size: 0.85rem; font-weight: 700; color: ${esBonif ? '#c084fc' : (estaPagado ? 'var(--neon-green)' : '#fff')}; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 6px;">
                       ${esBonif ? 'Bonificado' : `$${montoNum.toLocaleString('es-AR')}`}
@@ -4345,6 +4389,12 @@
       actualizarBotonFeriadoUI();
       poblarSelectProfesorAsistencias();
       filtrarAsistencias();
+      if (typeof renderizarListaAlumnos === 'function' && Array.isArray(alumnosFiltradosCache) && alumnosFiltradosCache.length > 0) {
+        renderizarListaAlumnos(alumnosFiltradosCache);
+      }
+      if (typeof cargarAlumnosEnRiesgo === 'function') {
+        cargarAlumnosEnRiesgo();
+      }
     }
 
     function cambiarFechaAsistenciaRelativa(offset) {
@@ -5585,6 +5635,12 @@
           });
           cerrarModalAsistenciaMasiva();
           filtrarAsistencias();
+          if (typeof renderizarListaAlumnos === 'function' && Array.isArray(alumnosFiltradosCache) && alumnosFiltradosCache.length > 0) {
+            renderizarListaAlumnos(alumnosFiltradosCache);
+          }
+          if (typeof cargarAlumnosEnRiesgo === 'function') {
+            cargarAlumnosEnRiesgo();
+          }
           await cargarAsistencias();
         }
       } catch (err) {
@@ -7794,6 +7850,12 @@ function renderizarLibroDiario(esCargarMas) {
       const refrescar = () => {
         renderizarCronogramaDinamico();
         if (typeof filtrarAsistencias === 'function') filtrarAsistencias();
+        if (typeof renderizarListaAlumnos === 'function' && Array.isArray(alumnosFiltradosCache) && alumnosFiltradosCache.length > 0) {
+          renderizarListaAlumnos(alumnosFiltradosCache);
+        }
+        if (typeof cargarAlumnosEnRiesgo === 'function') {
+          cargarAlumnosEnRiesgo();
+        }
       };
 
       if (yaTiene) {
@@ -8716,8 +8778,71 @@ function renderizarLibroDiario(esCargarMas) {
         actualizarCamposEstadoFicha();
         cargarHistorialEstadosFicha(cliente.id);
         renderizarTurnosFichaCliente(cliente.nombre);
+        cargarPresentesMesFichaCliente(cliente.id);
         
         document.getElementById('modalEditCliente').style.display = 'flex';
+    }
+
+    async function cargarPresentesMesFichaCliente(alumnoId) {
+        const badge = document.getElementById('fichaClienteBadgePresentes');
+        const cont = document.getElementById('fichaClienteFechasPresentes');
+        if (!badge || !cont) return;
+
+        badge.innerText = 'Cargando...';
+        badge.style.color = 'var(--text-dim)';
+        badge.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        cont.innerHTML = '<span style="font-size: 0.78rem; color: var(--text-dim);">Buscando asistencias...</span>';
+
+        const hoyStr = hoyLocalISO();
+        const mesActualFmt = hoyStr.slice(0, 7);
+        const dIni = `${mesActualFmt}-01`;
+        const dFin = `${mesActualFmt}-31`;
+
+        const setFechas = new Set();
+        [...(asistenciasMesData || []), ...(asistenciasCronoData || [])].forEach(a => {
+            if (a && String(a.alumno_id) === String(alumnoId) && a.fecha && String(a.fecha).startsWith(mesActualFmt)) {
+                setFechas.add(a.fecha);
+            }
+        });
+
+        try {
+            const { data, error } = await _supabase
+                .from('asistencias')
+                .select('id, fecha')
+                .eq('alumno_id', alumnoId)
+                .gte('fecha', dIni)
+                .lte('fecha', dFin)
+                .order('fecha', { ascending: false });
+
+            if (!error && Array.isArray(data)) {
+                data.forEach(item => {
+                    if (item && item.fecha) setFechas.add(item.fecha);
+                });
+            }
+        } catch (err) {
+            console.warn('Error cargando presentes del mes para la ficha:', err);
+        }
+
+        if (String(document.getElementById('editClienteId')?.value) !== String(alumnoId)) return;
+
+        const listaFechas = Array.from(setFechas).sort((a, b) => b.localeCompare(a));
+        const total = listaFechas.length;
+
+        badge.innerText = `${total} presente${total === 1 ? '' : 's'}`;
+        badge.style.color = total > 0 ? 'var(--neon-green)' : 'var(--text-dim)';
+        badge.style.borderColor = total > 0 ? 'rgba(149, 255, 83, 0.35)' : 'rgba(255, 255, 255, 0.1)';
+
+        if (total === 0) {
+            cont.innerHTML = '<span style="font-size: 0.78rem; color: var(--text-dim);">Sin presentes registrados en este mes.</span>';
+            return;
+        }
+
+        cont.innerHTML = listaFechas.map(fStr => {
+            const dObj = new Date(fStr + 'T12:00:00');
+            const diaSem = dObj.toLocaleDateString('es-AR', { weekday: 'short' });
+            const diaMes = dObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+            return `<span style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 700; color: #e2fbe8; background: rgba(149, 255, 83, 0.12); border: 1px solid rgba(149, 255, 83, 0.3); padding: 2px 7px; border-radius: 6px;" title="${fStr}">✔ ${diaSem} ${diaMes}</span>`;
+        }).join('');
     }
 
     async function renderizarTurnosFichaCliente(nombreExplicito) {
