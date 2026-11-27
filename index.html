@@ -9299,11 +9299,15 @@ function renderizarLibroDiario(esCargarMas) {
   
 
 // ==========================================
-// MÓDULO DE NUTRICIÓN
+// MÓDULO DE NUTRICIÓN (Optimizado con caché local instantáneo)
 // ==========================================
 let nutriPacientesData = [];
+try { nutriPacientesData = JSON.parse(localStorage.getItem('ftg_cache_nutri_pacientes') || '[]'); } catch(e){}
 let nutriTurnosData = [];
+try { nutriTurnosData = JSON.parse(localStorage.getItem('ftg_cache_nutri_turnos') || '[]'); } catch(e){}
 let nutricionMedicionesData = [];
+try { nutricionMedicionesData = JSON.parse(localStorage.getItem('ftg_cache_nutri_mediciones') || '[]'); } catch(e){}
+let _cargandoNutriEnProgreso = false;
 
 // ==========================================
 // HELPERS DEL MÓDULO DE NUTRICIÓN
@@ -9799,38 +9803,78 @@ async function copiarAlumnosMesAnteriorClasesProf() {
     await cargarDatosClasesProf();
 }
 
-async function cargarDatosNutricion() {
+async function cargarDatosNutricion(forzar = false) {
+    if (_cargandoNutriEnProgreso && !forzar) return;
+    _cargandoNutriEnProgreso = true;
+
     const inputMes = document.getElementById('mesFiltroNutricion');
     if(inputMes && !inputMes.value) {
         const d = new Date();
         inputMes.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     }
 
-    // Render inmediato si ya hay datos en memoria para eliminar pantallas en blanco
+    // Render inmediato si ya hay datos en memoria o caché para eliminar pantallas en blanco
     if ((nutriTurnosData && nutriTurnosData.length > 0) || (nutriPacientesData && nutriPacientesData.length > 0)) {
         renderVistasNutricion();
+    } else {
+        const listaTurnos = document.getElementById('listaTurnosNutri');
+        if (listaTurnos && !listaTurnos.innerHTML.includes('card')) {
+            listaTurnos.innerHTML = '<div style="text-align: center; color: var(--text-dim); padding: 35px 20px;"><div style="width: 24px; height: 24px; border: 2.5px solid rgba(149, 255, 83, 0.2); border-top-color: var(--neon-green); border-radius: 50%; animation: ftgSpin 0.8s linear infinite; margin: 0 auto 12px;"></div>Iniciando consultorio de nutrición...</div>';
+        }
     }
 
+    const fetchConTimeout = (prom, ms = 8000) => Promise.race([
+        prom,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de red Supabase')), ms))
+    ]);
+
     try {
-        const [resPacientes, resTurnos, resMediciones] = await Promise.all([
-            _supabase.from('nutricion_pacientes').select('*').order('nombre', {ascending: true}),
-            _supabase.from('nutricion_turnos').select('*').order('fecha_hora', {ascending: true}),
-            _supabase.from('nutricion_mediciones').select('*')
+        const [resPacientes, resTurnos, resMediciones] = await Promise.allSettled([
+            fetchConTimeout(_supabase.from('nutricion_pacientes').select('*').order('nombre', {ascending: true})),
+            fetchConTimeout(_supabase.from('nutricion_turnos').select('*').order('fecha_hora', {ascending: true})),
+            fetchConTimeout(_supabase.from('nutricion_mediciones').select('*'))
         ]);
-        if(resPacientes.error) console.error('Error cargando nutricion_pacientes:', resPacientes.error);
-        if(resTurnos.error) console.error('Error cargando nutricion_turnos:', resTurnos.error);
-        
-        if(resPacientes.data) nutriPacientesData = resPacientes.data;
-        if(resTurnos.data) nutriTurnosData = resTurnos.data;
-        if(resMediciones.data) nutricionMedicionesData = resMediciones.data;
-        
-        renderizarAgendaNutri();
-        renderizarPacientesNutri();
-        renderizarRendicionNutri();
+
+        let errorTurnos = false;
+
+        if (resPacientes.status === 'fulfilled' && resPacientes.value && !resPacientes.value.error && resPacientes.value.data) {
+            nutriPacientesData = resPacientes.value.data;
+            try { localStorage.setItem('ftg_cache_nutri_pacientes', JSON.stringify(nutriPacientesData)); } catch(e){}
+        }
+
+        if (resTurnos.status === 'fulfilled' && resTurnos.value && !resTurnos.value.error && resTurnos.value.data) {
+            nutriTurnosData = resTurnos.value.data;
+            try { localStorage.setItem('ftg_cache_nutri_turnos', JSON.stringify(nutriTurnosData)); } catch(e){}
+        } else {
+            errorTurnos = true;
+            if (resTurnos.status === 'rejected') console.warn('Turnos nutrición timeout:', resTurnos.reason);
+            else if (resTurnos.value?.error) console.warn('Turnos nutrición error:', resTurnos.value.error);
+        }
+
+        if (resMediciones.status === 'fulfilled' && resMediciones.value && !resMediciones.value.error && resMediciones.value.data) {
+            nutricionMedicionesData = resMediciones.value.data;
+            try { localStorage.setItem('ftg_cache_nutri_mediciones', JSON.stringify(nutricionMedicionesData)); } catch(e){}
+        }
+
+        renderVistasNutricion();
         actualizarDatalistPacientes();
+
+        if (errorTurnos && (!nutriTurnosData || nutriTurnosData.length === 0)) {
+            const listaTurnos = document.getElementById('listaTurnosNutri');
+            if (listaTurnos) {
+                listaTurnos.innerHTML = `
+                    <div style="text-align: center; padding: 30px 20px; color: var(--text-dim); background: rgba(255,255,255,0.015); border-radius: 12px; border: 1px dashed rgba(255,83,83,0.3);">
+                        <p style="color: #ff6b6b; font-weight: 700; margin-bottom: 8px;">⚠️ Hubo una demora al conectar con el servidor de nutrición.</p>
+                        <p style="font-size: 0.85rem; margin-bottom: 14px;">Puedes reintentar cargar la agenda sin necesidad de actualizar toda la página.</p>
+                        <button class="btn btn-outline" onclick="cargarDatosNutricion(true)" style="padding: 7px 18px; font-size: 0.85rem; border-color: var(--neon-green); color: var(--neon-green); font-weight: bold;">🔄 Reintentar conexión</button>
+                    </div>`;
+            }
+        }
     } catch(e) { 
         console.error('Error cargando nutricion', e);
         renderVistasNutricion();
+    } finally {
+        _cargandoNutriEnProgreso = false;
     }
 }
 
@@ -10167,8 +10211,21 @@ async function actualizarEstadoTurnoNutri(turnoId, estadoNuevo) {
 
 
 function renderVistasNutricion() {
-    renderizarAgendaNutri();
-    renderizarRendicionNutri();
+    try {
+        renderizarAgendaNutri();
+    } catch(e) {
+        console.error('Error renderizarAgendaNutri:', e);
+    }
+    try {
+        renderizarPacientesNutri();
+    } catch(e) {
+        console.error('Error renderizarPacientesNutri:', e);
+    }
+    try {
+        renderizarRendicionNutri();
+    } catch(e) {
+        console.error('Error renderizarRendicionNutri:', e);
+    }
 }
 
 function renderizarAgendaNutri() {
@@ -11077,6 +11134,7 @@ function renderizarRendicionNutri() {
     });
 
     let innerHtml = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px;">';
+    let tarjetasRendicionMostradas = 0;
     
     Object.keys(resumen).forEach(nombre => {
         const data = resumen[nombre];
@@ -11084,12 +11142,13 @@ function renderizarRendicionNutri() {
         const deudaGym = (data.totalCobrado * pctGym) / 100;
         const gananciaNutri = data.totalCobrado - deudaGym;
         
-        const emailActual = (window.emailActualGlobal || '').toLowerCase();
+        const emailActual = (window.emailActualGlobal || document.getElementById('loggedUserEmail')?.innerText || '').trim().toLowerCase();
         const nomKey = normalizarTextoNutri(nombre);
         const esSuRendicion = (emailActual.includes('lucia') && nomKey.includes('lucia')) || 
                               (emailActual.includes('santiago') && nomKey.includes('santiago'));
 
         if (window.esSuperAdminGlobal || esSuRendicion) {
+            tarjetasRendicionMostradas++;
             
             let tablaTurnos = `
             <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
@@ -11168,6 +11227,14 @@ function renderizarRendicionNutri() {
             `;
         }
     });
+
+    if (tarjetasRendicionMostradas === 0) {
+        innerHtml += `
+            <div style="grid-column: 1 / -1; text-align: center; color: var(--text-dim); padding: 30px; background: rgba(255,255,255,0.015); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.08);">
+                <div style="font-size: 1.2rem; margin-bottom: 6px;">📋</div>
+                Sin liquidaciones o turnos registrados para mostrar en este mes.
+            </div>`;
+    }
     
     innerHtml += '</div>';
     cont.innerHTML = innerHtml;
